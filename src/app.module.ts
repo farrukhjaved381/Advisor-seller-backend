@@ -4,7 +4,6 @@ import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose'; // MongoDB integration
 import { ThrottlerModule } from '@nestjs/throttler'; // Rate limiting
 import { ConfigModule, ConfigService } from '@nestjs/config'; // For env config
-import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 
@@ -27,17 +26,6 @@ import { UsersModule } from './users/users.module';
         limit: 100,
       },
     ]),
-    LoggerModule.forRoot({
-      pinoHttp: {
-        transport: {
-          target: 'pino-pretty', // Pretty print for dev
-          options: { singleLine: true },
-        },
-        customProps: (req) => ({
-          traceId: req.id, // Request tracing ID
-        }),
-      },
-    }),
     AuthModule,
     UsersModule,
   ],
