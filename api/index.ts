@@ -10,8 +10,10 @@ async function createApp() {
   if (!cachedApp) {
     cachedApp = await NestFactory.create(AppModule);
 
-    // Security: Helmet for HTTP headers
-    cachedApp.use(helmet());
+    // Security: Helmet for HTTP headers (disable CSP for Swagger)
+    cachedApp.use(helmet({
+      contentSecurityPolicy: false
+    }));
 
     // CORS: Allow all origins
     cachedApp.enableCors();
@@ -37,9 +39,8 @@ async function createApp() {
       res.json(document);
     });
     
-    // Swagger UI HTML page with relaxed CSP
+    // Swagger UI HTML page
     cachedApp.use('/docs', (req, res) => {
-      res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:;");
       res.send(`
         <!DOCTYPE html>
         <html>
