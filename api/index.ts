@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
 
 let cachedApp: any;
 
@@ -9,20 +10,20 @@ async function createApp() {
   if (!cachedApp) {
     cachedApp = await NestFactory.create(AppModule);
 
-    // CORS: Allow all origins
-    cachedApp.enableCors({
-      origin: true,
-      credentials: true,
-    });
+    // Security: Helmet for HTTP headers
+    cachedApp.use(helmet());
 
-    // Input Validation
+    // CORS: Allow all origins
+    cachedApp.enableCors();
+
+    // Input Validation: Global pipe with class-validator
     cachedApp.useGlobalPipes(new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
     }));
 
-    // Swagger Setup
+    // Swagger Setup: API Documentation at /docs
     const config = new DocumentBuilder()
       .setTitle('Seller-Advisor Backend API')
       .setDescription('API for Seller-Advisor Matching Platform')
@@ -39,6 +40,5 @@ async function createApp() {
 
 export default async function handler(req: any, res: any) {
   const app = await createApp();
-  const httpAdapter = app.getHttpAdapter();
-  return httpAdapter.getInstance()(req, res);
+  return app.getHttpAdapter().getInstance()(req, res);
 }
