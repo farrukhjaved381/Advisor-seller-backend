@@ -23,7 +23,7 @@ async function createApp() {
       transform: true,
     }));
 
-    // Swagger Setup: API Documentation at /docs
+    // API Documentation endpoint
     const config = new DocumentBuilder()
       .setTitle('Seller-Advisor Backend API')
       .setDescription('API for Seller-Advisor Matching Platform')
@@ -31,11 +31,29 @@ async function createApp() {
       .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(cachedApp, config);
-    SwaggerModule.setup('docs', cachedApp, document, {
-      swaggerOptions: {
-        persistAuthorization: true,
-      },
-      customSiteTitle: 'Seller-Advisor API Docs'
+    
+    // Serve JSON docs at /api-docs
+    cachedApp.use('/api-docs', (req, res) => {
+      res.json(document);
+    });
+    
+    // Simple HTML docs page
+    cachedApp.use('/docs', (req, res) => {
+      res.send(`
+        <html>
+          <head><title>Seller-Advisor API</title></head>
+          <body>
+            <h1>Seller-Advisor Backend API</h1>
+            <p>API is running successfully!</p>
+            <p><a href="/api-docs">View API JSON Schema</a></p>
+            <h2>Available Endpoints:</h2>
+            <ul>
+              <li>GET / - Health check</li>
+              <li>GET /api-docs - API documentation (JSON)</li>
+            </ul>
+          </body>
+        </html>
+      `);
     });
 
     await cachedApp.init();
