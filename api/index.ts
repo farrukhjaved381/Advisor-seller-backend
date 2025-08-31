@@ -2,17 +2,12 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
-import { ExpressAdapter } from '@nestjs/platform-express';
-import * as express from 'express';
 
 let cachedApp: any;
 
 async function createApp() {
   if (!cachedApp) {
-    const expressApp = express();
-    const adapter = new ExpressAdapter(expressApp);
-    
-    cachedApp = await NestFactory.create(AppModule, adapter);
+    cachedApp = await NestFactory.create(AppModule);
 
     // CORS: Allow all origins
     cachedApp.enableCors({
