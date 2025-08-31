@@ -104,3 +104,4 @@ public
 
 # Dist folder
 /dist
+.vercel
