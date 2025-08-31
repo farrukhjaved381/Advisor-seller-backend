@@ -37,20 +37,41 @@ async function createApp() {
       res.json(document);
     });
     
-    // Simple HTML docs page
+    // Swagger UI HTML page
     cachedApp.use('/docs', (req, res) => {
       res.send(`
+        <!DOCTYPE html>
         <html>
-          <head><title>Seller-Advisor API</title></head>
+          <head>
+            <title>Seller-Advisor API Documentation</title>
+            <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui.css" />
+            <style>
+              html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+              *, *:before, *:after { box-sizing: inherit; }
+              body { margin:0; background: #fafafa; }
+            </style>
+          </head>
           <body>
-            <h1>Seller-Advisor Backend API</h1>
-            <p>API is running successfully!</p>
-            <p><a href="/api-docs">View API JSON Schema</a></p>
-            <h2>Available Endpoints:</h2>
-            <ul>
-              <li>GET / - Health check</li>
-              <li>GET /api-docs - API documentation (JSON)</li>
-            </ul>
+            <div id="swagger-ui"></div>
+            <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-bundle.js"></script>
+            <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-standalone-preset.js"></script>
+            <script>
+              window.onload = function() {
+                const ui = SwaggerUIBundle({
+                  url: '/api-docs',
+                  dom_id: '#swagger-ui',
+                  deepLinking: true,
+                  presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                  ],
+                  plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                  ],
+                  layout: "StandaloneLayout"
+                });
+              };
+            </script>
           </body>
         </html>
       `);
