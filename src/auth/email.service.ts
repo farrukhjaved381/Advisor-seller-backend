@@ -6,14 +6,25 @@ export class EmailService {
   private transporter;
 
   constructor() {
+    const isProduction = process.env.NODE_ENV === 'production';
+    
     this.transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.EMAIL_PORT || '587'),
-      secure: false,
+      host: (process.env.EMAIL_HOST || 'smtp.gmail.com').trim(),
+      port: parseInt((process.env.EMAIL_PORT || '587').trim()),
+      secure: (process.env.EMAIL_SECURE || 'false').trim() === 'true',
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: (process.env.EMAIL_USER || '').trim(),
+        pass: (process.env.EMAIL_PASS || '').trim(),
       },
+      // Gmail-specific settings for production
+      ...(isProduction && {
+        tls: {
+          rejectUnauthorized: false
+        },
+        connectionTimeout: 60000,
+        greetingTimeout: 30000,
+        socketTimeout: 60000
+      })
     });
   }
 
@@ -64,7 +75,6 @@ export class EmailService {
           <p>Or copy and paste this link in your browser:</p>
           <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
           <p>This link will expire in 24 hours.</p>
-          <p>If you didn't create an account, please ignore this email.</p>
           <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
           <p style="color: #666; font-size: 12px;">
             This is an automated email. Please do not reply to this message.

@@ -59,5 +59,6 @@ export const AdvisorSchema = SchemaFactory.createForClass(Advisor);
 
 // Index for fast queries and matching
 AdvisorSchema.index({ userId: 1 });
-AdvisorSchema.index({ industries: 1, geographies: 1 });
+AdvisorSchema.index({ industries: 1 });
+AdvisorSchema.index({ geographies: 1 });
 AdvisorSchema.index({ isActive: 1, sendLeads: 1 });
