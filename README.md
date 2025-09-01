@@ -47,7 +47,7 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
-FRONTEND_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:5174
 ```
 
 ### Token System

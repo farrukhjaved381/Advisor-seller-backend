@@ -30,7 +30,7 @@ async function createApp(): Promise<INestApplication> {
   nestApp.use(cookieParser());
 
   const corsOrigins = process.env.NODE_ENV === 'production'
-    ? [process.env.FRONTEND_URL, 'https://your-frontend-domain.vercel.app']
+    ? [process.env.FRONTEND_URL, 'http://localhost:5174']
     : true;
 
   nestApp.enableCors({
