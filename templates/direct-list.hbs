@@ -1,0 +1,36 @@
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2>Your Matched Advisors Contact List</h2>
+  <p>Dear {{sellerName}},</p>
+  
+  <p>Based on your profile, we have found {{advisorCount}} matching advisors for your business needs:</p>
+  
+  <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+    {{#each advisors}}
+    <div style="border-bottom: 1px solid #dee2e6; padding: 15px 0;">
+      <h4 style="margin: 0 0 10px 0; color: #007bff;">{{companyName}}</h4>
+      <p style="margin: 5px 0;"><strong>Contact:</strong> {{email}}</p>
+      <p style="margin: 5px 0;"><strong>Industries:</strong> {{industries}}</p>
+      <p style="margin: 5px 0;"><strong>Geographies:</strong> {{geographies}}</p>
+      <p style="margin: 5px 0;"><strong>Experience:</strong> {{yearsExperience}} years</p>
+      {{#if licensing}}
+      <p style="margin: 5px 0;"><strong>Licensing:</strong> {{licensing}}</p>
+      {{/if}}
+    </div>
+    {{/each}}
+  </div>
+  
+  <p><strong>Next Steps:</strong></p>
+  <ul>
+    <li>Review the advisor profiles above</li>
+    <li>Contact advisors directly using the provided email addresses</li>
+    <li>All advisors have been notified of your potential interest</li>
+  </ul>
+  
+  <p>Best regards,<br>
+  The Advisor-Seller Platform Team</p>
+  
+  <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+  <p style="color: #666; font-size: 12px;">
+    This contact list is confidential and for your business use only.
+  </p>
+</div>

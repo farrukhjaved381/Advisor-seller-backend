@@ -54,4 +54,21 @@ export class UsersService {
   async validatePassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
     return bcrypt.compare(plainPassword, hashedPassword);
   }
+
+  async updateRefreshToken(userId: string, refreshToken: string, expiry: Date): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, {
+      refreshToken,
+      refreshTokenExpiry: expiry,
+    });
+  }
+
+  async findByRefreshToken(refreshToken: string): Promise<User | null> {
+    return this.userModel.findOne({ refreshToken });
+  }
+
+  async clearRefreshToken(userId: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, {
+      $unset: { refreshToken: 1, refreshTokenExpiry: 1 }
+    });
+  }
 }

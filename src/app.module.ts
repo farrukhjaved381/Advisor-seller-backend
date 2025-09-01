@@ -6,9 +6,20 @@ import { ThrottlerModule } from '@nestjs/throttler'; // Rate limiting
 import { ConfigModule, ConfigService } from '@nestjs/config'; // For env config
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { AdvisorsModule } from './advisors/advisors.module';
+import { SellersModule } from './sellers/sellers.module';
+import { MatchingModule } from './matching/matching.module';
+import { ConnectionsModule } from './connections/connections.module';
+import { PaymentModule } from './payment/payment.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..' ,'node_modules', 'swagger-ui-dist'),
+      serveRoot: '/docs',
+    }),
     ConfigModule.forRoot({ isGlobal: true }), // Load .env globally
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
@@ -25,6 +36,11 @@ import { UsersModule } from './users/users.module';
     ]),
     AuthModule,
     UsersModule,
+    AdvisorsModule,
+    SellersModule,
+    MatchingModule,
+    ConnectionsModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

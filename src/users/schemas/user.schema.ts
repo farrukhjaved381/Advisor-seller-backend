@@ -38,6 +38,16 @@ export class User extends Document {
 
   @Prop()
   emailVerificationExpires?: Date;
+
+  @Prop()
+  refreshToken?: string;
+
+  @Prop()
+  refreshTokenExpiry?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+// Index for fast queries
+UserSchema.index({ email: 1 });
+UserSchema.index({ refreshToken: 1 });

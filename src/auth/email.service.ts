@@ -7,22 +7,38 @@ export class EmailService {
 
   constructor() {
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.EMAIL_PORT || '587'),
       secure: false,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
   }
 
+  async sendEmail(options: {
+    to: string;
+    cc?: string;
+    subject: string;
+    html: string;
+  }): Promise<void> {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      ...options,
+    };
+
+    await this.transporter.sendMail(mailOptions);
+  }
+
   async sendVerificationEmail(email: string, name: string, token: string): Promise<void> {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
-    const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
+    const backendUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://advisor-seller-backend.vercel.app'
+      : 'http://localhost:3000';
+    const verificationUrl = `${backendUrl}/api/auth/verify-email?token=${token}`;
 
     const mailOptions = {
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      from: process.env.EMAIL_USER,
       to: email,
       subject: 'Verify Your Email - Advisor-Seller Platform',
       html: `
