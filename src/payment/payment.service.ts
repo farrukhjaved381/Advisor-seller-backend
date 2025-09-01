@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { Coupon, CouponDocument } from './schemas/coupon.schema';
 import { Advisor, AdvisorDocument } from '../advisors/schemas/advisor.schema';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class PaymentService {
@@ -15,6 +16,7 @@ export class PaymentService {
     @InjectModel(Coupon.name) private couponModel: Model<CouponDocument>,
     @InjectModel(Advisor.name) private advisorModel: Model<AdvisorDocument>,
     private configService: ConfigService,
+    private usersService: UsersService,
   ) {
     this.stripe = new Stripe(this.configService.get('STRIPE_SECRET_KEY') || 'sk_test_default', {
       apiVersion: '2025-08-27.basil',
@@ -186,5 +188,39 @@ export class PaymentService {
         { upsert: true, new: true }
       );
     }
+  }
+
+  async handleWebhook(signature: string, payload: Buffer): Promise<{ received: boolean }> {
+    let event: Stripe.Event;
+
+    try {
+      event = this.stripe.webhooks.constructEvent(
+        payload,
+        signature,
+        this.configService.get('STRIPE_WEBHOOK_SECRET') || 'whsec_default',
+      );
+    } catch (err) {
+      console.log(`Webhook signature verification failed.`, err.message);
+      throw new BadRequestException(`Webhook Error: ${err.message}`);
+    }
+
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        console.log('PaymentIntent succeeded:', paymentIntent.id);
+        
+        if (paymentIntent.metadata?.userId) {
+          await this.usersService.markPaymentVerified(
+            paymentIntent.metadata.userId,
+            paymentIntent.customer as string
+          );
+          console.log(`User ${paymentIntent.metadata.userId} marked as payment verified`);
+        }
+        break;
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    return { received: true };
   }
 }

@@ -6,6 +6,7 @@ import { PaymentService } from './payment.service';
 import { PaymentSeederService } from './payment-seeder.service';
 import { Coupon, CouponSchema } from './schemas/coupon.schema';
 import { Advisor, AdvisorSchema } from '../advisors/schemas/advisor.schema';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { Advisor, AdvisorSchema } from '../advisors/schemas/advisor.schema';
       { name: Advisor.name, schema: AdvisorSchema },
     ]),
     ConfigModule,
+    UsersModule,
   ],
   controllers: [PaymentController],
   providers: [PaymentService, PaymentSeederService],

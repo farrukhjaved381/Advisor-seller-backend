@@ -33,6 +33,12 @@ export class User extends Document {
   @Prop({ default: false })
   isEmailVerified: boolean;
 
+  @Prop({ default: false })
+  isPaymentVerified: boolean;
+
+  @Prop()
+  stripeCustomerId?: string;
+
   @Prop()
   emailVerificationToken?: string;
 

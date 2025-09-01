@@ -71,4 +71,21 @@ export class UsersService {
       $unset: { refreshToken: 1, refreshTokenExpiry: 1 }
     });
   }
+
+  async markPaymentVerified(userId: string, stripeCustomerId?: string): Promise<User> {
+    const user = await this.userModel.findByIdAndUpdate(
+      userId,
+      { 
+        isPaymentVerified: true,
+        ...(stripeCustomerId && { stripeCustomerId })
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
 }

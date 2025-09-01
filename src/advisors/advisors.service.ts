@@ -1,18 +1,34 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Advisor, AdvisorDocument } from './schemas/advisor.schema';
+import { Advisor } from './schemas/advisor.schema';
 import { CreateAdvisorProfileDto } from './dto/create-advisor-profile.dto';
 import { UpdateAdvisorProfileDto } from './dto/update-advisor-profile.dto';
 
 @Injectable()
 export class AdvisorsService {
-  constructor(
-    @InjectModel(Advisor.name) private advisorModel: Model<AdvisorDocument>,
-  ) {}
+  constructor(@InjectModel(Advisor.name) private advisorModel: Model<Advisor>) {
+    this.initializeIndexes();
+  }
 
-  // Creates advisor profile linked to authenticated user
-  async createProfile(userId: string, createProfileDto: CreateAdvisorProfileDto): Promise<Advisor> {
+  private async initializeIndexes() {
+    try {
+      // Drop all existing indexes except _id
+      await this.advisorModel.collection.dropIndexes();
+      
+      // Recreate proper indexes
+      await this.advisorModel.collection.createIndex({ userId: 1 }, { unique: true });
+      await this.advisorModel.collection.createIndex({ industries: 1 });
+      await this.advisorModel.collection.createIndex({ geographies: 1 });
+      await this.advisorModel.collection.createIndex({ isActive: 1, sendLeads: 1 });
+      
+      console.log('Advisor indexes recreated successfully');
+    } catch (error) {
+      console.log('Index initialization error (may be normal):', error.message);
+    }
+  }
+
+  async createProfile(userId: string, createAdvisorProfileDto: CreateAdvisorProfileDto): Promise<Advisor> {
     const existingProfile = await this.advisorModel.findOne({ userId });
     if (existingProfile) {
       throw new ConflictException('Advisor profile already exists');
@@ -20,23 +36,21 @@ export class AdvisorsService {
 
     const advisor = new this.advisorModel({
       userId,
-      ...createProfileDto,
+      ...createAdvisorProfileDto,
     });
 
     return advisor.save();
   }
 
-  // Retrieves advisor profile by user ID
   async getProfileByUserId(userId: string): Promise<Advisor | null> {
-    return this.advisorModel.findOne({ userId }).populate('userId', 'name email');
+    return this.advisorModel.findOne({ userId });
   }
 
-  // Updates advisor profile fields
-  async updateProfile(userId: string, updateProfileDto: UpdateAdvisorProfileDto): Promise<Advisor> {
+  async updateProfile(userId: string, updateAdvisorProfileDto: UpdateAdvisorProfileDto): Promise<Advisor> {
     const advisor = await this.advisorModel.findOneAndUpdate(
       { userId },
-      updateProfileDto,
-      { new: true, runValidators: true }
+      updateAdvisorProfileDto,
+      { new: true }
     );
 
     if (!advisor) {
@@ -46,7 +60,6 @@ export class AdvisorsService {
     return advisor;
   }
 
-  // Toggles lead sending status
   async toggleLeadSending(userId: string, sendLeads: boolean): Promise<Advisor> {
     const advisor = await this.advisorModel.findOneAndUpdate(
       { userId },
@@ -61,23 +74,7 @@ export class AdvisorsService {
     return advisor;
   }
 
-  // Activates advisor profile (after payment/verification)
-  async activateProfile(userId: string): Promise<Advisor> {
-    const advisor = await this.advisorModel.findOneAndUpdate(
-      { userId },
-      { isActive: true },
-      { new: true }
-    );
-
-    if (!advisor) {
-      throw new NotFoundException('Advisor profile not found');
-    }
-
-    return advisor;
-  }
-
-  // Gets all active advisors for matching (used later)
-  async getActiveAdvisors(): Promise<Advisor[]> {
+  async findActiveAdvisors(): Promise<Advisor[]> {
     return this.advisorModel.find({ isActive: true, sendLeads: true });
   }
 }

@@ -5,12 +5,13 @@ import { CreateAdvisorProfileDto } from './dto/create-advisor-profile.dto';
 import { UpdateAdvisorProfileDto } from './dto/update-advisor-profile.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { PaymentVerifiedGuard } from '../auth/guards/payment-verified.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/schemas/user.schema';
 
 @ApiTags('Advisors')
 @Controller('advisors')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PaymentVerifiedGuard)
 @Roles(UserRole.ADVISOR)
 @ApiBearerAuth()
 export class AdvisorsController {

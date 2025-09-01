@@ -57,8 +57,4 @@ function arrayLimit(val: any[]) {
 
 export const AdvisorSchema = SchemaFactory.createForClass(Advisor);
 
-// Index for fast queries and matching
-AdvisorSchema.index({ userId: 1 });
-AdvisorSchema.index({ industries: 1 });
-AdvisorSchema.index({ geographies: 1 });
-AdvisorSchema.index({ isActive: 1, sendLeads: 1 });
+// Indexes are managed in the service to avoid parallel array issues
