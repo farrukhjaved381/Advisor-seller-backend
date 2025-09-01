@@ -32,6 +32,14 @@ export class EmailService {
   }
 
   async sendVerificationEmail(email: string, name: string, token: string): Promise<void> {
+    console.log('Email config:', {
+      EMAIL_USER: process.env.EMAIL_USER ? 'SET' : 'NOT SET',
+      EMAIL_PASS: process.env.EMAIL_PASS ? 'SET' : 'NOT SET',
+      EMAIL_HOST: process.env.EMAIL_HOST,
+      EMAIL_PORT: process.env.EMAIL_PORT,
+      NODE_ENV: process.env.NODE_ENV
+    });
+    
     const backendUrl = process.env.NODE_ENV === 'production' 
       ? 'https://advisor-seller-backend.vercel.app'
       : 'http://localhost:3000';
@@ -65,6 +73,13 @@ export class EmailService {
       `,
     };
 
-    await this.transporter.sendMail(mailOptions);
+    try {
+      console.log('Attempting to send email to:', email);
+      await this.transporter.sendMail(mailOptions);
+      console.log('Email sent successfully to:', email);
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      throw error;
+    }
   }
 }
