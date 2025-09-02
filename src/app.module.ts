@@ -11,6 +11,7 @@ import { SellersModule } from './sellers/sellers.module';
 import { MatchingModule } from './matching/matching.module';
 import { ConnectionsModule } from './connections/connections.module';
 import { PaymentModule } from './payment/payment.module';
+import { UploadModule } from './upload/upload.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
@@ -41,6 +42,7 @@ import { join } from 'path';
     MatchingModule,
     ConnectionsModule,
     PaymentModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

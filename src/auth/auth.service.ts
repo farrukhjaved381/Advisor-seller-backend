@@ -94,6 +94,89 @@ export class AuthService {
     }
   }
 
+  async forgotPassword(email: string): Promise<{ message: string; success: boolean }> {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      // Don't reveal if email exists or not for security
+      return { message: 'If email exists, password reset link has been sent.', success: true };
+    }
+
+    const resetToken = this.jwtService.sign(
+      { sub: (user as any)._id.toString(), type: 'password_reset' },
+      { expiresIn: '1h' }
+    );
+
+    await this.usersService.saveResetPasswordToken(
+      (user as any)._id.toString(),
+      resetToken
+    );
+
+    try {
+      await this.emailService.sendPasswordResetEmail(
+        user.email,
+        user.name,
+        resetToken
+      );
+    } catch (error) {
+      console.error('Failed to send password reset email:', error);
+    }
+
+    return { message: 'If email exists, password reset link has been sent.', success: true };
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string; success: boolean }> {
+    try {
+      const payload = this.jwtService.verify(token);
+      
+      if (payload.type !== 'password_reset') {
+        throw new BadRequestException('Invalid reset token');
+      }
+
+      const user = await this.usersService.findById(payload.sub);
+      if (!user || user.resetPasswordToken !== token) {
+        throw new BadRequestException('Invalid or expired reset token');
+      }
+
+      await this.usersService.updatePassword(payload.sub, newPassword);
+      await this.usersService.clearResetPasswordToken(payload.sub);
+      
+      return { message: 'Password reset successfully! You can now login.', success: true };
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new BadRequestException('Reset token has expired');
+      }
+      throw new BadRequestException('Invalid reset token');
+    }
+  }
+
+  async resendVerificationEmail(email: string): Promise<{ message: string; success: boolean }> {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      return { message: 'If email exists and is unverified, verification email has been sent.', success: true };
+    }
+
+    if (user.isEmailVerified) {
+      return { message: 'Email is already verified.', success: true };
+    }
+
+    const verificationToken = this.jwtService.sign(
+      { sub: (user as any)._id.toString(), type: 'email_verification' },
+      { expiresIn: '24h' }
+    );
+
+    try {
+      await this.emailService.sendVerificationEmail(
+        user.email,
+        user.name,
+        verificationToken
+      );
+    } catch (error) {
+      console.error('Failed to resend verification email:', error);
+    }
+
+    return { message: 'If email exists and is unverified, verification email has been sent.', success: true };
+  }
+
   async validateUser(email: string, password: string): Promise<User> {
     const user = await this.usersService.findByEmail(email);
     if (!user) {

@@ -51,10 +51,8 @@ export class EmailService {
       NODE_ENV: process.env.NODE_ENV
     });
     
-    const backendUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://advisor-seller-backend.vercel.app'
-      : 'http://localhost:3000';
-    const verificationUrl = `${backendUrl}/api/auth/verify-email?token=${token}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+    const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -89,6 +87,47 @@ export class EmailService {
       console.log('Email sent successfully to:', email);
     } catch (error) {
       console.error('Email sending failed:', error);
+      throw error;
+    }
+  }
+
+  async sendPasswordResetEmail(email: string, name: string, token: string): Promise<void> {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Reset Your Password - Advisor-Seller Platform',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Password Reset Request</h2>
+          <p>Hello ${name},</p>
+          <p>You requested to reset your password. Click the button below to set a new password:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" 
+               style="background-color: #dc3545; color: white; padding: 12px 24px; 
+                      text-decoration: none; border-radius: 5px; display: inline-block;">
+              Reset Password
+            </a>
+          </div>
+          <p>Or copy and paste this link in your browser:</p>
+          <p style="word-break: break-all; color: #666;">${resetUrl}</p>
+          <p>This link will expire in 1 hour.</p>
+          <p><strong>If you didn't request this, please ignore this email.</strong></p>
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+          <p style="color: #666; font-size: 12px;">
+            This is an automated email. Please do not reply to this message.
+          </p>
+        </div>
+      `,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log('Password reset email sent successfully to:', email);
+    } catch (error) {
+      console.error('Password reset email sending failed:', error);
       throw error;
     }
   }

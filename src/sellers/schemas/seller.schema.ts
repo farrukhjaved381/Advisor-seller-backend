@@ -23,12 +23,28 @@ export class Seller {
   geography: string;
 
   @Prop({ required: true })
-  @ApiProperty({ description: 'Annual revenue in USD' })
+  @ApiProperty({ description: 'Annual revenue' })
   annualRevenue: number;
 
+  @Prop({ required: true })
+  @ApiProperty({ description: 'Revenue currency' })
+  currency: string;
+
+  @Prop({ required: true })
+  @ApiProperty({ description: 'Phone number' })
+  phone: string;
+
   @Prop()
+  @ApiProperty({ description: 'Website address' })
+  website?: string;
+
+  @Prop({ required: true })
   @ApiProperty({ description: 'Company description' })
-  description?: string;
+  description: string;
+
+  @Prop({ default: true })
+  @ApiProperty({ description: 'Profile active status' })
+  isActive: boolean;
 }
 
 export const SellerSchema = SchemaFactory.createForClass(Seller);

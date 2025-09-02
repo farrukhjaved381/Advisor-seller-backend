@@ -1,41 +1,57 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class TestimonialCardDto {
-  @ApiProperty({ description: 'Client name' })
-  clientName: string;
-
-  @ApiProperty({ description: 'Testimonial text' })
-  testimonial: string;
-
-  @ApiProperty({ description: 'PDF URL', required: false })
-  pdfUrl?: string;
-}
-
 export class AdvisorCardDto {
-  @ApiProperty({ description: 'Advisor ID' })
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
   id: string;
 
-  @ApiProperty({ description: 'Company name' })
+  @ApiProperty({ example: 'ABC Consulting LLC' })
   companyName: string;
 
-  @ApiProperty({ description: 'Industries served', type: [String] })
+  @ApiProperty({ example: ['Technology', 'Healthcare'] })
   industries: string[];
 
-  @ApiProperty({ description: 'Service geographies', type: [String] })
+  @ApiProperty({ example: ['North America', 'Europe'] })
   geographies: string[];
 
-  @ApiProperty({ description: 'Years of experience' })
+  @ApiProperty({ example: 15 })
   yearsExperience: number;
 
-  @ApiProperty({ description: 'Logo URL', required: false })
-  logoUrl?: string;
-
-  @ApiProperty({ description: 'Licensing information', required: false })
+  @ApiProperty({ example: 'Licensed CPA, MBA Finance' })
   licensing?: string;
 
-  @ApiProperty({ description: 'Revenue range', required: false })
+  @ApiProperty({ example: { min: 1000000, max: 50000000 } })
   revenueRange?: { min: number; max: number };
 
-  @ApiProperty({ description: 'Testimonials', type: [TestimonialCardDto], required: false })
-  testimonials?: TestimonialCardDto[];
+  @ApiProperty({ example: 'John Doe' })
+  advisorName: string;
+
+  @ApiProperty({ example: 'john@abcconsulting.com' })
+  advisorEmail: string;
+
+  @ApiProperty({ example: '+1-555-123-4567' })
+  phone: string;
+
+  @ApiProperty({ example: 'https://abcconsulting.com' })
+  website?: string;
+
+  @ApiProperty({ example: 'USD' })
+  currency: string;
+
+  @ApiProperty({ example: 'Expert advisory services for technology companies.' })
+  description: string;
+
+  @ApiProperty({ example: 150 })
+  numberOfTransactions: number;
+
+  @ApiProperty({ example: 'https://example.com/logo.png' })
+  logoUrl?: string;
+
+  @ApiProperty({ 
+    example: [{
+      clientName: 'TechCorp Inc',
+      testimonial: 'Excellent advisory services, helped us scale efficiently.',
+      pdfUrl: 'https://example.com/testimonial.pdf'
+    }]
+  })
+  testimonials: { clientName: string; testimonial: string; pdfUrl?: string }[];
 }

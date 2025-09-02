@@ -72,6 +72,29 @@ export class UsersService {
     });
   }
 
+  async saveResetPasswordToken(userId: string, token: string): Promise<void> {
+    const expiry = new Date();
+    expiry.setHours(expiry.getHours() + 1); // 1 hour expiry
+    
+    await this.userModel.findByIdAndUpdate(userId, {
+      resetPasswordToken: token,
+      resetPasswordExpiry: expiry
+    });
+  }
+
+  async updatePassword(userId: string, newPassword: string): Promise<void> {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.userModel.findByIdAndUpdate(userId, {
+      password: hashedPassword
+    });
+  }
+
+  async clearResetPasswordToken(userId: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, {
+      $unset: { resetPasswordToken: 1, resetPasswordExpiry: 1 }
+    });
+  }
+
   async markPaymentVerified(userId: string, stripeCustomerId?: string): Promise<User> {
     const user = await this.userModel.findByIdAndUpdate(
       userId,

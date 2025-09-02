@@ -1,10 +1,12 @@
-import { Controller, Post, Body, UseGuards, Get, Request, Query, Res } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import type { Response } from 'express';
 import { AuthService, AuthResponse } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginUserDto } from '../users/dto/login-user.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { AuthResponseDto, UserResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UsersService } from '../users/users.service';
@@ -83,65 +85,92 @@ export class AuthController {
   @Get('verify-email')
   @ApiOperation({ summary: 'Verify email address' })
   @ApiQuery({ name: 'token', description: 'Email verification token' })
-  @ApiResponse({ status: 200, description: 'Email verified successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
-  async verifyEmail(@Query('token') token: string, @Res() res: Response) {
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Email verified successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' }
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Invalid or expired token',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' }
+      }
+    }
+  })
+  async verifyEmail(@Query('token') token: string) {
     try {
       const result = await this.authService.verifyEmail(token);
-      
-      // Return HTML success page
-      const successHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Email Verified - Advisor-Seller Platform</title>
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
-            .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .success { color: #28a745; font-size: 24px; margin-bottom: 20px; }
-            .message { color: #333; font-size: 16px; line-height: 1.5; }
-            .icon { font-size: 48px; margin-bottom: 20px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="icon">✅</div>
-            <h1 class="success">Email Verified Successfully!</h1>
-            <p class="message">${result.message}</p>
-            <p class="message">You can now close this window and return to the application to login.</p>
-          </div>
-        </body>
-        </html>
-      `;
-      
-      res.status(200).send(successHtml);
+      return {
+        success: result.success,
+        message: result.message
+      };
     } catch (error) {
-      // Return HTML error page
-      const errorHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Verification Failed - Advisor-Seller Platform</title>
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
-            .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .error { color: #dc3545; font-size: 24px; margin-bottom: 20px; }
-            .message { color: #333; font-size: 16px; line-height: 1.5; }
-            .icon { font-size: 48px; margin-bottom: 20px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="icon">❌</div>
-            <h1 class="error">Verification Failed</h1>
-            <p class="message">${error.message}</p>
-            <p class="message">Please try registering again or contact support if the problem persists.</p>
-          </div>
-        </body>
-        </html>
-      `;
-      
-      res.status(400).send(errorHtml);
+      return {
+        success: false,
+        message: error.message
+      };
     }
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Request password reset' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Password reset email sent if email exists',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' }
+      }
+    }
+  })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto.email);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reset password with token' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Password reset successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
+  }
+
+  @Post('resend-verification')
+  @ApiOperation({ summary: 'Resend email verification' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Verification email sent if email exists and is unverified',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' }
+      }
+    }
+  })
+  async resendVerification(@Body() resendVerificationDto: ResendVerificationDto) {
+    return this.authService.resendVerificationEmail(resendVerificationDto.email);
   }
 }

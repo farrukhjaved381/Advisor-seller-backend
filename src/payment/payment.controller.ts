@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Headers, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PaymentService } from './payment.service';
@@ -9,16 +9,17 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/schemas/user.schema';
+import type { Request as ExpressRequest } from 'express';
 
 @ApiTags('Payment')
 @Controller('payment')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADVISOR)
-@ApiBearerAuth()
 export class PaymentController {
   constructor(private paymentService: PaymentService) {}
 
   @Post('create-intent')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADVISOR)
+  @ApiBearerAuth()
   @Throttle({ default: { limit: 10, ttl: 3600 } })
   @ApiOperation({ summary: 'Create payment intent for advisor membership' })
   @ApiResponse({ 
@@ -42,6 +43,9 @@ export class PaymentController {
   }
 
   @Post('confirm')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADVISOR)
+  @ApiBearerAuth()
   @Throttle({ default: { limit: 5, ttl: 3600 } })
   @ApiOperation({ summary: 'Confirm payment and activate advisor profile' })
   @ApiResponse({ 
@@ -65,6 +69,9 @@ export class PaymentController {
   }
 
   @Post('redeem-coupon')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADVISOR)
+  @ApiBearerAuth()
   @Throttle({ default: { limit: 3, ttl: 3600 } })
   @ApiOperation({ summary: 'Redeem coupon for free trial activation' })
   @ApiResponse({ 
@@ -85,5 +92,18 @@ export class PaymentController {
   async redeemCoupon(@Request() req, @Body() redeemCouponDto: RedeemCouponDto) {
     // Redeems free trial coupon and activates advisor profile without payment
     return this.paymentService.redeemCoupon(req.user._id, redeemCouponDto.code);
+  }
+
+  @Post('webhook')
+  @ApiOperation({ summary: 'Stripe webhook endpoint for payment confirmations' })
+  @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid webhook signature' })
+  async handleWebhook(
+    @Headers('stripe-signature') signature: string,
+    @Req() req: ExpressRequest & { rawBody?: Buffer }
+  ) {
+    // Public endpoint for Stripe to send payment confirmations
+    // No authentication required - Stripe signature verification handles security
+    return this.paymentService.handleWebhook(signature, req.rawBody || Buffer.from(''));
   }
 }

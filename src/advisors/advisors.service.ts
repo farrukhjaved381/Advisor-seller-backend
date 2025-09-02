@@ -77,4 +77,32 @@ export class AdvisorsService {
   async findActiveAdvisors(): Promise<Advisor[]> {
     return this.advisorModel.find({ isActive: true, sendLeads: true });
   }
+
+  async addTestimonial(userId: string, testimonialData: { clientName: string; testimonial: string; pdfUrl?: string }): Promise<Advisor> {
+    const advisor = await this.advisorModel.findOne({ userId });
+    if (!advisor) {
+      throw new NotFoundException('Advisor profile not found');
+    }
+
+    if (advisor.testimonials.length >= 5) {
+      throw new ConflictException('Maximum 5 testimonials allowed');
+    }
+
+    advisor.testimonials.push(testimonialData);
+    return advisor.save();
+  }
+
+  async updateLogo(userId: string, logoUrl: string): Promise<Advisor> {
+    const advisor = await this.advisorModel.findOneAndUpdate(
+      { userId },
+      { logoUrl },
+      { new: true }
+    );
+
+    if (!advisor) {
+      throw new NotFoundException('Advisor profile not found');
+    }
+
+    return advisor;
+  }
 }

@@ -2,41 +2,37 @@ import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateSellerProfileDto {
+  @ApiProperty({ example: 'TechCorp Solutions Inc.' })
   @IsString()
-  @ApiProperty({ 
-    description: 'Company name', 
-    example: 'TechCorp Solutions Inc.' 
-  })
   companyName: string;
 
+  @ApiProperty({ example: '+1-555-123-4567' })
   @IsString()
-  @ApiProperty({ 
-    description: 'Industry sector', 
-    example: 'Technology' 
-  })
-  industry: string;
+  phone: string;
 
-  @IsString()
-  @ApiProperty({ 
-    description: 'Geographic location', 
-    example: 'North America' 
-  })
-  geography: string;
-
-  @IsNumber()
-  @Min(0)
-  @ApiProperty({ 
-    description: 'Annual revenue in USD', 
-    example: 5000000 
-  })
-  annualRevenue: number;
-
+  @ApiProperty({ example: 'https://techcorp.com', required: false })
   @IsOptional()
   @IsString()
-  @ApiProperty({ 
-    description: 'Brief company description', 
-    required: false,
-    example: 'Leading software development company specializing in enterprise solutions.'
-  })
-  description?: string;
+  website?: string;
+
+  @ApiProperty({ example: 'Technology' })
+  @IsString()
+  industry: string;
+
+  @ApiProperty({ example: 'North America' })
+  @IsString()
+  geography: string;
+
+  @ApiProperty({ example: 5000000, description: 'Annual revenue' })
+  @IsNumber()
+  @Min(0)
+  annualRevenue: number;
+
+  @ApiProperty({ example: 'USD' })
+  @IsString()
+  currency: string;
+
+  @ApiProperty({ example: 'Leading software development company specializing in enterprise solutions.' })
+  @IsString()
+  description: string;
 }

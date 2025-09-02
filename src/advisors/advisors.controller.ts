@@ -66,4 +66,37 @@ export class AdvisorsController {
     // Toggles whether advisor receives leads
     return this.advisorsService.toggleLeadSending(req.user._id, body.sendLeads);
   }
+
+  @Post('testimonials')
+  @ApiOperation({ summary: 'Add testimonial to advisor profile' })
+  @ApiResponse({ status: 201, description: 'Testimonial added successfully' })
+  @ApiResponse({ status: 400, description: 'Maximum 5 testimonials allowed' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        clientName: { type: 'string' },
+        testimonial: { type: 'string' },
+        pdfUrl: { type: 'string' }
+      },
+      required: ['clientName', 'testimonial']
+    }
+  })
+  async addTestimonial(@Request() req, @Body() testimonialData: { clientName: string; testimonial: string; pdfUrl?: string }) {
+    return this.advisorsService.addTestimonial(req.user._id, testimonialData);
+  }
+
+  @Patch('logo')
+  @ApiOperation({ summary: 'Update advisor logo URL' })
+  @ApiResponse({ status: 200, description: 'Logo updated successfully' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { logoUrl: { type: 'string' } },
+      required: ['logoUrl']
+    }
+  })
+  async updateLogo(@Request() req, @Body() body: { logoUrl: string }) {
+    return this.advisorsService.updateLogo(req.user._id, body.logoUrl);
+  }
 }

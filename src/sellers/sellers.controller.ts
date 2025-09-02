@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Body, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { SellersService } from './sellers.service';
 import { CreateSellerProfileDto } from './dto/create-seller-profile.dto';
@@ -93,5 +93,30 @@ export class SellersController {
   async getMatchStats(@Request() req) {
     // Returns matching statistics for analytics
     return this.matchingService.getMatchStats(req.user._id);
+  }
+
+  @Delete('profile')
+  @ApiOperation({ summary: 'Delete seller profile' })
+  @ApiResponse({ status: 200, description: 'Profile deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Profile not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async deleteProfile(@Request() req) {
+    return this.sellersService.deleteProfile(req.user._id);
+  }
+
+  @Patch('profile/status')
+  @ApiOperation({ summary: 'Toggle seller profile active status' })
+  @ApiResponse({ status: 200, description: 'Status updated successfully' })
+  @ApiResponse({ status: 404, description: 'Profile not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBody({ 
+    schema: { 
+      type: 'object', 
+      properties: { isActive: { type: 'boolean' } },
+      required: ['isActive']
+    }
+  })
+  async toggleActiveStatus(@Request() req, @Body() body: { isActive: boolean }) {
+    return this.sellersService.toggleActiveStatus(req.user._id, body.isActive);
   }
 }

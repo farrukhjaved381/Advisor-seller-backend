@@ -10,7 +10,7 @@ import { UsersService } from '../users/users.service';
 @Injectable()
 export class PaymentService {
   private stripe: Stripe;
-  private readonly membershipFee = 500000; // $5,000 in cents
+  private readonly membershipFee = 500000; // $5,000 in cents (minimum $5.00)
 
   constructor(
     @InjectModel(Coupon.name) private couponModel: Model<CouponDocument>,
@@ -210,11 +210,19 @@ export class PaymentService {
         console.log('PaymentIntent succeeded:', paymentIntent.id);
         
         if (paymentIntent.metadata?.userId) {
+          // Mark user as payment verified
           await this.usersService.markPaymentVerified(
             paymentIntent.metadata.userId,
             paymentIntent.customer as string
           );
-          console.log(`User ${paymentIntent.metadata.userId} marked as payment verified`);
+          
+          // Activate advisor profile (single source of truth)
+          await this.advisorModel.findOneAndUpdate(
+            { userId: paymentIntent.metadata.userId },
+            { isActive: true }
+          );
+          
+          console.log(`User ${paymentIntent.metadata.userId} payment verified and profile activated`);
         }
         break;
       default:

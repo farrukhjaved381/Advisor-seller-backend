@@ -20,6 +20,15 @@ export class CreateAdvisorProfileDto {
   @ApiProperty({ description: 'Company name', example: 'ABC Consulting LLC' })
   companyName: string;
 
+  @IsString()
+  @ApiProperty({ example: '+1-555-123-4567' })
+  phone: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ example: 'https://abcconsulting.com', required: false })
+  website?: string;
+
   @IsArray()
   @ApiProperty({ 
     description: 'Array of industries served', 
@@ -41,6 +50,19 @@ export class CreateAdvisorProfileDto {
   @Max(100)
   @ApiProperty({ description: 'Years of experience', example: 15 })
   yearsExperience: number;
+
+  @IsNumber()
+  @Min(0)
+  @ApiProperty({ example: 150 })
+  numberOfTransactions: number;
+
+  @IsString()
+  @ApiProperty({ example: 'USD' })
+  currency: string;
+
+  @IsString()
+  @ApiProperty({ example: 'Expert advisory services for technology and healthcare companies.' })
+  description: string;
 
   @IsOptional()
   @IsString()

@@ -23,12 +23,31 @@ export class Advisor {
   geographies: string[];
 
   @Prop()
-  @ApiProperty({ description: 'Logo URL' })
+  @ApiProperty({ description: 'Company logo URL' })
   logoUrl?: string;
 
-  @Prop({ type: [{ clientName: String, testimonial: String, pdfUrl: String }], validate: [arrayLimit, '{PATH} exceeds the limit of 5'] })
-  @ApiProperty({ description: 'Array of testimonials (max 5)' })
-  testimonials?: { clientName: string; testimonial: string; pdfUrl?: string }[];
+  @Prop({ 
+    type: [{ 
+      clientName: { type: String, required: true },
+      testimonial: { type: String, required: true },
+      pdfUrl: { type: String }
+    }], 
+    validate: [arrayLimit, '{PATH} exceeds the limit of 5'],
+    default: []
+  })
+  @ApiProperty({ 
+    description: 'Array of client testimonials (max 5)',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        clientName: { type: 'string' },
+        testimonial: { type: 'string' },
+        pdfUrl: { type: 'string' }
+      }
+    }
+  })
+  testimonials: { clientName: string; testimonial: string; pdfUrl?: string }[];
 
   @Prop()
   @ApiProperty({ description: 'Licensing info' })
@@ -37,6 +56,26 @@ export class Advisor {
   @Prop({ required: true })
   @ApiProperty({ description: 'Years in business' })
   yearsExperience: number;
+
+  @Prop({ required: true })
+  @ApiProperty({ description: 'Number of transactions completed' })
+  numberOfTransactions: number;
+
+  @Prop({ required: true })
+  @ApiProperty({ description: 'Phone number' })
+  phone: string;
+
+  @Prop()
+  @ApiProperty({ description: 'Website address' })
+  website?: string;
+
+  @Prop({ required: true })
+  @ApiProperty({ description: 'Revenue currency' })
+  currency: string;
+
+  @Prop({ required: true })
+  @ApiProperty({ description: 'Company description' })
+  description: string;
 
   @Prop({ type: { min: Number, max: Number } })
   @ApiProperty({ description: 'Revenue range for clients' })
