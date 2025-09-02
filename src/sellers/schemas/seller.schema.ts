@@ -34,7 +34,7 @@ export class Seller {
   @ApiProperty({ description: 'Phone number' })
   phone: string;
 
-  @Prop()
+  @Prop({required: true})
   @ApiProperty({ description: 'Website address' })
   website?: string;
 

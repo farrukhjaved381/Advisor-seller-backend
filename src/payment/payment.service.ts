@@ -40,7 +40,10 @@ export class PaymentService {
     const paymentIntent = await this.stripe.paymentIntents.create({
       amount: stripeAmount,
       currency: 'usd',
-      automatic_payment_methods: { enabled: true },
+      automatic_payment_methods: { 
+        enabled: true,
+        allow_redirects: 'never', // Important for backend-only confirmation
+      },
       metadata: {
         userId: userId.toString(), // Convert ObjectId to string for Stripe metadata
         couponCode: couponCode || '',
