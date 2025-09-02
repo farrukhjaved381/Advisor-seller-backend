@@ -12,7 +12,9 @@ dotenv.config();
 let app: INestApplication;
 
 async function createApp(): Promise<INestApplication> {
-  const nestApp = await NestFactory.create(AppModule);
+  const nestApp = await NestFactory.create(AppModule, {
+    rawBody: true, // Enable raw body parsing for webhook verification
+  });
 
   nestApp.use(
     helmet({

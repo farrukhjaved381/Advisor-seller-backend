@@ -11,7 +11,7 @@ import { UserRole } from '../users/schemas/user.schema';
 
 @ApiTags('Advisors')
 @Controller('advisors')
-@UseGuards(JwtAuthGuard, RolesGuard, PaymentVerifiedGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADVISOR)
 @ApiBearerAuth()
 export class AdvisorsController {

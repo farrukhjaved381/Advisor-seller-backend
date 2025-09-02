@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request, Headers, Req } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Headers, Req, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PaymentService } from './payment.service';
@@ -92,6 +92,24 @@ export class PaymentController {
   async redeemCoupon(@Request() req, @Body() redeemCouponDto: RedeemCouponDto) {
     // Redeems free trial coupon and activates advisor profile without payment
     return this.paymentService.redeemCoupon(req.user._id, redeemCouponDto.code);
+  }
+
+  @Get('setup-coupons')
+  @ApiOperation({ summary: 'Setup test coupons (development only)' })
+  @ApiResponse({ status: 200, description: 'Coupons created successfully' })
+  async setupCoupons() {
+    await this.paymentService.createSampleCoupons();
+    return { message: 'Test coupons created successfully' };
+  }
+
+  @Post('activate-free-trial')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADVISOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Activate free trial without coupon (testing only)' })
+  @ApiResponse({ status: 200, description: 'Free trial activated' })
+  async activateFreeTrial(@Request() req) {
+    return this.paymentService.activateFreeTrial(req.user._id);
   }
 
   @Post('webhook')

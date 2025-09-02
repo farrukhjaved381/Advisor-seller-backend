@@ -28,20 +28,23 @@ export class AdvisorsService {
     }
   }
 
-  async createProfile(userId: string, createAdvisorProfileDto: CreateAdvisorProfileDto): Promise<Advisor> {
+  // Creates advisor profile linked to authenticated user
+  async createProfile(userId: string, createDto: CreateAdvisorProfileDto): Promise<Advisor> {
     const existingProfile = await this.advisorModel.findOne({ userId });
     if (existingProfile) {
       throw new ConflictException('Advisor profile already exists');
     }
 
-    const advisor = new this.advisorModel({
+    const newProfile = new this.advisorModel({
       userId,
-      ...createAdvisorProfileDto,
+      ...createDto,
+      isActive: true, // Profile is active by default upon creation
     });
 
-    return advisor.save();
+    return newProfile.save();
   }
 
+  // Gets advisor profile by user ID
   async getProfileByUserId(userId: string): Promise<Advisor | null> {
     return this.advisorModel.findOne({ userId });
   }

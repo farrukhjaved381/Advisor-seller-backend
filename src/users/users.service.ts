@@ -95,20 +95,11 @@ export class UsersService {
     });
   }
 
-  async markPaymentVerified(userId: string, stripeCustomerId?: string): Promise<User> {
-    const user = await this.userModel.findByIdAndUpdate(
-      userId,
-      { 
-        isPaymentVerified: true,
-        ...(stripeCustomerId && { stripeCustomerId })
-      },
-      { new: true }
-    );
-
-    if (!user) {
-      throw new NotFoundException('User not found');
+  async markPaymentVerified(userId: string, stripeCustomerId?: string): Promise<User | null> {
+    const updateData: any = { isPaymentVerified: true };
+    if (stripeCustomerId) {
+      updateData.stripeCustomerId = stripeCustomerId;
     }
-
-    return user;
+    return this.userModel.findByIdAndUpdate(userId, updateData, { new: true });
   }
 }

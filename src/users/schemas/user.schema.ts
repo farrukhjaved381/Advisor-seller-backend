@@ -1,5 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { ApiProperty } from '@nestjs/swagger';
+
+export type UserDocument = User & Document;
 
 export enum UserRole {
   ADVISOR = 'advisor',
@@ -28,16 +31,19 @@ export class User extends Document {
     enum: UserRole, 
     required: true 
   })
+  @ApiProperty({ description: 'User role', enum: UserRole })
   role: UserRole;
 
   @Prop({ default: false })
-  isEmailVerified: boolean;
-
-  @Prop({ default: false })
+  @ApiProperty({ description: 'Indicates if the user has completed the payment process' })
   isPaymentVerified: boolean;
 
   @Prop()
+  @ApiProperty({ description: 'Stripe customer ID' })
   stripeCustomerId?: string;
+
+  @Prop({ default: false })
+  isEmailVerified: boolean;
 
   @Prop()
   emailVerificationToken?: string;

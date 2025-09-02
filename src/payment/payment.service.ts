@@ -34,13 +34,18 @@ export class PaymentService {
       amount = this.calculateDiscountedAmount(amount, coupon);
     }
 
+    // If amount is 0 (free trial), set minimum amount for Stripe
+    const stripeAmount = amount === 0 ? 50 : amount; // 50 cents minimum
+
     const paymentIntent = await this.stripe.paymentIntents.create({
-      amount,
+      amount: stripeAmount,
       currency: 'usd',
+      automatic_payment_methods: { enabled: true },
       metadata: {
-        userId,
+        userId: userId.toString(), // Convert ObjectId to string for Stripe metadata
         couponCode: couponCode || '',
         originalAmount: this.membershipFee.toString(),
+        actualAmount: amount.toString(),
       },
     });
 
@@ -99,15 +104,11 @@ export class PaymentService {
       throw new BadRequestException('This coupon is not valid for free trial');
     }
 
-    // Activate advisor profile
-    const advisor = await this.advisorModel.findOneAndUpdate(
-      { userId },
-      { isActive: true },
-      { new: true }
-    );
+    // Mark user as payment verified
+    const user = await this.usersService.markPaymentVerified(userId);
 
-    if (!advisor) {
-      throw new NotFoundException('Advisor profile not found');
+    if (!user) {
+      throw new NotFoundException('User not found during coupon redemption');
     }
 
     // Update coupon usage
@@ -118,7 +119,7 @@ export class PaymentService {
 
     return {
       success: true,
-      message: 'Free trial activated successfully',
+      message: 'Free trial activated successfully. You can now create your profile.',
     };
   }
 
@@ -210,19 +211,11 @@ export class PaymentService {
         console.log('PaymentIntent succeeded:', paymentIntent.id);
         
         if (paymentIntent.metadata?.userId) {
-          // Mark user as payment verified
           await this.usersService.markPaymentVerified(
             paymentIntent.metadata.userId,
             paymentIntent.customer as string
           );
-          
-          // Activate advisor profile (single source of truth)
-          await this.advisorModel.findOneAndUpdate(
-            { userId: paymentIntent.metadata.userId },
-            { isActive: true }
-          );
-          
-          console.log(`User ${paymentIntent.metadata.userId} payment verified and profile activated`);
+          console.log(`User ${paymentIntent.metadata.userId} marked as payment verified`);
         }
         break;
       default:
@@ -230,5 +223,22 @@ export class PaymentService {
     }
 
     return { received: true };
+  }
+
+  async activateFreeTrial(userId: string): Promise<{ success: boolean; message: string }> {
+    // Mark user as payment verified
+    await this.usersService.markPaymentVerified(userId, 'free-trial');
+    
+    // Activate advisor profile if exists
+    const advisor = await this.advisorModel.findOneAndUpdate(
+      { userId },
+      { isActive: true },
+      { new: true }
+    );
+
+    return {
+      success: true,
+      message: advisor ? 'Free trial activated and profile activated' : 'Free trial activated - create profile next'
+    };
   }
 }
