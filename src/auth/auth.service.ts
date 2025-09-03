@@ -198,7 +198,7 @@ export class AuthService {
       role: user.role,
     };
 
-    // Generate access token (1 hour)
+    // Generate access token (24 hour)
     const accessToken = this.jwtService.sign(payload, { expiresIn: '24h' });
     
     // Generate refresh token (7 days)

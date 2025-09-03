@@ -4,6 +4,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe, INestApplication } from '@nestjs/common';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
+import slowDown from 'express-slow-down';
 import { HttpExceptionFilter, AllExceptionsFilter } from './filters/http-exception.filter';
 import * as dotenv from 'dotenv';
 
@@ -16,6 +18,7 @@ async function createApp(): Promise<INestApplication> {
     rawBody: true, // Enable raw body parsing for webhook verification
   });
 
+  // Security headers
   nestApp.use(
     helmet({
       contentSecurityPolicy: {
@@ -24,10 +27,35 @@ async function createApp(): Promise<INestApplication> {
           styleSrc: [`'self'`, `'unsafe-inline'`],
           imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
           scriptSrc: [`'self'`, `'unsafe-inline'`, `https://unpkg.com`],
+          objectSrc: [`'none'`],
+          upgradeInsecureRequests: [],
         },
+      },
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
       },
     }),
   );
+
+  // Rate limiting
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  nestApp.use('/api/', limiter);
+
+  // Slow down repeated requests
+  const speedLimiter = slowDown({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    delayAfter: 50, // allow 50 requests per 15 minutes, then...
+    delayMs: 500 // begin adding 500ms of delay per request above 50
+  });
+  nestApp.use('/api/auth/', speedLimiter);
 
   nestApp.use(cookieParser());
 
@@ -39,7 +67,7 @@ async function createApp(): Promise<INestApplication> {
     origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
   });
 
   nestApp.useGlobalFilters(new AllExceptionsFilter(), new HttpExceptionFilter());

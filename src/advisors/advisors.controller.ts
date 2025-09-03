@@ -6,6 +6,7 @@ import { UpdateAdvisorProfileDto } from './dto/update-advisor-profile.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PaymentVerifiedGuard } from '../auth/guards/payment-verified.guard';
+import { CsrfGuard } from '../auth/guards/csrf.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/schemas/user.schema';
 
@@ -18,6 +19,7 @@ export class AdvisorsController {
   constructor(private advisorsService: AdvisorsService) {}
 
   @Post('profile')
+  @UseGuards(CsrfGuard)
   @ApiOperation({ summary: 'Create advisor profile' })
   @ApiResponse({ status: 201, description: 'Profile created successfully' })
   @ApiResponse({ status: 409, description: 'Profile already exists' })
@@ -40,6 +42,7 @@ export class AdvisorsController {
   }
 
   @Patch('profile')
+  @UseGuards(CsrfGuard)
   @ApiOperation({ summary: 'Update advisor profile' })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
   @ApiResponse({ status: 404, description: 'Profile not found' })
@@ -68,6 +71,7 @@ export class AdvisorsController {
   }
 
   @Post('testimonials')
+  @UseGuards(CsrfGuard)
   @ApiOperation({ summary: 'Add testimonial to advisor profile' })
   @ApiResponse({ status: 201, description: 'Testimonial added successfully' })
   @ApiResponse({ status: 400, description: 'Maximum 5 testimonials allowed' })
