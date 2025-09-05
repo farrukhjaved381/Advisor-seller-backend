@@ -60,14 +60,18 @@ async function createApp(): Promise<INestApplication> {
   nestApp.use(cookieParser());
 
   const corsOrigins = process.env.NODE_ENV === 'production'
-    ? [process.env.FRONTEND_URL, 'http://localhost:5174']
+    ? [
+        process.env.FRONTEND_URL, 
+        'http://localhost:5174',
+        'https://frontend-five-pied-17.vercel.app'
+      ]
     : true;
 
   nestApp.enableCors({
     origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-CSRF-Token'],
   });
 
   nestApp.useGlobalFilters(new AllExceptionsFilter(), new HttpExceptionFilter());

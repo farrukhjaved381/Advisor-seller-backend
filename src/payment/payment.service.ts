@@ -42,7 +42,7 @@ export class PaymentService {
       currency: 'usd',
       automatic_payment_methods: { 
         enabled: true,
-        allow_redirects: 'never', // Important for backend-only confirmation
+        allow_redirects: 'never', // Keep as never for backend-only confirmation
       },
       metadata: {
         userId: userId.toString(), // Convert ObjectId to string for Stripe metadata
@@ -70,6 +70,12 @@ export class PaymentService {
       if (paymentIntent.metadata.userId !== userId) {
         throw new BadRequestException('Payment does not belong to this user');
       }
+
+      // Mark user as payment verified
+      await this.usersService.markPaymentVerified(
+        userId,
+        paymentIntentId
+      );
 
       // Activate advisor profile
       const advisor = await this.advisorModel.findOneAndUpdate(

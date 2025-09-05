@@ -51,7 +51,7 @@ export class EmailService {
       NODE_ENV: process.env.NODE_ENV
     });
     
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://frontend-five-pied-17.vercel.app';
     const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
 
     const mailOptions = {
@@ -92,7 +92,7 @@ export class EmailService {
   }
 
   async sendPasswordResetEmail(email: string, name: string, token: string): Promise<void> {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://frontend-five-pied-17.vercel.app';
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
     const mailOptions = {
