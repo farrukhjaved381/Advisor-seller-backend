@@ -24,10 +24,9 @@ export class CreateAdvisorProfileDto {
   @ApiProperty({ example: '+1-555-123-4567' })
   phone: string;
 
-  @IsOptional()
   @IsString()
-  @ApiProperty({ example: 'https://abcconsulting.com', required: false })
-  website?: string;
+  @ApiProperty({ example: 'https://abcconsulting.com' })
+  website: string;
 
   @IsArray()
   @ApiProperty({ 
@@ -64,10 +63,9 @@ export class CreateAdvisorProfileDto {
   @ApiProperty({ example: 'Expert advisory services for technology and healthcare companies.' })
   description: string;
 
-  @IsOptional()
   @IsString()
-  @ApiProperty({ description: 'Licensing information', required: false })
-  licensing?: string;
+  @ApiProperty({ description: 'Licensing information' })
+  licensing: string;
 
   @IsOptional()
   @IsArray()
@@ -81,13 +79,16 @@ export class CreateAdvisorProfileDto {
   })
   testimonials?: TestimonialDto[];
 
-  @IsOptional()
   @ValidateNested()
   @Type(() => RevenueRangeDto)
   @ApiProperty({ 
     description: 'Preferred client revenue range', 
-    type: RevenueRangeDto,
-    required: false
+    type: RevenueRangeDto
   })
-  revenueRange?: RevenueRangeDto;
+  revenueRange: RevenueRangeDto;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ description: 'Logo URL', required: false })
+  logoUrl?: string;
 }
