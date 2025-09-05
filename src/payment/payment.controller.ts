@@ -7,6 +7,7 @@ import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 import { RedeemCouponDto } from './dto/redeem-coupon.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { CsrfGuard } from '../auth/guards/csrf.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/schemas/user.schema';
 import type { Request as ExpressRequest } from 'express';

@@ -67,7 +67,12 @@ export class PaymentService {
         throw new BadRequestException('Payment not completed');
       }
 
-      if (paymentIntent.metadata.userId !== userId) {
+      if (paymentIntent.metadata.userId !== userId.toString()) {
+        console.log('User ID mismatch:', {
+          paymentIntentUserId: paymentIntent.metadata.userId,
+          currentUserId: userId.toString(),
+          paymentIntentId
+        });
         throw new BadRequestException('Payment does not belong to this user');
       }
 
@@ -77,16 +82,8 @@ export class PaymentService {
         paymentIntentId
       );
 
-      // Activate advisor profile
-      const advisor = await this.advisorModel.findOneAndUpdate(
-        { userId },
-        { isActive: true },
-        { new: true }
-      );
-
-      if (!advisor) {
-        throw new NotFoundException('Advisor profile not found');
-      }
+      // Payment confirmed - user can now create advisor profile
+      console.log('Payment confirmed for user:', userId, 'PaymentIntent:', paymentIntentId);
 
       // Update coupon usage if used
       if (paymentIntent.metadata.couponCode) {
@@ -98,7 +95,7 @@ export class PaymentService {
 
       return {
         success: true,
-        message: 'Payment confirmed and profile activated',
+        message: 'Payment confirmed! You can now create your advisor profile.',
       };
     } catch (error) {
       throw new BadRequestException(`Payment confirmation failed: ${error.message}`);

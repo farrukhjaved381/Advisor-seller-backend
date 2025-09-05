@@ -14,10 +14,17 @@ export class CsrfGuard implements CanActivate {
       return true;
     }
 
+    console.log('CSRF Guard - Headers:', request.headers);
+    console.log('CSRF Guard - Cookies:', request.cookies);
+    
     const csrfToken = request.headers['x-csrf-token'];
     const csrfSecret = request.cookies['csrf-secret'];
+    
+    console.log('CSRF Token from header:', csrfToken);
+    console.log('CSRF Secret from cookie:', csrfSecret);
 
     if (!csrfToken || !csrfSecret) {
+      console.log('CSRF validation failed - missing token or secret');
       throw new ForbiddenException('CSRF token missing');
     }
 
