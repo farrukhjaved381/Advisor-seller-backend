@@ -35,7 +35,7 @@ export class PaymentService {
     }
 
     // If amount is 0 (free trial), set minimum amount for Stripe
-    const stripeAmount = amount === 0 ? 50 : amount; // 50 cents minimum
+    const stripeAmount = amount === 0 ? 50 : amount; // 50 cents minimum for free trial only
 
     const paymentIntent = await this.stripe.paymentIntents.create({
       amount: stripeAmount,

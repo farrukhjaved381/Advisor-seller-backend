@@ -17,8 +17,7 @@ export class PaymentController {
   constructor(private paymentService: PaymentService) {}
 
   @Post('create-intent')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADVISOR)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Throttle({ default: { limit: 10, ttl: 3600 } })
   @ApiOperation({ summary: 'Create payment intent for advisor membership' })
@@ -43,8 +42,7 @@ export class PaymentController {
   }
 
   @Post('confirm')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADVISOR)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Throttle({ default: { limit: 5, ttl: 3600 } })
   @ApiOperation({ summary: 'Confirm payment and activate advisor profile' })
@@ -69,8 +67,7 @@ export class PaymentController {
   }
 
   @Post('redeem-coupon')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADVISOR)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Throttle({ default: { limit: 3, ttl: 3600 } })
   @ApiOperation({ summary: 'Redeem coupon for free trial activation' })
