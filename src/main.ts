@@ -63,7 +63,8 @@ async function createApp(): Promise<INestApplication> {
     ? [
         process.env.FRONTEND_URL, 
         'http://localhost:5174',
-        'https://frontend-five-pied-17.vercel.app'
+        'https://frontend-five-pied-17.vercel.app',
+        'https://cimamplify-ui.vercel.app'
       ]
     : true;
 
@@ -71,7 +72,7 @@ async function createApp(): Promise<INestApplication> {
     origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-CSRF-Token'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-CSRF-Token', 'x-csrf-token'],
   });
 
   nestApp.useGlobalFilters(new AllExceptionsFilter(), new HttpExceptionFilter());
