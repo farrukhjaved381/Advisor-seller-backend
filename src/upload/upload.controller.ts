@@ -21,7 +21,7 @@ export class UploadController {
       }
       cb(null, true);
     },
-    limits: { fileSize: 5 * 1024 * 1024 },
+    limits: { fileSize: 10 * 1024 * 1024 },
   }))
   @ApiOperation({ summary: 'Upload company logo' })
   @ApiConsumes('multipart/form-data')
@@ -34,7 +34,7 @@ export class UploadController {
   @ApiResponse({ status: 201, description: 'Logo uploaded successfully' })
   async uploadLogo(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file uploaded');
-    return this.uploadService.saveFileUrl(file, 'logo');
+    return await this.uploadService.saveFileUrl(file, 'logo');
   }
 
   @Post('testimonial')
@@ -46,7 +46,7 @@ export class UploadController {
       }
       cb(null, true);
     },
-    limits: { fileSize: 10 * 1024 * 1024 },
+    limits: { fileSize: 20 * 1024 * 1024 },
   }))
   @ApiOperation({ summary: 'Upload testimonial PDF' })
   @ApiConsumes('multipart/form-data')
@@ -59,6 +59,6 @@ export class UploadController {
   @ApiResponse({ status: 201, description: 'Testimonial uploaded successfully' })
   async uploadTestimonial(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file uploaded');
-    return this.uploadService.saveFileUrl(file, 'testimonial');
+    return await this.uploadService.saveFileUrl(file, 'testimonial');
   }
 }
