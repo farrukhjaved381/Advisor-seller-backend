@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Request, Query, Res } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Request, Query, Res, forwardRef, Inject } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { AuthService, AuthResponse } from './auth.service';
@@ -12,6 +12,8 @@ import { AuthResponseDto, UserResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UsersService } from '../users/users.service';
 import { CsrfService } from './csrf.service';
+import { AdvisorsService } from '../advisors/advisors.service';
+import { UserRole } from '../users/schemas/user.schema';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -20,6 +22,8 @@ export class AuthController {
     private authService: AuthService,
     private usersService: UsersService,
     private csrfService: CsrfService,
+    @Inject(forwardRef(() => AdvisorsService))
+    private advisorsService: AdvisorsService,
   ) {}
 
   @Post('register')
@@ -87,7 +91,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'User profile retrieved', type: UserResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  getProfile(@Request() req) {
+  async getProfile(@Request() req) {
+    let isProfileComplete = false;
+    if (req.user.role === UserRole.ADVISOR) {
+      const advisorProfile = await this.advisorsService.getProfileByUserId(req.user._id.toString());
+      isProfileComplete = !!advisorProfile;
+    }
+
     return {
       id: req.user._id,
       name: req.user.name,
@@ -95,6 +105,7 @@ export class AuthController {
       role: req.user.role,
       isEmailVerified: req.user.isEmailVerified,
       isPaymentVerified: req.user.isPaymentVerified,
+      isProfileComplete,
     };
   }
 
@@ -235,6 +246,18 @@ export class AuthController {
   })
   async resendVerification(@Body() resendVerificationDto: ResendVerificationDto) {
     return this.authService.resendVerificationEmail(resendVerificationDto.email);
+  }
+
+  @Post('login-with-token')
+  @ApiOperation({ summary: 'Login with verification token' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'User successfully logged in',
+    type: AuthResponseDto
+  })
+  @ApiResponse({ status: 401, description: 'Invalid or expired token' })
+  async loginWithToken(@Body() { token }: { token: string }): Promise<AuthResponse> {
+    return this.authService.loginWithToken(token);
   }
 
   @Get('csrf-token')

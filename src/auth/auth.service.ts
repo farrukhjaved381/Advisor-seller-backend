@@ -1,10 +1,11 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, forwardRef, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { EmailService } from './email.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginUserDto } from '../users/dto/login-user.dto';
-import { User } from '../users/schemas/user.schema';
+import { User, UserRole } from '../users/schemas/user.schema';
+import { AdvisorsService } from '../advisors/advisors.service';
 
 export interface JwtPayload {
   sub: string;
@@ -22,6 +23,7 @@ export interface AuthResponse {
     role: string;
     isEmailVerified: boolean;
     isPaymentVerified: boolean;
+    isProfileComplete?: boolean;
   };
 }
 
@@ -31,6 +33,8 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private emailService: EmailService,
+    @Inject(forwardRef(() => AdvisorsService))
+    private advisorsService: AdvisorsService,
   ) {}
 
   async register(createUserDto: CreateUserDto): Promise<AuthResponse> {
@@ -178,6 +182,28 @@ export class AuthService {
     return { message: 'If email exists and is unverified, verification email has been sent.', success: true };
   }
 
+  async loginWithToken(token: string): Promise<AuthResponse> {
+    try {
+      const payload = this.jwtService.verify(token);
+      
+      if (payload.type !== 'email_verification') {
+        throw new BadRequestException('Invalid verification token');
+      }
+      
+      const user = await this.usersService.findById(payload.sub);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+      
+      return this.generateAuthResponse(user);
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new BadRequestException('Verification token has expired');
+      }
+      throw new BadRequestException('Invalid verification token');
+    }
+  }
+
   async validateUser(email: string, password: string): Promise<User> {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
@@ -218,6 +244,12 @@ export class AuthService {
       refreshTokenExpiry
     );
 
+    let isProfileComplete = false;
+    if (user.role === UserRole.ADVISOR) {
+      const advisorProfile = await this.advisorsService.getProfileByUserId((user as any)._id.toString());
+      isProfileComplete = !!advisorProfile;
+    }
+
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -228,6 +260,7 @@ export class AuthService {
         role: user.role,
         isEmailVerified: user.isEmailVerified,
         isPaymentVerified: user.isPaymentVerified,
+        isProfileComplete,
       },
     };
   }

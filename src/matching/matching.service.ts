@@ -24,18 +24,33 @@ export class MatchingService {
     else sortCriteria = { createdAt: -1 };
 
     const matches = await this.advisorModel.find({
+      // Advisor must be active and accepting leads
       isActive: true,
       sendLeads: true,
+
+      // Match seller's industry and geography to the advisor's specializations
       industries: { $in: [seller.industry] },
       geographies: { $in: [seller.geography] },
+
+      // Revenue Range Matching:
+      // The seller's annual revenue must fall within the advisor's preferred client revenue range.
+      // This logic handles cases where the advisor has specified a full range, an open-ended range (min only or max only), or no range at all.
+
+      // Condition for the minimum revenue:
+      // The advisor's minimum must be less than or equal to the seller's revenue, OR the advisor has not set a minimum.
       $or: [
         { 'revenueRange.min': { $lte: seller.annualRevenue } },
-        { 'revenueRange.min': { $exists: false } }
+        { 'revenueRange.min': { $exists: false } },
+        { 'revenueRange.min': null },
       ],
+
+      // Condition for the maximum revenue:
+      // The advisor's maximum must be greater than or equal to the seller's revenue, OR the advisor has not set a maximum.
       $and: [{
         $or: [
           { 'revenueRange.max': { $gte: seller.annualRevenue } },
-          { 'revenueRange.max': { $exists: false } }
+          { 'revenueRange.max': { $exists: false } },
+          { 'revenueRange.max': null },
         ]
       }]
     }).populate('userId', 'name email').sort(sortCriteria);
