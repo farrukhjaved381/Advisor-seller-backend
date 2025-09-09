@@ -219,10 +219,16 @@ export class AuthService {
   }
 
   private async generateAuthResponse(user: User): Promise<AuthResponse> {
+    // Re-fetch the user to ensure we have the latest isProfileComplete status
+    const latestUser = await this.usersService.findById((user as any)._id.toString());
+    if (!latestUser) {
+      throw new UnauthorizedException('User not found during auth response generation');
+    }
+
     const payload: JwtPayload = {
-      sub: (user as any)._id.toString(),
-      email: user.email,
-      role: user.role,
+      sub: (latestUser as any)._id.toString(),
+      email: latestUser.email,
+      role: latestUser.role,
     };
 
     // Generate access token (24 hour)
@@ -230,7 +236,7 @@ export class AuthService {
     
     // Generate refresh token (7 days)
     const refreshToken = this.jwtService.sign(
-      { sub: (user as any)._id.toString(), type: 'refresh' },
+      { sub: (latestUser as any)._id.toString(), type: 'refresh' },
       { expiresIn: '7d' }
     );
 
@@ -239,14 +245,14 @@ export class AuthService {
     refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);
     
     await this.usersService.updateRefreshToken(
-      (user as any)._id.toString(),
+      (latestUser as any)._id.toString(),
       refreshToken,
       refreshTokenExpiry
     );
 
     let isProfileComplete = false;
-    if (user.role === UserRole.ADVISOR) {
-      const advisorProfile = await this.advisorsService.getProfileByUserId((user as any)._id.toString());
+    if (latestUser.role === UserRole.ADVISOR) {
+      const advisorProfile = await this.advisorsService.getProfileByUserId((latestUser as any)._id.toString());
       isProfileComplete = !!advisorProfile;
     }
 
@@ -254,14 +260,13 @@ export class AuthService {
       access_token: accessToken,
       refresh_token: refreshToken,
       user: {
-        id: (user as any)._id.toString(),
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isEmailVerified: user.isEmailVerified,
-        isPaymentVerified: user.isPaymentVerified,
+        id: (latestUser as any)._id.toString(),
+        name: latestUser.name,
+        email: latestUser.email,
+        role: latestUser.role,
+        isEmailVerified: latestUser.isEmailVerified,
+        isPaymentVerified: latestUser.isPaymentVerified,
         isProfileComplete,
       },
     };
-  }
 }
