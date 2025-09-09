@@ -43,6 +43,10 @@ export class User extends Document {
   stripeCustomerId?: string;
 
   @Prop({ default: false })
+  @ApiProperty({ description: 'Indicates if the user has completed their profile' })
+  isProfileComplete: boolean;
+
+  @Prop({ default: false })
   isEmailVerified: boolean;
 
   @Prop()
