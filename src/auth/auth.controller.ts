@@ -94,6 +94,7 @@ export class AuthController {
       email: req.user.email,
       role: req.user.role,
       isEmailVerified: req.user.isEmailVerified,
+      isPaymentVerified: req.user.isPaymentVerified,
     };
   }
 

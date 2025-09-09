@@ -21,6 +21,7 @@ export interface AuthResponse {
     email: string;
     role: string;
     isEmailVerified: boolean;
+    isPaymentVerified: boolean;
   };
 }
 
@@ -226,6 +227,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         isEmailVerified: user.isEmailVerified,
+        isPaymentVerified: user.isPaymentVerified,
       },
     };
   }
