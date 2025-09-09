@@ -102,4 +102,8 @@ export class UsersService {
     }
     return this.userModel.findByIdAndUpdate(userId, updateData, { new: true });
   }
+
+  async updateProfileComplete(userId: string, isComplete: boolean): Promise<User | null> {
+    return this.userModel.findByIdAndUpdate(userId, { isProfileComplete: isComplete }, { new: true });
+  }
 }

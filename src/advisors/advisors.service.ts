@@ -4,10 +4,14 @@ import { Model } from 'mongoose';
 import { Advisor } from './schemas/advisor.schema';
 import { CreateAdvisorProfileDto } from './dto/create-advisor-profile.dto';
 import { UpdateAdvisorProfileDto } from './dto/update-advisor-profile.dto';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AdvisorsService {
-  constructor(@InjectModel(Advisor.name) private advisorModel: Model<Advisor>) {
+  constructor(
+    @InjectModel(Advisor.name) private advisorModel: Model<Advisor>,
+    private usersService: UsersService,
+  ) {
     this.initializeIndexes();
   }
 
@@ -41,7 +45,12 @@ export class AdvisorsService {
       isActive: true, // Profile is active by default upon creation
     });
 
-    return newProfile.save();
+    const savedProfile = await newProfile.save();
+
+    // Update the user's isProfileComplete flag
+    await this.usersService.updateProfileComplete(userId, true);
+
+    return savedProfile;
   }
 
   // Gets advisor profile by user ID
