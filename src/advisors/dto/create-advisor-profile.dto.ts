@@ -25,7 +25,7 @@ export class CreateAdvisorProfileDto {
   phone: string;
 
   @IsString()
-  @ApiProperty({ example: 'https://abcconsulting.com' })
+  @ApiProperty({ example: 'https://abcdconsulting.com' })
   website: string;
 
   @IsArray()
