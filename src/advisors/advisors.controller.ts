@@ -114,4 +114,12 @@ export class AdvisorsController {
   async toggleLeads(@Request() req, @Body() body: { sendLeads: boolean }) {
     return this.advisorsService.toggleLeadSending(req.user._id, body.sendLeads);
   }
+
+  @Get('leads')
+  @ApiOperation({ summary: 'Get leads for the current advisor' })
+  @ApiResponse({ status: 200, description: 'Leads retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'No leads found' })
+  async getLeads(@Request() req) {
+    return this.advisorsService.getLeadsForAdvisor(req.user._id);
+  }
 }

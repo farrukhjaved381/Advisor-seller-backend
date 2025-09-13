@@ -9,6 +9,7 @@ import { EmailService } from '../auth/email.service';
 import { IntroductionDto } from './dto/introduction.dto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Connection, ConnectionDocument, ConnectionType } from './schemas/connection.schema';
 
 @Injectable()
 export class ConnectionsService {
@@ -16,6 +17,7 @@ export class ConnectionsService {
     @InjectModel(Advisor.name) private advisorModel: Model<AdvisorDocument>,
     @InjectModel(Seller.name) private sellerModel: Model<SellerDocument>,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Connection.name) private connectionModel: Model<ConnectionDocument>,
     private matchingService: MatchingService,
     private emailService: EmailService,
   ) {}
@@ -85,6 +87,13 @@ export class ConnectionsService {
           cc: sellerUser.email,
           subject: `New Client Introduction - ${seller.companyName}`,
           html: emailHtml,
+        });
+        
+        // Record the connection
+        await this.connectionModel.create({
+          sellerId: seller.userId._id,
+          advisorId: advisor._id,
+          type: ConnectionType.INTRODUCTION,
         });
         emailsSent++;
       } catch (error) {
@@ -194,6 +203,13 @@ export class ConnectionsService {
           to: advisorUser.email,
           subject: `New Seller Match - ${seller.companyName}`,
           html: notificationHtml,
+        });
+        
+        // Record the connection
+        await this.connectionModel.create({
+          sellerId: seller.userId._id,
+          advisorId: advisor._id,
+          type: ConnectionType.DIRECT_LIST,
         });
         notificationsSent++;
       } catch (error) {

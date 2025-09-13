@@ -11,11 +11,13 @@ import { CreateAdvisorProfileDto } from './dto/create-advisor-profile.dto';
 import { UpdateAdvisorProfileDto } from './dto/update-advisor-profile.dto';
 import { UsersService } from '../users/users.service';
 import { v2 as cloudinary } from 'cloudinary';
+import { Connection, ConnectionDocument } from '../connections/schemas/connection.schema';
 
 @Injectable()
 export class AdvisorsService {
   constructor(
     @InjectModel(Advisor.name) private advisorModel: Model<Advisor>,
+    @InjectModel(Connection.name) private connectionModel: Model<ConnectionDocument>,
     private usersService: UsersService,
   ) {
     this.initializeIndexes();
@@ -208,5 +210,20 @@ export class AdvisorsService {
     }
 
     return advisor.save();
+  }
+
+  async getLeadsForAdvisor(advisorId: string): Promise<ConnectionDocument[]> {
+    const advisorProfile = await this.advisorModel.findOne({ userId: advisorId });
+    if (!advisorProfile) {
+      throw new NotFoundException('Advisor profile not found');
+    }
+
+    return this.connectionModel
+      .find({ advisorId: advisorProfile._id })
+      .populate({
+        path: 'sellerId',
+        select: 'companyName industry geography annualRevenue description',
+      })
+      .exec();
   }
 }
