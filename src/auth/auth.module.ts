@@ -9,11 +9,13 @@ import { CsrfService } from './csrf.service';
 import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AdvisorsModule } from '../advisors/advisors.module';
+import { SellersModule } from '../sellers/sellers.module';
 
 @Module({
   imports: [
     UsersModule,
     forwardRef(() => AdvisorsModule),
+    SellersModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

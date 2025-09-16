@@ -9,10 +9,12 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { AuthResponseDto, UserResponseDto } from './dto/auth-response.dto';
+import { SellerEmailLoginDto } from './dto/seller-email-login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UsersService } from '../users/users.service';
 import { CsrfService } from './csrf.service';
 import { AdvisorsService } from '../advisors/advisors.service';
+import { SellersService } from '../sellers/sellers.service';
 import { UserRole } from '../users/schemas/user.schema';
 
 @ApiTags('Authentication')
@@ -24,6 +26,7 @@ export class AuthController {
     private csrfService: CsrfService,
     @Inject(forwardRef(() => AdvisorsService))
     private advisorsService: AdvisorsService,
+    private sellersService: SellersService,
   ) {}
 
   @Post('register')
@@ -85,6 +88,54 @@ export class AuthController {
     return authResponse;
   }
 
+  @Post('seller-login')
+  @ApiOperation({ summary: 'Login or register seller using email only' })
+  @ApiResponse({
+    status: 200,
+    description: 'Seller authenticated successfully',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid email or role mismatch' })
+  async sellerLogin(
+    @Body() sellerEmailLoginDto: SellerEmailLoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const authResponse = await this.authService.sellerLoginByEmail(sellerEmailLoginDto.email);
+
+    res.cookie('access_token', authResponse.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    res.cookie('refresh_token', authResponse.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    const csrfSecret = this.csrfService.generateSecret();
+    const csrfToken = this.csrfService.generateToken(csrfSecret);
+
+    res.cookie('csrf-secret', csrfSecret, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    res.cookie('csrf-token', csrfToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    return authResponse;
+  }
+
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -96,6 +147,15 @@ export class AuthController {
     if (req.user.role === UserRole.ADVISOR) {
       const advisorProfile = await this.advisorsService.getProfileByUserId(req.user._id.toString());
       isProfileComplete = !!advisorProfile;
+    } else if (req.user.role === UserRole.SELLER) {
+      const sellerProfile = await this.sellersService.getProfileByUserId(req.user._id.toString());
+      isProfileComplete = !!sellerProfile;
+      if (isProfileComplete && !req.user.isProfileComplete) {
+        await this.usersService.updateProfileComplete(req.user._id.toString(), true);
+      }
+      if (!isProfileComplete && req.user.isProfileComplete) {
+        await this.usersService.updateProfileComplete(req.user._id.toString(), false);
+      }
     }
 
     return {

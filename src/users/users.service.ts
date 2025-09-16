@@ -2,7 +2,8 @@ import { Injectable, ConflictException, NotFoundException } from '@nestjs/common
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { User } from './schemas/user.schema';
+import { randomBytes } from 'crypto';
+import { User, UserRole } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
@@ -105,5 +106,30 @@ export class UsersService {
 
   async updateProfileComplete(userId: string, isComplete: boolean): Promise<User | null> {
     return this.userModel.findByIdAndUpdate(userId, { isProfileComplete: isComplete }, { new: true });
+  }
+
+  async createSellerFromEmail(email: string, fallbackName?: string): Promise<User> {
+    const normalizedEmail = email.toLowerCase();
+    const existingUser = await this.userModel.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      throw new ConflictException('Email already exists');
+    }
+
+    const localPart = normalizedEmail.split('@')[0];
+    const defaultName = localPart.replace(/[^a-zA-Z0-9]/g, ' ').trim() || 'Seller';
+    const name = fallbackName?.trim() || defaultName;
+
+    const tempPassword = randomBytes(32).toString('hex');
+    const hashedPassword = await bcrypt.hash(tempPassword, 12);
+
+    const user = new this.userModel({
+      name,
+      email: normalizedEmail,
+      password: hashedPassword,
+      role: UserRole.SELLER,
+      isEmailVerified: true,
+    });
+
+    return user.save();
   }
 }

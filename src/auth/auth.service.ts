@@ -6,6 +6,7 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginUserDto } from '../users/dto/login-user.dto';
 import { User, UserRole } from '../users/schemas/user.schema';
 import { AdvisorsService } from '../advisors/advisors.service';
+import { SellersService } from '../sellers/sellers.service';
 
 export interface JwtPayload {
   sub: string;
@@ -35,6 +36,7 @@ export class AuthService {
     private emailService: EmailService,
     @Inject(forwardRef(() => AdvisorsService))
     private advisorsService: AdvisorsService,
+    private sellersService: SellersService,
   ) {}
 
   async register(createUserDto: CreateUserDto): Promise<AuthResponse> {
@@ -63,9 +65,30 @@ export class AuthService {
 
   async login(loginUserDto: LoginUserDto): Promise<AuthResponse> {
     const user = await this.validateUser(loginUserDto.email, loginUserDto.password);
-    
+
     if (!user.isEmailVerified) {
       throw new UnauthorizedException('Please verify your email before logging in');
+    }
+
+    return this.generateAuthResponse(user);
+  }
+
+  async sellerLoginByEmail(email: string): Promise<AuthResponse> {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      throw new BadRequestException('Email is required');
+    }
+
+    let user = await this.usersService.findByEmail(normalizedEmail);
+
+    if (user && user.role !== UserRole.SELLER) {
+      throw new BadRequestException('Email is registered for a different user type');
+    }
+
+    if (!user) {
+      user = await this.usersService.createSellerFromEmail(normalizedEmail);
+    } else if (!user.isEmailVerified) {
+      user = await this.usersService.verifyEmail((user as any)._id.toString());
     }
 
     return this.generateAuthResponse(user);
@@ -250,10 +273,23 @@ export class AuthService {
       refreshTokenExpiry
     );
 
-    let isProfileComplete = false;
+    let isProfileComplete = !!latestUser.isProfileComplete;
     if (latestUser.role === UserRole.ADVISOR) {
       const advisorProfile = await this.advisorsService.getProfileByUserId((latestUser as any)._id.toString());
       isProfileComplete = !!advisorProfile;
+    } else if (latestUser.role === UserRole.SELLER) {
+      const sellerProfile = await this.sellersService.getProfileByUserId((latestUser as any)._id.toString());
+      const hasProfile = !!sellerProfile;
+
+      if (hasProfile && !isProfileComplete) {
+        await this.usersService.updateProfileComplete((latestUser as any)._id.toString(), true);
+      }
+
+      if (!hasProfile && isProfileComplete) {
+        await this.usersService.updateProfileComplete((latestUser as any)._id.toString(), false);
+      }
+
+      isProfileComplete = hasProfile;
     }
 
     return {

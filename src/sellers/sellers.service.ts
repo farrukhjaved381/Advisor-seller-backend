@@ -4,10 +4,14 @@ import { Model } from 'mongoose';
 import { Seller } from './schemas/seller.schema';
 import { CreateSellerProfileDto } from './dto/create-seller-profile.dto';
 import { UpdateSellerProfileDto } from './dto/update-seller-profile.dto';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class SellersService {
-  constructor(@InjectModel(Seller.name) private sellerModel: Model<Seller>) {}
+  constructor(
+    @InjectModel(Seller.name) private sellerModel: Model<Seller>,
+    private usersService: UsersService,
+  ) {}
 
   async createProfile(userId: string, createSellerProfileDto: CreateSellerProfileDto): Promise<Seller> {
     const existingProfile = await this.sellerModel.findOne({ userId });
@@ -20,7 +24,10 @@ export class SellersService {
       ...createSellerProfileDto,
     });
 
-    return seller.save();
+    const savedSeller = await seller.save();
+    await this.usersService.updateProfileComplete(userId, true);
+
+    return savedSeller;
   }
 
   async getProfileByUserId(userId: string): Promise<Seller | null> {
@@ -43,10 +50,12 @@ export class SellersService {
 
   async deleteProfile(userId: string): Promise<{ message: string }> {
     const result = await this.sellerModel.deleteOne({ userId });
-    
+
     if (result.deletedCount === 0) {
       throw new NotFoundException('Seller profile not found');
     }
+
+    await this.usersService.updateProfileComplete(userId, false);
 
     return { message: 'Seller profile deleted successfully' };
   }

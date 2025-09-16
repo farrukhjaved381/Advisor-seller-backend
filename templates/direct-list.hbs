@@ -8,13 +8,18 @@
     {{#each advisors}}
     <div style="border-bottom: 1px solid #dee2e6; padding: 15px 0;">
       <h4 style="margin: 0 0 10px 0; color: #007bff;">{{companyName}}</h4>
+      <p style="margin: 5px 0;"><strong>Phone:</strong> {{phone}}</p>
       <p style="margin: 5px 0;"><strong>Contact:</strong> {{email}}</p>
+      <p style="margin: 5px 0;"><strong>Website:</strong> <a href="{{website}}" target="_blank" style="color: #007bff;">{{website}}</a></p>
       <p style="margin: 5px 0;"><strong>Industries:</strong> {{industries}}</p>
       <p style="margin: 5px 0;"><strong>Geographies:</strong> {{geographies}}</p>
       <p style="margin: 5px 0;"><strong>Experience:</strong> {{yearsExperience}} years</p>
-      {{#if licensing}}
+      <p style="margin: 5px 0;"><strong>No. of Transactions</strong>{{numberOfTransactions}}</p>
+      <p style="margin: 5px 0;"><strong>Minimum Revenue</strong>{{min}}</p>
+      <p style="margin: 5px 0;"><strong>Maximum Revenue</strong>{{max}}</p>
+      <p style="margin: 5px 0;"><strong>Company Description:</strong> {{description}}</p>
       <p style="margin: 5px 0;"><strong>Licensing:</strong> {{licensing}}</p>
-      {{/if}}
+      
     </div>
     {{/each}}
   </div>

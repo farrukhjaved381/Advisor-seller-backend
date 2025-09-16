@@ -201,7 +201,7 @@ export class ConnectionsService {
       try {
         await this.emailService.sendEmail({
           to: advisorUser.email,
-          subject: `New Seller Match - ${seller.companyName}`,
+          subject: `A Seller Was Matched To You But Will Reach Out On Their Own`,
           html: notificationHtml,
         });
         
