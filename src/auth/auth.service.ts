@@ -79,6 +79,7 @@ export class AuthService {
       throw new BadRequestException('Email is required');
     }
 
+    console.log('[AuthService] sellerLoginByEmail start', { normalizedEmail });
     let user = await this.usersService.findByEmail(normalizedEmail);
 
     if (user && user.role !== UserRole.SELLER) {
@@ -86,11 +87,17 @@ export class AuthService {
     }
 
     if (!user) {
+      console.log('[AuthService] No user found, creating new seller for email', normalizedEmail);
       user = await this.usersService.createSellerFromEmail(normalizedEmail);
     } else if (!user.isEmailVerified) {
+      console.log('[AuthService] Existing seller found but email not verified, marking verified', normalizedEmail);
       user = await this.usersService.verifyEmail((user as any)._id.toString());
     }
 
+    console.log('[AuthService] sellerLoginByEmail issuing tokens for user', {
+      userId: (user as any)._id?.toString?.(),
+      role: user.role,
+    });
     return this.generateAuthResponse(user);
   }
 

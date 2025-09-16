@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Request, Query, Res, forwardRef, Inject } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Request, Query, Res, forwardRef, Inject, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { AuthService, AuthResponse } from './auth.service';
@@ -89,6 +89,7 @@ export class AuthController {
   }
 
   @Post('seller-login')
+  @HttpCode(200)
   @ApiOperation({ summary: 'Login or register seller using email only' })
   @ApiResponse({
     status: 200,
@@ -100,6 +101,7 @@ export class AuthController {
     @Body() sellerEmailLoginDto: SellerEmailLoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
+    console.log('[AuthController] sellerLogin invoked with email:', sellerEmailLoginDto.email);
     const authResponse = await this.authService.sellerLoginByEmail(sellerEmailLoginDto.email);
 
     res.cookie('access_token', authResponse.access_token, {

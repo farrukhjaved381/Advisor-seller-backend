@@ -5,6 +5,7 @@ import { SellersService } from './sellers.service';
 import { Seller, SellerSchema } from './schemas/seller.schema';
 import { UsersModule } from '../users/users.module';
 import { MatchingModule } from '../matching/matching.module';
+import { EmailService } from '../auth/email.service';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { MatchingModule } from '../matching/matching.module';
     MatchingModule,
   ],
   controllers: [SellersController],
-  providers: [SellersService],
+  providers: [SellersService, EmailService],
   exports: [SellersService],
 })
 export class SellersModule {}
