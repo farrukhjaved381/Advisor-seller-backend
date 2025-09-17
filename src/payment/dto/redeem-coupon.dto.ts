@@ -3,9 +3,9 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class RedeemCouponDto {
   @IsString()
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Coupon code to redeem',
-    example: 'FREETRIAL2024'
+    example: 'FREETRIAL2024',
   })
   code: string;
 }

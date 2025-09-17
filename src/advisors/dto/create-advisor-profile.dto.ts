@@ -1,4 +1,13 @@
-import { IsString, IsArray, IsNumber, IsOptional, ArrayMaxSize, ValidateNested, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsArray,
+  IsNumber,
+  IsOptional,
+  ArrayMaxSize,
+  ValidateNested,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { TestimonialDto } from './testimonial.dto';
@@ -29,18 +38,18 @@ export class CreateAdvisorProfileDto {
   website: string;
 
   @IsArray()
-  @ApiProperty({ 
-    description: 'Array of industries served', 
+  @ApiProperty({
+    description: 'Array of industries served',
     type: [String],
-    example: ['Technology', 'Healthcare', 'Finance']
+    example: ['Technology', 'Healthcare', 'Finance'],
   })
   industries: string[];
 
   @IsArray()
-  @ApiProperty({ 
-    description: 'Array of service geographies', 
+  @ApiProperty({
+    description: 'Array of service geographies',
     type: [String],
-    example: ['North America', 'Europe', 'Asia Pacific']
+    example: ['North America', 'Europe', 'Asia Pacific'],
   })
   geographies: string[];
 
@@ -60,7 +69,10 @@ export class CreateAdvisorProfileDto {
   currency: string;
 
   @IsString()
-  @ApiProperty({ example: 'Expert advisory services for technology and healthcare companies.' })
+  @ApiProperty({
+    example:
+      'Expert advisory services for technology and healthcare companies.',
+  })
   description: string;
 
   @IsString()
@@ -72,18 +84,18 @@ export class CreateAdvisorProfileDto {
   @ArrayMaxSize(5)
   @ValidateNested({ each: true })
   @Type(() => TestimonialDto)
-  @ApiProperty({ 
-    description: 'Array of testimonials (max 5)', 
+  @ApiProperty({
+    description: 'Array of testimonials (max 5)',
     type: [TestimonialDto],
-    required: false
+    required: false,
   })
   testimonials?: TestimonialDto[];
 
   @ValidateNested()
   @Type(() => RevenueRangeDto)
-  @ApiProperty({ 
-    description: 'Preferred client revenue range', 
-    type: RevenueRangeDto
+  @ApiProperty({
+    description: 'Preferred client revenue range',
+    type: RevenueRangeDto,
   })
   revenueRange: RevenueRangeDto;
 
@@ -91,4 +103,9 @@ export class CreateAdvisorProfileDto {
   @IsString()
   @ApiProperty({ description: 'Logo URL', required: false })
   logoUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ description: 'Introduction video URL', required: false })
+  introVideoUrl?: string;
 }

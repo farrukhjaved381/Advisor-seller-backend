@@ -14,28 +14,30 @@ export class User extends Document {
   @Prop({ required: true, trim: true })
   name: string;
 
-  @Prop({ 
-    required: true, 
-    unique: true, 
+  @Prop({
+    required: true,
+    unique: true,
     lowercase: true,
     trim: true,
-    index: true 
+    index: true,
   })
   email: string;
 
   @Prop({ required: true })
   password: string;
 
-  @Prop({ 
-    type: String, 
-    enum: UserRole, 
-    required: true 
+  @Prop({
+    type: String,
+    enum: UserRole,
+    required: true,
   })
   @ApiProperty({ description: 'User role', enum: UserRole })
   role: UserRole;
 
   @Prop({ default: false })
-  @ApiProperty({ description: 'Indicates if the user has completed the payment process' })
+  @ApiProperty({
+    description: 'Indicates if the user has completed the payment process',
+  })
   isPaymentVerified: boolean;
 
   @Prop()
@@ -43,7 +45,9 @@ export class User extends Document {
   stripeCustomerId?: string;
 
   @Prop({ default: false })
-  @ApiProperty({ description: 'Indicates if the user has completed their profile' })
+  @ApiProperty({
+    description: 'Indicates if the user has completed their profile',
+  })
   isProfileComplete: boolean;
 
   @Prop({ default: false })

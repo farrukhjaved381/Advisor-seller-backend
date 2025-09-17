@@ -3,9 +3,9 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ConfirmPaymentDto {
   @IsString()
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Stripe payment intent ID',
-    example: 'pi_1234567890abcdef'
+    example: 'pi_1234567890abcdef',
   })
   paymentIntentId: string;
 }

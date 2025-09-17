@@ -5,6 +5,9 @@ import { Advisor } from '../advisors/schemas/advisor.schema';
 import { Seller } from '../sellers/schemas/seller.schema';
 import { AdvisorCardDto } from './dto/advisor-card.dto';
 
+const escapeRegex = (value: string) =>
+  value.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+
 @Injectable()
 export class MatchingService {
   constructor(
@@ -12,54 +15,75 @@ export class MatchingService {
     @InjectModel(Seller.name) private sellerModel: Model<Seller>,
   ) {}
 
-  async findMatches(sellerId: string, sortBy?: string): Promise<AdvisorCardDto[]> {
+  async findMatches(
+    sellerId: string,
+    sortBy?: string,
+  ): Promise<AdvisorCardDto[]> {
     const seller = await this.sellerModel.findOne({ userId: sellerId });
     if (!seller) {
       throw new NotFoundException('Seller profile not found');
     }
+
+    const industryRegex = seller.industry
+      ? new RegExp(`^${escapeRegex(seller.industry)}$`, 'i')
+      : /.*/i;
+    const geographyVariants = seller.geography
+      ? [seller.geography, seller.geography.split('>')[0]?.trim()].filter(
+          Boolean,
+        )
+      : [];
+    const geographyRegexes = geographyVariants.map(
+      (variant) => new RegExp(`^${escapeRegex(variant)}$`, 'i'),
+    );
+    const geographyConditions = geographyRegexes.map((regex) => ({
+      geographies: { $regex: regex },
+    }));
 
     let sortCriteria = {};
     if (sortBy === 'years') sortCriteria = { yearsExperience: -1 };
     else if (sortBy === 'company') sortCriteria = { companyName: 1 };
     else sortCriteria = { createdAt: -1 };
 
-    const matches = await this.advisorModel.find({
-      // Advisor must be active and accepting leads
-      isActive: true,
-      sendLeads: true,
+    const matches = await this.advisorModel
+      .find({
+        // Advisor must be active and accepting leads
+        isActive: true,
+        sendLeads: true,
+        industries: { $regex: industryRegex },
+        $and: [
+          geographyConditions.length ? { $or: geographyConditions } : {},
+          {
+            $or: [
+              { 'revenueRange.min': { $lte: seller.annualRevenue } },
+              { 'revenueRange.min': { $exists: false } },
+              { 'revenueRange.min': null },
+            ],
+          },
+          {
+            $or: [
+              { 'revenueRange.max': { $gte: seller.annualRevenue } },
+              { 'revenueRange.max': { $exists: false } },
+              { 'revenueRange.max': null },
+            ],
+          },
+        ].filter((condition) => Object.keys(condition).length > 0),
+      })
+      .populate('userId', 'name email')
+      .sort(sortCriteria);
 
-      // Match seller's industry and geography to the advisor's specializations
-      industries: { $in: [seller.industry] },
-      geographies: { $in: [seller.geography] },
-
-      // Revenue Range Matching:
-      // The seller's annual revenue must fall within the advisor's preferred client revenue range.
-      // This logic handles cases where the advisor has specified a full range, an open-ended range (min only or max only), or no range at all.
-
-      // Condition for the minimum revenue:
-      // The advisor's minimum must be less than or equal to the seller's revenue, OR the advisor has not set a minimum.
-      $or: [
-        { 'revenueRange.min': { $lte: seller.annualRevenue } },
-        { 'revenueRange.min': { $exists: false } },
-        { 'revenueRange.min': null },
-      ],
-
-      // Condition for the maximum revenue:
-      // The advisor's maximum must be greater than or equal to the seller's revenue, OR the advisor has not set a maximum.
-      $and: [{
-        $or: [
-          { 'revenueRange.max': { $gte: seller.annualRevenue } },
-          { 'revenueRange.max': { $exists: false } },
-          { 'revenueRange.max': null },
-        ]
-      }]
-    }).populate('userId', 'name email').sort(sortCriteria);
-
-    return matches.map(advisor => ({
+    return matches.map((advisor) => ({
       id: advisor._id.toString(),
       companyName: advisor.companyName,
       industries: advisor.industries,
       geographies: advisor.geographies,
+      matchedIndustries: advisor.industries.filter((industry) =>
+        industryRegex.test(industry),
+      ),
+      matchedGeographies: geographyRegexes.length
+        ? advisor.geographies.filter((geo) =>
+            geographyRegexes.some((regex) => regex.test(geo)),
+          )
+        : advisor.geographies,
       yearsExperience: advisor.yearsExperience,
       numberOfTransactions: advisor.numberOfTransactions,
       licensing: advisor.licensing,
@@ -75,15 +99,19 @@ export class MatchingService {
     }));
   }
 
-  async getMatchStats(sellerId: string): Promise<{ totalMatches: number; industries: string[]; geographies: string[] }> {
+  async getMatchStats(sellerId: string): Promise<{
+    totalMatches: number;
+    industries: string[];
+    geographies: string[];
+  }> {
     const matches = await this.findMatches(sellerId);
-    const industries = [...new Set(matches.flatMap(m => m.industries))];
-    const geographies = [...new Set(matches.flatMap(m => m.geographies))];
-    
+    const industries = [...new Set(matches.flatMap((m) => m.industries))];
+    const geographies = [...new Set(matches.flatMap((m) => m.geographies))];
+
     return {
       totalMatches: matches.length,
       industries,
-      geographies
+      geographies,
     };
   }
 }

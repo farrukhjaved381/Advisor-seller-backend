@@ -11,6 +11,18 @@ export class Seller {
   userId: Types.ObjectId;
 
   @Prop({ required: true })
+  @ApiProperty({ description: 'Primary contact name' })
+  contactName: string;
+
+  @Prop({ required: true })
+  @ApiProperty({ description: 'Primary contact email address' })
+  contactEmail: string;
+
+  @Prop({ required: true })
+  @ApiProperty({ description: 'Primary contact title' })
+  contactTitle: string;
+
+  @Prop({ required: true })
   @ApiProperty({ description: 'Company name' })
   companyName: string;
 
@@ -34,7 +46,7 @@ export class Seller {
   @ApiProperty({ description: 'Phone number' })
   phone: string;
 
-  @Prop({required: true})
+  @Prop({ required: true })
   @ApiProperty({ description: 'Website address' })
   website?: string;
 

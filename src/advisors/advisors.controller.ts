@@ -42,7 +42,10 @@ export class AdvisorsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - not an advisor' })
   @ApiBody({ type: CreateAdvisorProfileDto })
-  async createProfile(@Request() req, @Body() createProfileDto: CreateAdvisorProfileDto) {
+  async createProfile(
+    @Request() req,
+    @Body() createProfileDto: CreateAdvisorProfileDto,
+  ) {
     return this.advisorsService.createProfile(req.user._id, createProfileDto);
   }
 
@@ -59,7 +62,9 @@ export class AdvisorsController {
    * Accepts multipart/form-data for text fields + logo + testimonials
    */
   @Patch('profile')
-  @ApiOperation({ summary: 'Update advisor profile (including logo & testimonials)' })
+  @ApiOperation({
+    summary: 'Update advisor profile (including logo & testimonials)',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
   @UseInterceptors(
@@ -67,10 +72,11 @@ export class AdvisorsController {
       [
         { name: 'logo', maxCount: 1 },
         { name: 'testimonials', maxCount: 5 },
+        { name: 'introVideo', maxCount: 1 },
       ],
       {
         storage: memoryStorage(),
-        limits: { fileSize: 20 * 1024 * 1024 },
+        limits: { fileSize: 200 * 1024 * 1024 },
       },
     ),
   )
@@ -82,7 +88,10 @@ export class AdvisorsController {
         bio: { type: 'string' },
         industries: { type: 'string', example: 'Finance,Healthcare' },
         logo: { type: 'string', format: 'binary' },
-        testimonials: { type: 'array', items: { type: 'string', format: 'binary' } },
+        testimonials: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
         clientName: { type: 'string', example: 'John Doe' },
         testimonial: { type: 'string', example: 'Great advisor service' },
       },
@@ -92,12 +101,20 @@ export class AdvisorsController {
     @Request() req,
     @Body() updateProfileDto: any,
     @UploadedFiles()
-    files: { logo?: Express.Multer.File[]; testimonials?: Express.Multer.File[] },
+    files: {
+      logo?: Express.Multer.File[];
+      testimonials?: Express.Multer.File[];
+      introVideo?: Express.Multer.File[];
+    },
   ) {
     if (!updateProfileDto && !files) {
       throw new BadRequestException('No data or files provided for update');
     }
-    return this.advisorsService.updateFullProfile(req.user._id, updateProfileDto, files);
+    return this.advisorsService.updateFullProfile(
+      req.user._id,
+      updateProfileDto,
+      files,
+    );
   }
 
   @Patch('profile/pause-leads')

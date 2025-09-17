@@ -1,5 +1,11 @@
 import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiBody,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { ConnectionsService } from './connections.service';
 import { IntroductionDto } from './dto/introduction.dto';
@@ -19,43 +25,57 @@ export class ConnectionsController {
   @Post('introduction')
   @Throttle({ default: { limit: 5, ttl: 3600 } }) // 5 requests per hour
   @ApiOperation({ summary: 'Send introduction emails to selected advisors' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Introduction emails sent successfully',
     schema: {
       type: 'object',
       properties: {
         message: { type: 'string' },
-        emailsSent: { type: 'number' }
-      }
-    }
+        emailsSent: { type: 'number' },
+      },
+    },
   })
-  @ApiResponse({ status: 400, description: 'Invalid advisor IDs or not from matches' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid advisor IDs or not from matches',
+  })
   @ApiResponse({ status: 404, description: 'Seller profile not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - not a seller' })
   @ApiResponse({ status: 429, description: 'Too many requests - rate limited' })
   @ApiBody({ type: IntroductionDto })
-  async sendIntroductions(@Request() req, @Body() introductionDto: IntroductionDto) {
+  async sendIntroductions(
+    @Request() req,
+    @Body() introductionDto: IntroductionDto,
+  ) {
     // Sends professional introduction emails to selected advisors, copying the seller
-    return this.connectionsService.sendIntroductions(req.user._id, introductionDto);
+    return this.connectionsService.sendIntroductions(
+      req.user._id,
+      introductionDto,
+    );
   }
 
   @Post('direct-list')
   @Throttle({ default: { limit: 3, ttl: 3600 } }) // 3 requests per hour
-  @ApiOperation({ summary: 'Send direct contact list to seller and notify advisors' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiOperation({
+    summary: 'Send direct contact list to seller and notify advisors',
+  })
+  @ApiResponse({
+    status: 200,
     description: 'Contact list sent and advisors notified',
     schema: {
       type: 'object',
       properties: {
         message: { type: 'string' },
-        advisorCount: { type: 'number' }
-      }
-    }
+        advisorCount: { type: 'number' },
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: 'Seller profile not found or no matches' })
+  @ApiResponse({
+    status: 404,
+    description: 'Seller profile not found or no matches',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - not a seller' })
   @ApiResponse({ status: 429, description: 'Too many requests - rate limited' })

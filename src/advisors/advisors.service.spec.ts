@@ -56,7 +56,9 @@ describe('AdvisorsService', () => {
       const result = await service.createProfile('user123', createDto);
 
       expect(result.companyName).toBe(createDto.companyName);
-      expect(mockAdvisorModel.findOne).toHaveBeenCalledWith({ userId: 'user123' });
+      expect(mockAdvisorModel.findOne).toHaveBeenCalledWith({
+        userId: 'user123',
+      });
     });
 
     it('❌ should throw error for duplicate profile', async () => {
@@ -69,7 +71,9 @@ describe('AdvisorsService', () => {
 
       mockAdvisorModel.findOne.mockResolvedValue(mockAdvisor);
 
-      await expect(service.createProfile('user123', createDto)).rejects.toThrow(ConflictException);
+      await expect(service.createProfile('user123', createDto)).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -88,7 +92,9 @@ describe('AdvisorsService', () => {
     it('❌ should throw error if profile not found', async () => {
       mockAdvisorModel.findOneAndUpdate.mockResolvedValue(null);
 
-      await expect(service.updateProfile('user123', {})).rejects.toThrow(NotFoundException);
+      await expect(service.updateProfile('user123', {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

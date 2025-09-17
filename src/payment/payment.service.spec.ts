@@ -104,7 +104,7 @@ describe('PaymentService', () => {
       mockCouponModel.findOne.mockResolvedValue(null);
 
       await expect(
-        service.createPaymentIntent('user123', 'INVALID')
+        service.createPaymentIntent('user123', 'INVALID'),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -128,7 +128,7 @@ describe('PaymentService', () => {
       expect(mockAdvisorModel.findOneAndUpdate).toHaveBeenCalledWith(
         { userId: 'user123' },
         { isActive: true },
-        { new: true }
+        { new: true },
       );
     });
 
@@ -140,7 +140,7 @@ describe('PaymentService', () => {
       });
 
       await expect(
-        service.confirmPayment('user123', 'pi_test_123')
+        service.confirmPayment('user123', 'pi_test_123'),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -158,7 +158,7 @@ describe('PaymentService', () => {
       expect(result.success).toBe(true);
       expect(mockCouponModel.findOneAndUpdate).toHaveBeenCalledWith(
         { code: 'FREETRIAL2024' },
-        { $inc: { usedCount: 1 } }
+        { $inc: { usedCount: 1 } },
       );
     });
 
@@ -169,7 +169,7 @@ describe('PaymentService', () => {
       });
 
       await expect(
-        service.redeemCoupon('user123', 'DISCOUNT50')
+        service.redeemCoupon('user123', 'DISCOUNT50'),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -179,9 +179,9 @@ describe('PaymentService', () => {
         expiresAt: new Date('2020-01-01'),
       });
 
-      await expect(
-        service.redeemCoupon('user123', 'EXPIRED')
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.redeemCoupon('user123', 'EXPIRED')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

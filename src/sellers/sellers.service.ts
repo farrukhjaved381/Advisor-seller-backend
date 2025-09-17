@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Seller } from './schemas/seller.schema';
@@ -15,7 +19,10 @@ export class SellersService {
     private emailService: EmailService,
   ) {}
 
-  async createProfile(userId: string, createSellerProfileDto: CreateSellerProfileDto): Promise<Seller> {
+  async createProfile(
+    userId: string,
+    createSellerProfileDto: CreateSellerProfileDto,
+  ): Promise<Seller> {
     const existingProfile = await this.sellerModel.findOne({ userId });
     if (existingProfile) {
       throw new ConflictException('Seller profile already exists');
@@ -81,7 +88,10 @@ export class SellersService {
           html: emailBody,
         });
       } catch (error) {
-        console.error('Failed to send seller interview questions email:', error);
+        console.error(
+          'Failed to send seller interview questions email:',
+          error,
+        );
       }
     }
 
@@ -92,11 +102,14 @@ export class SellersService {
     return this.sellerModel.findOne({ userId });
   }
 
-  async updateProfile(userId: string, updateSellerProfileDto: UpdateSellerProfileDto): Promise<Seller> {
+  async updateProfile(
+    userId: string,
+    updateSellerProfileDto: UpdateSellerProfileDto,
+  ): Promise<Seller> {
     const seller = await this.sellerModel.findOneAndUpdate(
       { userId },
       updateSellerProfileDto,
-      { new: true }
+      { new: true },
     );
 
     if (!seller) {
@@ -122,7 +135,7 @@ export class SellersService {
     const seller = await this.sellerModel.findOneAndUpdate(
       { userId },
       { isActive },
-      { new: true }
+      { new: true },
     );
 
     if (!seller) {

@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { User, UserDocument } from '../../users/schemas/user.schema';
 
@@ -14,6 +19,8 @@ export class PaymentVerifiedGuard implements CanActivate {
       return true;
     }
 
-    throw new ForbiddenException('Please complete payment to access advisor features');
+    throw new ForbiddenException(
+      'Please complete payment to access advisor features',
+    );
   }
 }

@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { CsrfService } from '../csrf.service';
 
 @Injectable()
@@ -16,10 +21,10 @@ export class CsrfGuard implements CanActivate {
 
     console.log('CSRF Guard - Headers:', request.headers);
     console.log('CSRF Guard - Cookies:', request.cookies);
-    
+
     const csrfToken = request.headers['x-csrf-token'];
     const csrfSecret = request.cookies['csrf-secret'];
-    
+
     console.log('CSRF Token from header:', csrfToken);
     console.log('CSRF Secret from cookie:', csrfSecret);
 

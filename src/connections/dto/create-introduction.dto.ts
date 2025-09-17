@@ -6,9 +6,10 @@ export class CreateIntroductionDto {
   @IsString()
   advisorId: string;
 
-  @ApiProperty({ 
-    example: 'I would like to discuss potential advisory services for our technology company.',
-    required: false 
+  @ApiProperty({
+    example:
+      'I would like to discuss potential advisory services for our technology company.',
+    required: false,
   })
   @IsOptional()
   @IsString()

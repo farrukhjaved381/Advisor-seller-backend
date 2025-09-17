@@ -1,5 +1,20 @@
-import { Controller, Post, Body, UseGuards, Request, Headers, Req, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  Headers,
+  Req,
+  Get,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiBody,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PaymentService } from './payment.service';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
@@ -22,24 +37,30 @@ export class PaymentController {
   @ApiBearerAuth()
   @Throttle({ default: { limit: 10, ttl: 3600 } })
   @ApiOperation({ summary: 'Create payment intent for advisor membership' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Payment intent created successfully',
     schema: {
       type: 'object',
       properties: {
         clientSecret: { type: 'string' },
-        amount: { type: 'number' }
-      }
-    }
+        amount: { type: 'number' },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Invalid coupon code' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - not an advisor' })
   @ApiBody({ type: CreatePaymentIntentDto })
-  async createPaymentIntent(@Request() req, @Body() createPaymentDto: CreatePaymentIntentDto) {
+  async createPaymentIntent(
+    @Request() req,
+    @Body() createPaymentDto: CreatePaymentIntentDto,
+  ) {
     // Creates Stripe payment intent for $5,000 membership fee with optional coupon discount
-    return this.paymentService.createPaymentIntent(req.user._id, createPaymentDto.couponCode);
+    return this.paymentService.createPaymentIntent(
+      req.user._id,
+      createPaymentDto.couponCode,
+    );
   }
 
   @Post('confirm')
@@ -47,24 +68,30 @@ export class PaymentController {
   @ApiBearerAuth()
   @Throttle({ default: { limit: 5, ttl: 3600 } })
   @ApiOperation({ summary: 'Confirm payment and activate advisor profile' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Payment confirmed and profile activated',
     schema: {
       type: 'object',
       properties: {
         success: { type: 'boolean' },
-        message: { type: 'string' }
-      }
-    }
+        message: { type: 'string' },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Payment not completed or invalid' })
   @ApiResponse({ status: 404, description: 'Advisor profile not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiBody({ type: ConfirmPaymentDto })
-  async confirmPayment(@Request() req, @Body() confirmPaymentDto: ConfirmPaymentDto) {
+  async confirmPayment(
+    @Request() req,
+    @Body() confirmPaymentDto: ConfirmPaymentDto,
+  ) {
     // Confirms Stripe payment and activates advisor profile
-    return this.paymentService.confirmPayment(req.user._id, confirmPaymentDto.paymentIntentId);
+    return this.paymentService.confirmPayment(
+      req.user._id,
+      confirmPaymentDto.paymentIntentId,
+    );
   }
 
   @Post('redeem-coupon')
@@ -72,19 +99,25 @@ export class PaymentController {
   @ApiBearerAuth()
   @Throttle({ default: { limit: 3, ttl: 3600 } })
   @ApiOperation({ summary: 'Redeem coupon for free trial activation' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Coupon redeemed and profile activated',
     schema: {
       type: 'object',
       properties: {
         success: { type: 'boolean' },
-        message: { type: 'string' }
-      }
-    }
+        message: { type: 'string' },
+      },
+    },
   })
-  @ApiResponse({ status: 400, description: 'Invalid coupon or not for free trial' })
-  @ApiResponse({ status: 404, description: 'Coupon not found or advisor profile not found' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid coupon or not for free trial',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Coupon not found or advisor profile not found',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiBody({ type: RedeemCouponDto })
   async redeemCoupon(@Request() req, @Body() redeemCouponDto: RedeemCouponDto) {
@@ -104,22 +137,29 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Activate free trial without coupon (testing only)' })
+  @ApiOperation({
+    summary: 'Activate free trial without coupon (testing only)',
+  })
   @ApiResponse({ status: 200, description: 'Free trial activated' })
   async activateFreeTrial(@Request() req) {
     return this.paymentService.activateFreeTrial(req.user._id);
   }
 
   @Post('webhook')
-  @ApiOperation({ summary: 'Stripe webhook endpoint for payment confirmations' })
+  @ApiOperation({
+    summary: 'Stripe webhook endpoint for payment confirmations',
+  })
   @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
   @ApiResponse({ status: 400, description: 'Invalid webhook signature' })
   async handleWebhook(
     @Headers('stripe-signature') signature: string,
-    @Req() req: ExpressRequest & { rawBody?: Buffer }
+    @Req() req: ExpressRequest & { rawBody?: Buffer },
   ) {
     // Public endpoint for Stripe to send payment confirmations
     // No authentication required - Stripe signature verification handles security
-    return this.paymentService.handleWebhook(signature, req.rawBody || Buffer.from(''));
+    return this.paymentService.handleWebhook(
+      signature,
+      req.rawBody || Buffer.from(''),
+    );
   }
 }

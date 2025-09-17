@@ -18,7 +18,7 @@ import { join } from 'path';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..' ,'node_modules', 'swagger-ui-dist'),
+      rootPath: join(__dirname, '..', 'node_modules', 'swagger-ui-dist'),
       serveRoot: '/docs',
     }),
     ConfigModule.forRoot({ isGlobal: true }), // Load .env globally

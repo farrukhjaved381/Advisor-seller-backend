@@ -10,8 +10,20 @@ export class AdvisorCardDto {
   @ApiProperty({ example: ['Technology', 'Healthcare'] })
   industries: string[];
 
+  @ApiProperty({
+    example: ['Technology'],
+    description: 'Matched industries based on seller profile',
+  })
+  matchedIndustries: string[];
+
   @ApiProperty({ example: ['North America', 'Europe'] })
   geographies: string[];
+
+  @ApiProperty({
+    example: ['United States > California'],
+    description: 'Matched geography paths based on seller profile',
+  })
+  matchedGeographies: string[];
 
   @ApiProperty({ example: 15 })
   yearsExperience: number;
@@ -37,7 +49,9 @@ export class AdvisorCardDto {
   @ApiProperty({ example: 'USD' })
   currency: string;
 
-  @ApiProperty({ example: 'Expert advisory services for technology companies.' })
+  @ApiProperty({
+    example: 'Expert advisory services for technology companies.',
+  })
   description: string;
 
   @ApiProperty({ example: 150 })
@@ -46,12 +60,15 @@ export class AdvisorCardDto {
   @ApiProperty({ example: 'https://example.com/logo.png' })
   logoUrl?: string;
 
-  @ApiProperty({ 
-    example: [{
-      clientName: 'TechCorp Inc',
-      testimonial: 'Excellent advisory services, helped us scale efficiently.',
-      pdfUrl: 'https://example.com/testimonial.pdf'
-    }]
+  @ApiProperty({
+    example: [
+      {
+        clientName: 'TechCorp Inc',
+        testimonial:
+          'Excellent advisory services, helped us scale efficiently.',
+        pdfUrl: 'https://example.com/testimonial.pdf',
+      },
+    ],
   })
   testimonials: { clientName: string; testimonial: string; pdfUrl?: string }[];
 }

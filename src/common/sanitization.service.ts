@@ -19,11 +19,11 @@ export class SanitizationService {
     if (typeof obj === 'string') {
       return this.sanitizeHtml(obj);
     }
-    
+
     if (Array.isArray(obj)) {
-      return obj.map(item => this.sanitizeObject(item));
+      return obj.map((item) => this.sanitizeObject(item));
     }
-    
+
     if (obj && typeof obj === 'object') {
       const sanitized: any = {};
       for (const key in obj) {
@@ -31,7 +31,7 @@ export class SanitizationService {
       }
       return sanitized;
     }
-    
+
     return obj;
   }
 }

@@ -26,7 +26,9 @@ describe('Seller-Advisor Platform E2E', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
   });
 
@@ -129,9 +131,7 @@ describe('Seller-Advisor Platform E2E', () => {
       });
 
       it('❌ should reject access without token', async () => {
-        await request(app.getHttpServer())
-          .get('/auth/profile')
-          .expect(401);
+        await request(app.getHttpServer()).get('/auth/profile').expect(401);
       });
     });
   });
@@ -311,8 +311,10 @@ describe('Seller-Advisor Platform E2E', () => {
       const matchesResponse = await request(app.getHttpServer())
         .get('/sellers/matches')
         .set('Authorization', `Bearer ${sellerToken}`);
-      
-      matchedAdvisorIds = matchesResponse.body.map((advisor: any) => advisor.id);
+
+      matchedAdvisorIds = matchesResponse.body.map(
+        (advisor: any) => advisor.id,
+      );
     });
 
     describe('Introduction Service', () => {

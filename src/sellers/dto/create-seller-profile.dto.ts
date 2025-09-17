@@ -1,7 +1,19 @@
-import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, Min, IsEmail } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateSellerProfileDto {
+  @ApiProperty({ example: 'Jane Doe' })
+  @IsString()
+  contactName: string;
+
+  @ApiProperty({ example: 'jane.doe@example.com' })
+  @IsEmail()
+  contactEmail: string;
+
+  @ApiProperty({ example: 'CEO' })
+  @IsString()
+  contactTitle: string;
+
   @ApiProperty({ example: 'TechCorp Solutions Inc.' })
   @IsString()
   companyName: string;
@@ -32,7 +44,10 @@ export class CreateSellerProfileDto {
   @IsString()
   currency: string;
 
-  @ApiProperty({ example: 'Leading software development company specializing in enterprise solutions.' })
+  @ApiProperty({
+    example:
+      'Leading software development company specializing in enterprise solutions.',
+  })
   @IsString()
   description: string;
 }

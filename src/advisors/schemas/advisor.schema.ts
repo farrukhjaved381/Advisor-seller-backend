@@ -26,16 +26,22 @@ export class Advisor {
   @ApiProperty({ description: 'Company logo URL' })
   logoUrl?: string;
 
-  @Prop({ 
-    type: [{ 
-      clientName: { type: String, required: true },
-      testimonial: { type: String, required: true },
-      pdfUrl: { type: String }
-    }], 
+  @Prop()
+  @ApiProperty({ description: 'Introduction video URL', required: false })
+  introVideoUrl?: string;
+
+  @Prop({
+    type: [
+      {
+        clientName: { type: String, required: true },
+        testimonial: { type: String, required: true },
+        pdfUrl: { type: String },
+      },
+    ],
     validate: [arrayLimit, '{PATH} exceeds the limit of 5'],
-    default: []
+    default: [],
   })
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Array of client testimonials (max 5)',
     type: 'array',
     items: {
@@ -43,9 +49,9 @@ export class Advisor {
       properties: {
         clientName: { type: 'string' },
         testimonial: { type: 'string' },
-        pdfUrl: { type: 'string' }
-      }
-    }
+        pdfUrl: { type: 'string' },
+      },
+    },
   })
   testimonials: { clientName: string; testimonial: string; pdfUrl?: string }[];
 

@@ -1,5 +1,22 @@
-import { Controller, Post, Get, Patch, Delete, Body, UseGuards, Request, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiQuery } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Delete,
+  Body,
+  UseGuards,
+  Request,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { SellersService } from './sellers.service';
 import { CreateSellerProfileDto } from './dto/create-seller-profile.dto';
 import { UpdateSellerProfileDto } from './dto/update-seller-profile.dto';
@@ -28,7 +45,10 @@ export class SellersController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - not a seller' })
   @ApiBody({ type: CreateSellerProfileDto })
-  async createProfile(@Request() req, @Body() createProfileDto: CreateSellerProfileDto) {
+  async createProfile(
+    @Request() req,
+    @Body() createProfileDto: CreateSellerProfileDto,
+  ) {
     // Creates seller profile linked to authenticated user
     return this.sellersService.createProfile(req.user._id, createProfileDto);
   }
@@ -49,44 +69,50 @@ export class SellersController {
   @ApiResponse({ status: 404, description: 'Profile not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiBody({ type: UpdateSellerProfileDto })
-  async updateProfile(@Request() req, @Body() updateProfileDto: UpdateSellerProfileDto) {
+  async updateProfile(
+    @Request() req,
+    @Body() updateProfileDto: UpdateSellerProfileDto,
+  ) {
     // Updates seller profile fields
     return this.sellersService.updateProfile(req.user._id, updateProfileDto);
   }
 
   @Get('matches')
   @ApiOperation({ summary: 'Get matched advisors for current seller' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Array of matched advisor cards',
-    type: [AdvisorCardDto]
+    type: [AdvisorCardDto],
   })
   @ApiResponse({ status: 404, description: 'Seller profile not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiQuery({ 
-    name: 'sortBy', 
-    required: false, 
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
     description: 'Sort criteria: years, company, or default (newest)',
-    enum: ['years', 'company']
+    enum: ['years', 'company'],
   })
-  async getMatches(@Request() req, @Query('sortBy') sortBy?: string): Promise<AdvisorCardDto[]> {
+  async getMatches(
+    @Request() req,
+    @Query('sortBy') sortBy?: string,
+  ): Promise<AdvisorCardDto[]> {
     // Finds and returns matched advisors based on industry, geography, revenue, and active status
     return this.matchingService.findMatches(req.user._id, sortBy);
   }
 
   @Get('matches/stats')
   @ApiOperation({ summary: 'Get matching statistics' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Matching statistics',
     schema: {
       type: 'object',
       properties: {
         totalMatches: { type: 'number' },
         industries: { type: 'array', items: { type: 'string' } },
-        geographies: { type: 'array', items: { type: 'string' } }
-      }
-    }
+        geographies: { type: 'array', items: { type: 'string' } },
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Seller profile not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -109,14 +135,17 @@ export class SellersController {
   @ApiResponse({ status: 200, description: 'Status updated successfully' })
   @ApiResponse({ status: 404, description: 'Profile not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiBody({ 
-    schema: { 
-      type: 'object', 
+  @ApiBody({
+    schema: {
+      type: 'object',
       properties: { isActive: { type: 'boolean' } },
-      required: ['isActive']
-    }
+      required: ['isActive'],
+    },
   })
-  async toggleActiveStatus(@Request() req, @Body() body: { isActive: boolean }) {
+  async toggleActiveStatus(
+    @Request() req,
+    @Body() body: { isActive: boolean },
+  ) {
     return this.sellersService.toggleActiveStatus(req.user._id, body.isActive);
   }
 }

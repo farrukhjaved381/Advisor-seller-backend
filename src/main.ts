@@ -6,7 +6,10 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import slowDown from 'express-slow-down';
-import { HttpExceptionFilter, AllExceptionsFilter } from './filters/http-exception.filter';
+import {
+  HttpExceptionFilter,
+  AllExceptionsFilter,
+} from './filters/http-exception.filter';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -34,7 +37,7 @@ async function createApp(): Promise<INestApplication> {
       hsts: {
         maxAge: 31536000,
         includeSubDomains: true,
-        preload: true
+        preload: true,
       },
     }),
   );
@@ -53,35 +56,47 @@ async function createApp(): Promise<INestApplication> {
   const speedLimiter = slowDown({
     windowMs: 15 * 60 * 1000, // 15 minutes
     delayAfter: 50, // allow 50 requests per 15 minutes, then...
-    delayMs: 500 // begin adding 500ms of delay per request above 50
+    delayMs: 500, // begin adding 500ms of delay per request above 50
   });
   nestApp.use('/api/auth/', speedLimiter);
 
   nestApp.use(cookieParser());
 
-  const corsOrigins = process.env.NODE_ENV === 'production'
-    ? [
-        process.env.FRONTEND_URL, 
-        'http://localhost:5174',
-        'https://frontend-five-pied-17.vercel.app',
-        'https://cimamplify-ui.vercel.app'
-      ]
-    : true;
+  const corsOrigins =
+    process.env.NODE_ENV === 'production'
+      ? [
+          process.env.FRONTEND_URL,
+          'http://localhost:5174',
+          'https://frontend-five-pied-17.vercel.app',
+          'https://cimamplify-ui.vercel.app',
+        ]
+      : true;
 
   nestApp.enableCors({
     origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-CSRF-Token', 'x-csrf-token'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Cookie',
+      'X-CSRF-Token',
+      'x-csrf-token',
+    ],
   });
 
-  nestApp.useGlobalFilters(new AllExceptionsFilter(), new HttpExceptionFilter());
+  nestApp.useGlobalFilters(
+    new AllExceptionsFilter(),
+    new HttpExceptionFilter(),
+  );
 
-  nestApp.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  nestApp.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   nestApp.setGlobalPrefix('api');
 
@@ -100,8 +115,12 @@ async function createApp(): Promise<INestApplication> {
 async function bootstrap() {
   app = await createApp();
   await app.listen(process.env.PORT || 3000);
-  console.log(`🚀 Backend server running on: http://localhost:${process.env.PORT || 3000}`);
-  console.log(`📚 Swagger API docs available at: http://localhost:${process.env.PORT || 3000}/docs`);
+  console.log(
+    `🚀 Backend server running on: http://localhost:${process.env.PORT || 3000}`,
+  );
+  console.log(
+    `📚 Swagger API docs available at: http://localhost:${process.env.PORT || 3000}/docs`,
+  );
 }
 
 export default async (req: any, res: any) => {

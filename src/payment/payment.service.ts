@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
@@ -18,13 +22,19 @@ export class PaymentService {
     private configService: ConfigService,
     private usersService: UsersService,
   ) {
-    this.stripe = new Stripe(this.configService.get('STRIPE_SECRET_KEY') || 'sk_test_default', {
-      apiVersion: '2025-08-27.basil',
-    });
+    this.stripe = new Stripe(
+      this.configService.get('STRIPE_SECRET_KEY') || 'sk_test_default',
+      {
+        apiVersion: '2025-08-27.basil',
+      },
+    );
   }
 
   // Creates payment intent for advisor membership fee
-  async createPaymentIntent(userId: string, couponCode?: string): Promise<{ clientSecret: string; amount: number }> {
+  async createPaymentIntent(
+    userId: string,
+    couponCode?: string,
+  ): Promise<{ clientSecret: string; amount: number }> {
     let amount = this.membershipFee;
     let coupon: Coupon | null = null;
 
@@ -40,7 +50,7 @@ export class PaymentService {
     const paymentIntent = await this.stripe.paymentIntents.create({
       amount: stripeAmount,
       currency: 'usd',
-      automatic_payment_methods: { 
+      automatic_payment_methods: {
         enabled: true,
         allow_redirects: 'never', // Keep as never for backend-only confirmation
       },
@@ -59,10 +69,14 @@ export class PaymentService {
   }
 
   // Confirms payment and activates advisor profile
-  async confirmPayment(userId: string, paymentIntentId: string): Promise<{ success: boolean; message: string }> {
+  async confirmPayment(
+    userId: string,
+    paymentIntentId: string,
+  ): Promise<{ success: boolean; message: string }> {
     try {
-      const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
-      
+      const paymentIntent =
+        await this.stripe.paymentIntents.retrieve(paymentIntentId);
+
       if (paymentIntent.status !== 'succeeded') {
         throw new BadRequestException('Payment not completed');
       }
@@ -71,25 +85,27 @@ export class PaymentService {
         console.log('User ID mismatch:', {
           paymentIntentUserId: paymentIntent.metadata.userId,
           currentUserId: userId.toString(),
-          paymentIntentId
+          paymentIntentId,
         });
         throw new BadRequestException('Payment does not belong to this user');
       }
 
       // Mark user as payment verified
-      await this.usersService.markPaymentVerified(
-        userId,
-        paymentIntentId
-      );
+      await this.usersService.markPaymentVerified(userId, paymentIntentId);
 
       // Payment confirmed - user can now create advisor profile
-      console.log('Payment confirmed for user:', userId, 'PaymentIntent:', paymentIntentId);
+      console.log(
+        'Payment confirmed for user:',
+        userId,
+        'PaymentIntent:',
+        paymentIntentId,
+      );
 
       // Update coupon usage if used
       if (paymentIntent.metadata.couponCode) {
         await this.couponModel.findOneAndUpdate(
           { code: paymentIntent.metadata.couponCode },
-          { $inc: { usedCount: 1 } }
+          { $inc: { usedCount: 1 } },
         );
       }
 
@@ -98,14 +114,19 @@ export class PaymentService {
         message: 'Payment confirmed! You can now create your advisor profile.',
       };
     } catch (error) {
-      throw new BadRequestException(`Payment confirmation failed: ${error.message}`);
+      throw new BadRequestException(
+        `Payment confirmation failed: ${error.message}`,
+      );
     }
   }
 
   // Redeems coupon for free trial (activates profile without payment)
-  async redeemCoupon(userId: string, code: string): Promise<{ success: boolean; message: string }> {
+  async redeemCoupon(
+    userId: string,
+    code: string,
+  ): Promise<{ success: boolean; message: string }> {
     const coupon = await this.validateCoupon(code);
-    
+
     if (coupon.type !== 'free_trial') {
       throw new BadRequestException('This coupon is not valid for free trial');
     }
@@ -120,19 +141,20 @@ export class PaymentService {
     // Update coupon usage
     await this.couponModel.findOneAndUpdate(
       { code },
-      { $inc: { usedCount: 1 } }
+      { $inc: { usedCount: 1 } },
     );
 
     return {
       success: true,
-      message: 'Free trial activated successfully. You can now create your profile.',
+      message:
+        'Free trial activated successfully. You can now create your profile.',
     };
   }
 
   // Validates coupon code and availability
   private async validateCoupon(code: string): Promise<Coupon> {
     const coupon = await this.couponModel.findOne({ code, isActive: true });
-    
+
     if (!coupon) {
       throw new NotFoundException('Invalid or inactive coupon code');
     }
@@ -149,15 +171,18 @@ export class PaymentService {
   }
 
   // Calculates discounted amount based on coupon
-  private calculateDiscountedAmount(originalAmount: number, coupon: Coupon): number {
+  private calculateDiscountedAmount(
+    originalAmount: number,
+    coupon: Coupon,
+  ): number {
     if (coupon.type === 'free_trial') {
       return 0;
     }
-    
+
     if (coupon.type === 'percentage') {
       return Math.round(originalAmount * (1 - coupon.value / 100));
     }
-    
+
     if (coupon.type === 'fixed') {
       return Math.max(0, originalAmount - coupon.value * 100); // Convert dollars to cents
     }
@@ -192,12 +217,15 @@ export class PaymentService {
       await this.couponModel.findOneAndUpdate(
         { code: couponData.code },
         couponData,
-        { upsert: true, new: true }
+        { upsert: true, new: true },
       );
     }
   }
 
-  async handleWebhook(signature: string, payload: Buffer): Promise<{ received: boolean }> {
+  async handleWebhook(
+    signature: string,
+    payload: Buffer,
+  ): Promise<{ received: boolean }> {
     let event: Stripe.Event;
 
     try {
@@ -212,18 +240,21 @@ export class PaymentService {
     }
 
     switch (event.type) {
-      case 'payment_intent.succeeded':
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object;
         console.log('PaymentIntent succeeded:', paymentIntent.id);
-        
+
         if (paymentIntent.metadata?.userId) {
           await this.usersService.markPaymentVerified(
             paymentIntent.metadata.userId,
-            paymentIntent.customer as string
+            paymentIntent.customer as string,
           );
-          console.log(`User ${paymentIntent.metadata.userId} marked as payment verified`);
+          console.log(
+            `User ${paymentIntent.metadata.userId} marked as payment verified`,
+          );
         }
         break;
+      }
       default:
         console.log(`Unhandled event type ${event.type}`);
     }
@@ -231,20 +262,24 @@ export class PaymentService {
     return { received: true };
   }
 
-  async activateFreeTrial(userId: string): Promise<{ success: boolean; message: string }> {
+  async activateFreeTrial(
+    userId: string,
+  ): Promise<{ success: boolean; message: string }> {
     // Mark user as payment verified
     await this.usersService.markPaymentVerified(userId, 'free-trial');
-    
+
     // Activate advisor profile if exists
     const advisor = await this.advisorModel.findOneAndUpdate(
       { userId },
       { isActive: true },
-      { new: true }
+      { new: true },
     );
 
     return {
       success: true,
-      message: advisor ? 'Free trial activated and profile activated' : 'Free trial activated - create profile next'
+      message: advisor
+        ? 'Free trial activated and profile activated'
+        : 'Free trial activated - create profile next',
     };
   }
 }

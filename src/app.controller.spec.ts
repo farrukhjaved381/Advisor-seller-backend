@@ -15,8 +15,10 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Welcome to Advisor-seller Backend !"', () => {
-      expect(appController.getHello()).toBe('Welcome to Advisor-seller Backend !');
+    it('should return "Welcome to Advisor Chooser Backend !"', () => {
+      expect(appController.getHello()).toBe(
+        'Welcome to Advisor Chooser Backend !',
+      );
     });
   });
 });

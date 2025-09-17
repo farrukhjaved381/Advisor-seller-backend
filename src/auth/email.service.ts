@@ -7,7 +7,7 @@ export class EmailService {
 
   constructor() {
     const isProduction = process.env.NODE_ENV === 'production';
-    
+
     this.transporter = nodemailer.createTransport({
       host: (process.env.EMAIL_HOST || 'smtp.gmail.com').trim(),
       port: parseInt((process.env.EMAIL_PORT || '587').trim()),
@@ -19,12 +19,12 @@ export class EmailService {
       // Gmail-specific settings for production
       ...(isProduction && {
         tls: {
-          rejectUnauthorized: false
+          rejectUnauthorized: false,
         },
         connectionTimeout: 60000,
         greetingTimeout: 30000,
-        socketTimeout: 60000
-      })
+        socketTimeout: 60000,
+      }),
     });
   }
 
@@ -42,25 +42,30 @@ export class EmailService {
     await this.transporter.sendMail(mailOptions);
   }
 
-  async sendVerificationEmail(email: string, name: string, token: string): Promise<void> {
+  async sendVerificationEmail(
+    email: string,
+    name: string,
+    token: string,
+  ): Promise<void> {
     console.log('Email config:', {
       EMAIL_USER: process.env.EMAIL_USER ? 'SET' : 'NOT SET',
       EMAIL_PASS: process.env.EMAIL_PASS ? 'SET' : 'NOT SET',
       EMAIL_HOST: process.env.EMAIL_HOST,
       EMAIL_PORT: process.env.EMAIL_PORT,
-      NODE_ENV: process.env.NODE_ENV
+      NODE_ENV: process.env.NODE_ENV,
     });
-    
-    const frontendUrl = process.env.FRONTEND_URL || 'https://frontend-five-pied-17.vercel.app';
+
+    const frontendUrl =
+      process.env.FRONTEND_URL || 'https://frontend-five-pied-17.vercel.app';
     const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: 'Verify Your Email - Advisor-Seller Platform',
+      subject: 'Verify Your Email - Advisor Chooser Platform',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Welcome to Advisor-Seller Platform!</h2>
+          <h2>Welcome to Advisor Chooser Platform!</h2>
           <p>Hello ${name},</p>
           <p>Thank you for registering with us. Please verify your email address by clicking the button below:</p>
           <div style="text-align: center; margin: 30px 0;">
@@ -91,14 +96,19 @@ export class EmailService {
     }
   }
 
-  async sendPasswordResetEmail(email: string, name: string, token: string): Promise<void> {
-    const frontendUrl = process.env.FRONTEND_URL || 'https://frontend-five-pied-17.vercel.app';
+  async sendPasswordResetEmail(
+    email: string,
+    name: string,
+    token: string,
+  ): Promise<void> {
+    const frontendUrl =
+      process.env.FRONTEND_URL || 'https://frontend-five-pied-17.vercel.app';
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: 'Reset Your Password - Advisor-Seller Platform',
+      subject: 'Reset Your Password - Advisor Chooser Platform',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Password Reset Request</h2>

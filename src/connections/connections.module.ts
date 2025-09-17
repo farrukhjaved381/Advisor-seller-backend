@@ -22,6 +22,11 @@ import { Connection, ConnectionSchema } from './schemas/connection.schema';
   ],
   controllers: [ConnectionsController],
   providers: [ConnectionsService],
-  exports: [ConnectionsService, MongooseModule.forFeature([{ name: Connection.name, schema: ConnectionSchema }])],
+  exports: [
+    ConnectionsService,
+    MongooseModule.forFeature([
+      { name: Connection.name, schema: ConnectionSchema },
+    ]),
+  ],
 })
 export class ConnectionsModule {}

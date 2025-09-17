@@ -3,6 +3,6 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class AppService {
   getHello(): string {
-    return 'Welcome to Advisor-seller Backend !';
+    return 'Welcome to Advisor Chooser Backend !';
   }
 }

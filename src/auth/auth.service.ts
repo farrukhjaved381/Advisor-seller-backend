@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, BadRequestException, forwardRef, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  forwardRef,
+  Inject,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { EmailService } from './email.service';
@@ -41,33 +47,38 @@ export class AuthService {
 
   async register(createUserDto: CreateUserDto): Promise<AuthResponse> {
     const user = await this.usersService.create(createUserDto);
-    
+
     // Generate verification token and send email
     const verificationToken = this.jwtService.sign(
       { sub: (user as any)._id.toString(), type: 'email_verification' },
-      { expiresIn: '24h' }
+      { expiresIn: '24h' },
     );
-    
+
     try {
       await this.emailService.sendVerificationEmail(
         user.email,
         user.name,
-        verificationToken
+        verificationToken,
       );
       console.log(`Verification email sent to ${user.email}`);
     } catch (error) {
       console.error('Failed to send verification email:', error);
       // Don't throw error - allow registration to complete
     }
-    
+
     return this.generateAuthResponse(user);
   }
 
   async login(loginUserDto: LoginUserDto): Promise<AuthResponse> {
-    const user = await this.validateUser(loginUserDto.email, loginUserDto.password);
+    const user = await this.validateUser(
+      loginUserDto.email,
+      loginUserDto.password,
+    );
 
     if (!user.isEmailVerified) {
-      throw new UnauthorizedException('Please verify your email before logging in');
+      throw new UnauthorizedException(
+        'Please verify your email before logging in',
+      );
     }
 
     return this.generateAuthResponse(user);
@@ -83,14 +94,22 @@ export class AuthService {
     let user = await this.usersService.findByEmail(normalizedEmail);
 
     if (user && user.role !== UserRole.SELLER) {
-      throw new BadRequestException('Email is registered for a different user type');
+      throw new BadRequestException(
+        'Email is registered for a different user type',
+      );
     }
 
     if (!user) {
-      console.log('[AuthService] No user found, creating new seller for email', normalizedEmail);
+      console.log(
+        '[AuthService] No user found, creating new seller for email',
+        normalizedEmail,
+      );
       user = await this.usersService.createSellerFromEmail(normalizedEmail);
     } else if (!user.isEmailVerified) {
-      console.log('[AuthService] Existing seller found but email not verified, marking verified', normalizedEmail);
+      console.log(
+        '[AuthService] Existing seller found but email not verified, marking verified',
+        normalizedEmail,
+      );
       user = await this.usersService.verifyEmail((user as any)._id.toString());
     }
 
@@ -103,24 +122,33 @@ export class AuthService {
 
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
     const user = await this.usersService.findByRefreshToken(refreshToken);
-    if (!user || !user.refreshTokenExpiry || user.refreshTokenExpiry < new Date()) {
+    if (
+      !user ||
+      !user.refreshTokenExpiry ||
+      user.refreshTokenExpiry < new Date()
+    ) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
     return this.generateAuthResponse(user);
   }
 
-  async verifyEmail(token: string): Promise<{ message: string; success: boolean }> {
+  async verifyEmail(
+    token: string,
+  ): Promise<{ message: string; success: boolean }> {
     try {
       const payload = this.jwtService.verify(token);
-      
+
       if (payload.type !== 'email_verification') {
         throw new BadRequestException('Invalid verification token');
       }
-      
+
       await this.usersService.verifyEmail(payload.sub);
-      
-      return { message: 'Email verified successfully! You can now login.', success: true };
+
+      return {
+        message: 'Email verified successfully! You can now login.',
+        success: true,
+      };
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
         throw new BadRequestException('Verification token has expired');
@@ -129,40 +157,51 @@ export class AuthService {
     }
   }
 
-  async forgotPassword(email: string): Promise<{ message: string; success: boolean }> {
+  async forgotPassword(
+    email: string,
+  ): Promise<{ message: string; success: boolean }> {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
       // Don't reveal if email exists or not for security
-      return { message: 'If email exists, password reset link has been sent.', success: true };
+      return {
+        message: 'If email exists, password reset link has been sent.',
+        success: true,
+      };
     }
 
     const resetToken = this.jwtService.sign(
       { sub: (user as any)._id.toString(), type: 'password_reset' },
-      { expiresIn: '1h' }
+      { expiresIn: '1h' },
     );
 
     await this.usersService.saveResetPasswordToken(
       (user as any)._id.toString(),
-      resetToken
+      resetToken,
     );
 
     try {
       await this.emailService.sendPasswordResetEmail(
         user.email,
         user.name,
-        resetToken
+        resetToken,
       );
     } catch (error) {
       console.error('Failed to send password reset email:', error);
     }
 
-    return { message: 'If email exists, password reset link has been sent.', success: true };
+    return {
+      message: 'If email exists, password reset link has been sent.',
+      success: true,
+    };
   }
 
-  async resetPassword(token: string, newPassword: string): Promise<{ message: string; success: boolean }> {
+  async resetPassword(
+    token: string,
+    newPassword: string,
+  ): Promise<{ message: string; success: boolean }> {
     try {
       const payload = this.jwtService.verify(token);
-      
+
       if (payload.type !== 'password_reset') {
         throw new BadRequestException('Invalid reset token');
       }
@@ -174,8 +213,11 @@ export class AuthService {
 
       await this.usersService.updatePassword(payload.sub, newPassword);
       await this.usersService.clearResetPasswordToken(payload.sub);
-      
-      return { message: 'Password reset successfully! You can now login.', success: true };
+
+      return {
+        message: 'Password reset successfully! You can now login.',
+        success: true,
+      };
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
         throw new BadRequestException('Reset token has expired');
@@ -184,10 +226,16 @@ export class AuthService {
     }
   }
 
-  async resendVerificationEmail(email: string): Promise<{ message: string; success: boolean }> {
+  async resendVerificationEmail(
+    email: string,
+  ): Promise<{ message: string; success: boolean }> {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
-      return { message: 'If email exists and is unverified, verification email has been sent.', success: true };
+      return {
+        message:
+          'If email exists and is unverified, verification email has been sent.',
+        success: true,
+      };
     }
 
     if (user.isEmailVerified) {
@@ -196,35 +244,39 @@ export class AuthService {
 
     const verificationToken = this.jwtService.sign(
       { sub: (user as any)._id.toString(), type: 'email_verification' },
-      { expiresIn: '24h' }
+      { expiresIn: '24h' },
     );
 
     try {
       await this.emailService.sendVerificationEmail(
         user.email,
         user.name,
-        verificationToken
+        verificationToken,
       );
     } catch (error) {
       console.error('Failed to resend verification email:', error);
     }
 
-    return { message: 'If email exists and is unverified, verification email has been sent.', success: true };
+    return {
+      message:
+        'If email exists and is unverified, verification email has been sent.',
+      success: true,
+    };
   }
 
   async loginWithToken(token: string): Promise<AuthResponse> {
     try {
       const payload = this.jwtService.verify(token);
-      
+
       if (payload.type !== 'email_verification') {
         throw new BadRequestException('Invalid verification token');
       }
-      
+
       const user = await this.usersService.findById(payload.sub);
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
-      
+
       return this.generateAuthResponse(user);
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
@@ -240,7 +292,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await this.usersService.validatePassword(password, user.password);
+    const isPasswordValid = await this.usersService.validatePassword(
+      password,
+      user.password,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -250,9 +305,13 @@ export class AuthService {
 
   private async generateAuthResponse(user: User): Promise<AuthResponse> {
     // Re-fetch the user to ensure we have the latest isProfileComplete status
-    const latestUser = await this.usersService.findById((user as any)._id.toString());
+    const latestUser = await this.usersService.findById(
+      (user as any)._id.toString(),
+    );
     if (!latestUser) {
-      throw new UnauthorizedException('User not found during auth response generation');
+      throw new UnauthorizedException(
+        'User not found during auth response generation',
+      );
     }
 
     const payload: JwtPayload = {
@@ -263,37 +322,47 @@ export class AuthService {
 
     // Generate access token (24 hour)
     const accessToken = this.jwtService.sign(payload, { expiresIn: '24h' });
-    
+
     // Generate refresh token (7 days)
     const refreshToken = this.jwtService.sign(
       { sub: (latestUser as any)._id.toString(), type: 'refresh' },
-      { expiresIn: '7d' }
+      { expiresIn: '7d' },
     );
 
     // Save refresh token to database
     const refreshTokenExpiry = new Date();
     refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);
-    
+
     await this.usersService.updateRefreshToken(
       (latestUser as any)._id.toString(),
       refreshToken,
-      refreshTokenExpiry
+      refreshTokenExpiry,
     );
 
     let isProfileComplete = !!latestUser.isProfileComplete;
     if (latestUser.role === UserRole.ADVISOR) {
-      const advisorProfile = await this.advisorsService.getProfileByUserId((latestUser as any)._id.toString());
+      const advisorProfile = await this.advisorsService.getProfileByUserId(
+        (latestUser as any)._id.toString(),
+      );
       isProfileComplete = !!advisorProfile;
     } else if (latestUser.role === UserRole.SELLER) {
-      const sellerProfile = await this.sellersService.getProfileByUserId((latestUser as any)._id.toString());
+      const sellerProfile = await this.sellersService.getProfileByUserId(
+        (latestUser as any)._id.toString(),
+      );
       const hasProfile = !!sellerProfile;
 
       if (hasProfile && !isProfileComplete) {
-        await this.usersService.updateProfileComplete((latestUser as any)._id.toString(), true);
+        await this.usersService.updateProfileComplete(
+          (latestUser as any)._id.toString(),
+          true,
+        );
       }
 
       if (!hasProfile && isProfileComplete) {
-        await this.usersService.updateProfileComplete((latestUser as any)._id.toString(), false);
+        await this.usersService.updateProfileComplete(
+          (latestUser as any)._id.toString(),
+          false,
+        );
       }
 
       isProfileComplete = hasProfile;
@@ -312,5 +381,5 @@ export class AuthService {
         isProfileComplete,
       },
     };
-}
+  }
 }
