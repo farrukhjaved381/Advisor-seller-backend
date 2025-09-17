@@ -50,7 +50,11 @@ export class AuthService {
 
     // Generate verification token and send email
     const verificationToken = this.jwtService.sign(
-      { sub: (user as any)._id.toString(), type: 'email_verification' },
+      {
+        sub: (user as any)._id.toString(),
+        type: 'email_verification',
+        role: user.role,
+      },
       { expiresIn: '24h' },
     );
 
@@ -59,6 +63,7 @@ export class AuthService {
         user.email,
         user.name,
         verificationToken,
+        user.role,
       );
       console.log(`Verification email sent to ${user.email}`);
     } catch (error) {
@@ -135,7 +140,19 @@ export class AuthService {
 
   async verifyEmail(
     token: string,
-  ): Promise<{ message: string; success: boolean }> {
+  ): Promise<{
+    message: string;
+    success: boolean;
+    user?: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      isEmailVerified: boolean;
+      isPaymentVerified: boolean;
+      isProfileComplete?: boolean;
+    };
+  }> {
     try {
       const payload = this.jwtService.verify(token);
 
@@ -143,11 +160,20 @@ export class AuthService {
         throw new BadRequestException('Invalid verification token');
       }
 
-      await this.usersService.verifyEmail(payload.sub);
+      const verifiedUser = await this.usersService.verifyEmail(payload.sub);
 
       return {
         message: 'Email verified successfully! You can now login.',
         success: true,
+        user: {
+          id: (verifiedUser as any)._id.toString(),
+          name: verifiedUser.name,
+          email: verifiedUser.email,
+          role: verifiedUser.role,
+          isEmailVerified: verifiedUser.isEmailVerified,
+          isPaymentVerified: verifiedUser.isPaymentVerified,
+          isProfileComplete: verifiedUser.isProfileComplete,
+        },
       };
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
@@ -243,7 +269,11 @@ export class AuthService {
     }
 
     const verificationToken = this.jwtService.sign(
-      { sub: (user as any)._id.toString(), type: 'email_verification' },
+      {
+        sub: (user as any)._id.toString(),
+        type: 'email_verification',
+        role: user.role,
+      },
       { expiresIn: '24h' },
     );
 
@@ -252,6 +282,7 @@ export class AuthService {
         user.email,
         user.name,
         verificationToken,
+        user.role,
       );
     } catch (error) {
       console.error('Failed to resend verification email:', error);

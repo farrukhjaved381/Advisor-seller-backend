@@ -46,6 +46,7 @@ export class EmailService {
     email: string,
     name: string,
     token: string,
+    role?: string,
   ): Promise<void> {
     console.log('Email config:', {
       EMAIL_USER: process.env.EMAIL_USER ? 'SET' : 'NOT SET',
@@ -57,7 +58,11 @@ export class EmailService {
 
     const frontendUrl =
       process.env.FRONTEND_URL || 'https://frontend-five-pied-17.vercel.app';
-    const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
+    const params = new URLSearchParams({ token });
+    if (role) {
+      params.append('role', role);
+    }
+    const verificationUrl = `${frontendUrl}/verify-email?${params.toString()}`;
 
     const mailOptions = {
       from: process.env.EMAIL_USER,

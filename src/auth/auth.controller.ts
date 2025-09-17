@@ -294,6 +294,7 @@ export class AuthController {
       return {
         success: result.success,
         message: result.message,
+        user: result.user,
       };
     } catch (error) {
       return {
