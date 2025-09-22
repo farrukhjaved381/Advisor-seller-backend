@@ -116,11 +116,73 @@ export class UsersService {
     userId: string,
     stripeCustomerId?: string,
   ): Promise<User | null> {
-    const updateData: any = { isPaymentVerified: true };
+    const now = new Date();
+    // Default: 1 year membership window upon payment
+    const periodStart = now;
+    const periodEnd = new Date(now.getTime());
+    periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+
+    const updateData: any = {
+      isPaymentVerified: true,
+      subscription: {
+        status: 'active',
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
+        cancelAtPeriodEnd: false,
+      },
+    };
     if (stripeCustomerId) {
       updateData.stripeCustomerId = stripeCustomerId;
     }
     return this.userModel.findByIdAndUpdate(userId, updateData, { new: true });
+  }
+
+  async appendPaymentHistory(
+    userId: string,
+    record: {
+      id: string;
+      amount: number;
+      currency: string;
+      status: string;
+      description?: string;
+      provider?: string;
+    },
+  ): Promise<User | null> {
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      { $push: { paymentHistory: { ...record, createdAt: new Date() } } },
+      { new: true },
+    );
+  }
+
+  async cancelSubscriptionAtPeriodEnd(userId: string): Promise<User | null> {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    const subscription = user.subscription || { status: 'none' } as any;
+    if (!subscription.currentPeriodEnd) {
+      // Nothing to cancel
+      return user;
+    }
+    subscription.cancelAtPeriodEnd = true;
+    subscription.status = 'canceled';
+    subscription.canceledAt = new Date();
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      { subscription },
+      { new: true },
+    );
+  }
+
+  async getPaymentHistory(userId: string): Promise<{
+    subscription?: User['subscription'];
+    paymentHistory?: User['paymentHistory'];
+  }> {
+    const user = await this.userModel.findById(userId).lean();
+    if (!user) throw new NotFoundException('User not found');
+    return {
+      subscription: user.subscription,
+      paymentHistory: user.paymentHistory || [],
+    };
   }
 
   async updateProfileComplete(

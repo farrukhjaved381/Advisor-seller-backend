@@ -200,6 +200,48 @@ export class AuthController {
       }
     }
 
+    // Ensure subscription is initialized for payment-verified legacy users
+    try {
+      if (
+        req.user.isPaymentVerified &&
+        (!req.user.subscription || !req.user.subscription.currentPeriodEnd)
+      ) {
+        const now = new Date();
+        const end = new Date(now.getTime());
+        end.setFullYear(end.getFullYear() + 1);
+        await this.usersService.updateProfileComplete(req.user._id.toString(), req.user.isProfileComplete);
+        // Directly update subscription without changing other fields
+        await (this as any).usersService['userModel'].findByIdAndUpdate(req.user._id, {
+          subscription: {
+            status: 'active',
+            currentPeriodStart: now,
+            currentPeriodEnd: end,
+            cancelAtPeriodEnd: false,
+          },
+        });
+        // reflect in-memory object for response
+        req.user.subscription = {
+          status: 'active',
+          currentPeriodStart: now,
+          currentPeriodEnd: end,
+          cancelAtPeriodEnd: false,
+        } as any;
+      }
+    } catch (e) {
+      // non-fatal
+      console.warn('[AuthController] lazy subscription init failed:', e?.message || e);
+    }
+
+    // Compute subscription active state
+    const sub = req.user.subscription;
+    const now = new Date();
+    const isSubscriptionActive = !!(
+      req.user.isPaymentVerified &&
+      sub &&
+      sub.currentPeriodEnd &&
+      new Date(sub.currentPeriodEnd) > now
+    );
+
     return {
       id: req.user._id,
       name: req.user.name,
@@ -208,6 +250,8 @@ export class AuthController {
       isEmailVerified: req.user.isEmailVerified,
       isPaymentVerified: req.user.isPaymentVerified,
       isProfileComplete,
+      subscription: req.user.subscription || { status: 'none' },
+      isSubscriptionActive,
     };
   }
 

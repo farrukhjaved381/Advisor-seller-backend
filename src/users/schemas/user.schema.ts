@@ -44,6 +44,61 @@ export class User extends Document {
   @ApiProperty({ description: 'Stripe customer ID' })
   stripeCustomerId?: string;
 
+  @Prop({
+    type: {
+      status: { type: String, enum: ['none', 'active', 'canceled', 'expired'], default: 'none' },
+      currentPeriodStart: { type: Date },
+      currentPeriodEnd: { type: Date },
+      cancelAtPeriodEnd: { type: Boolean, default: false },
+      canceledAt: { type: Date },
+    },
+    default: { status: 'none' },
+  })
+  @ApiProperty({
+    description: 'Subscription status and period details',
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      status: { type: 'string', enum: ['none', 'active', 'canceled', 'expired'] },
+      currentPeriodStart: { type: 'string', format: 'date-time' },
+      currentPeriodEnd: { type: 'string', format: 'date-time' },
+      cancelAtPeriodEnd: { type: 'boolean' },
+      canceledAt: { type: 'string', format: 'date-time' },
+    },
+  })
+  subscription?: {
+    status: 'none' | 'active' | 'canceled' | 'expired';
+    currentPeriodStart?: Date;
+    currentPeriodEnd?: Date;
+    cancelAtPeriodEnd?: boolean;
+    canceledAt?: Date;
+  };
+
+  @Prop({
+    type: [
+      {
+        id: { type: String },
+        amount: { type: Number },
+        currency: { type: String },
+        status: { type: String },
+        description: { type: String },
+        createdAt: { type: Date, default: Date.now },
+        provider: { type: String, default: 'stripe' },
+      },
+    ],
+    default: [],
+  })
+  @ApiProperty({ description: 'Payment history records' })
+  paymentHistory?: Array<{
+    id: string;
+    amount: number;
+    currency: string;
+    status: string;
+    description?: string;
+    createdAt: Date;
+    provider?: string;
+  }>;
+
   @Prop({ default: false })
   @ApiProperty({
     description: 'Indicates if the user has completed their profile',

@@ -10,6 +10,7 @@ import Stripe from 'stripe';
 import { Coupon, CouponDocument } from './schemas/coupon.schema';
 import { Advisor, AdvisorDocument } from '../advisors/schemas/advisor.schema';
 import { UsersService } from '../users/users.service';
+import { PaymentHistory, PaymentHistoryDocument } from './schemas/payment-history.schema';
 
 @Injectable()
 export class PaymentService {
@@ -19,6 +20,7 @@ export class PaymentService {
   constructor(
     @InjectModel(Coupon.name) private couponModel: Model<CouponDocument>,
     @InjectModel(Advisor.name) private advisorModel: Model<AdvisorDocument>,
+    @InjectModel(PaymentHistory.name) private paymentHistoryModel: Model<PaymentHistoryDocument>,
     private configService: ConfigService,
     private usersService: UsersService,
   ) {
@@ -35,6 +37,7 @@ export class PaymentService {
     userId: string,
     couponCode?: string,
   ): Promise<{ clientSecret: string; amount: number }> {
+    console.log('[PaymentService] createPaymentIntent for user', userId, 'coupon:', couponCode);
     let amount = this.membershipFee;
     let coupon: Coupon | null = null;
 
@@ -74,6 +77,7 @@ export class PaymentService {
     paymentIntentId: string,
   ): Promise<{ success: boolean; message: string }> {
     try {
+      console.log('[PaymentService] confirmPayment for user', userId, 'intent', paymentIntentId);
       const paymentIntent =
         await this.stripe.paymentIntents.retrieve(paymentIntentId);
 
@@ -90,8 +94,11 @@ export class PaymentService {
         throw new BadRequestException('Payment does not belong to this user');
       }
 
-      // Mark user as payment verified
-      await this.usersService.markPaymentVerified(userId, paymentIntentId);
+      // Mark user as payment verified and start/renew subscription period
+      const user = await this.usersService.markPaymentVerified(
+        userId,
+        paymentIntent.customer as string,
+      );
 
       // Payment confirmed - user can now create advisor profile
       console.log(
@@ -100,6 +107,23 @@ export class PaymentService {
         'PaymentIntent:',
         paymentIntentId,
       );
+
+      // Append payment history
+      // Persist to separate payment history collection
+      const periodStart = user?.subscription?.currentPeriodStart ? new Date(user.subscription.currentPeriodStart) : undefined;
+      const periodEnd = user?.subscription?.currentPeriodEnd ? new Date(user.subscription.currentPeriodEnd) : undefined;
+      await this.paymentHistoryModel.create({
+        userId,
+        provider: 'stripe',
+        paymentId: paymentIntent.id,
+        amount: paymentIntent.amount_received || paymentIntent.amount || 0,
+        currency: paymentIntent.currency || 'usd',
+        status: paymentIntent.status,
+        description: 'Advisor membership payment',
+        periodStart,
+        periodEnd,
+        metadata: paymentIntent.metadata || {},
+      });
 
       // Update coupon usage if used
       if (paymentIntent.metadata.couponCode) {
@@ -114,6 +138,7 @@ export class PaymentService {
         message: 'Payment confirmed! You can now create your advisor profile.',
       };
     } catch (error) {
+      console.error('[PaymentService] confirmPayment error:', error?.message || error);
       throw new BadRequestException(
         `Payment confirmation failed: ${error.message}`,
       );
@@ -125,6 +150,7 @@ export class PaymentService {
     userId: string,
     code: string,
   ): Promise<{ success: boolean; message: string }> {
+    console.log('[PaymentService] redeemCoupon for user', userId, 'code', code);
     const coupon = await this.validateCoupon(code);
 
     if (coupon.type !== 'free_trial') {
@@ -137,6 +163,34 @@ export class PaymentService {
     if (!user) {
       throw new NotFoundException('User not found during coupon redemption');
     }
+
+    // For free trial, set a shorter subscription period (e.g., 30 days)
+    if (user?.subscription) {
+      const now = new Date();
+      const end = new Date(now.getTime());
+      end.setDate(end.getDate() + 30);
+      user.subscription.currentPeriodStart = now;
+      user.subscription.currentPeriodEnd = end;
+      user.subscription.status = 'active';
+      user.subscription.cancelAtPeriodEnd = false;
+      await (this as any).usersService.userModel.findByIdAndUpdate(userId, {
+        subscription: user.subscription,
+      });
+    }
+
+    // Append history record for trial activation (separate collection)
+    await this.paymentHistoryModel.create({
+      userId,
+      provider: 'coupon',
+      paymentId: `trial-${Date.now()}`,
+      amount: 0,
+      currency: 'usd',
+      status: 'succeeded',
+      description: 'Free trial activation',
+      periodStart: user?.subscription?.currentPeriodStart,
+      periodEnd: user?.subscription?.currentPeriodEnd,
+      metadata: { code },
+    });
 
     // Update coupon usage
     await this.couponModel.findOneAndUpdate(
@@ -281,5 +335,18 @@ export class PaymentService {
         ? 'Free trial activated and profile activated'
         : 'Free trial activated - create profile next',
     };
+  }
+
+  async getHistory(userId: string) {
+    const items = await this.paymentHistoryModel
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .lean();
+    return { paymentHistory: items };
+  }
+
+  async cancelAtPeriodEnd(userId: string) {
+    const user = await this.usersService.cancelSubscriptionAtPeriodEnd(userId);
+    return { subscription: user?.subscription };
   }
 }

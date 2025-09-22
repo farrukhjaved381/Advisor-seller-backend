@@ -162,4 +162,27 @@ export class PaymentController {
       req.rawBody || Buffer.from(''),
     );
   }
+
+  @Get('history')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADVISOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get subscription and payment history' })
+  async getHistory(@Request() req) {
+    console.log('[PaymentController] GET /payment/history for user', req.user?._id);
+    return this.paymentService.getHistory(req.user._id);
+  }
+
+  @Post('cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADVISOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cancel subscription at period end' })
+  async cancel(@Request() req) {
+    console.log('[PaymentController] POST /payment/cancel for user', req.user?._id);
+    const { subscription } = await this.paymentService.cancelAtPeriodEnd(
+      req.user._id,
+    );
+    return { success: true, subscription, message: 'Subscription will cancel at period end' };
+  }
 }
