@@ -242,9 +242,13 @@ export class AdvisorsService {
       const minKey = 'revenueRange[min]';
       const maxKey = 'revenueRange[max]';
       if (minKey in updateProfileDto || maxKey in updateProfileDto) {
-        advisor.revenueRange = advisor.revenueRange || ({} as any);
-        if (minKey in updateProfileDto) advisor.revenueRange.min = Number(updateProfileDto[minKey]);
-        if (maxKey in updateProfileDto) advisor.revenueRange.max = Number(updateProfileDto[maxKey]);
+        if (!advisor.revenueRange) {
+          // Initialize to avoid TS undefined complaints and ensure persistence
+          (advisor as any).revenueRange = {};
+        }
+        const rr: any = advisor.revenueRange as any;
+        if (minKey in updateProfileDto) rr.min = Number(updateProfileDto[minKey]);
+        if (maxKey in updateProfileDto) rr.max = Number(updateProfileDto[maxKey]);
       }
     }
 
