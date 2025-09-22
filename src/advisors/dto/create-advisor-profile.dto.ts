@@ -75,6 +75,7 @@ export class CreateAdvisorProfileDto {
   })
   description: string;
 
+  @IsOptional()
   @IsString()
   @ApiProperty({ description: 'Licensing information' })
   licensing: string;

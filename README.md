@@ -66,7 +66,7 @@ FRONTEND_URL=frontend link of vercel
 ### Advisor Schema Features
 - Linked to User authentication system
 - Company details (name, industries, geographies)
-- Experience and licensing information
+- Experience
 - Testimonials support (max 5)
 - Revenue range preferences
 - Active status and lead preferences
@@ -103,7 +103,7 @@ FRONTEND_URL=frontend link of vercel
 - **Sorting Options**: Sort by years of experience, company name, or newest first
 
 ### Matching Features
-- Real-time advisor card display with logos, testimonials, licensing
+- Real-time advisor card display with logos, testimonials
 - Match statistics and analytics
 - Optimized MongoDB queries with proper indexing
 - Comprehensive error handling and validation

@@ -18,6 +18,8 @@ export class MatchingService {
   async findMatches(
     sellerId: string,
     sortBy?: string,
+    page?: number,
+    limit?: number,
   ): Promise<AdvisorCardDto[]> {
     const seller = await this.sellerModel.findOne({ userId: sellerId });
     if (!seller) {
@@ -44,7 +46,7 @@ export class MatchingService {
     else if (sortBy === 'company') sortCriteria = { companyName: 1 };
     else sortCriteria = { createdAt: -1 };
 
-    const matches = await this.advisorModel
+    let query = this.advisorModel
       .find({
         // Advisor must be active and accepting leads
         isActive: true,
@@ -71,6 +73,15 @@ export class MatchingService {
       .populate('userId', 'name email')
       .sort(sortCriteria);
 
+    // Apply pagination only if valid limit is provided to avoid breaking stats consumers
+    if (limit && limit > 0) {
+      const currentPage = page && page > 0 ? page : 1;
+      const skip = (currentPage - 1) * limit;
+      query = query.skip(skip).limit(limit);
+    }
+
+    const matches = await query;
+
     return matches.map((advisor) => ({
       id: advisor._id.toString(),
       companyName: advisor.companyName,
@@ -86,7 +97,6 @@ export class MatchingService {
         : advisor.geographies,
       yearsExperience: advisor.yearsExperience,
       numberOfTransactions: advisor.numberOfTransactions,
-      licensing: advisor.licensing,
       revenueRange: advisor.revenueRange,
       advisorName: (advisor.userId as any).name,
       advisorEmail: (advisor.userId as any).email,

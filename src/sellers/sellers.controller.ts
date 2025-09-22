@@ -92,12 +92,26 @@ export class SellersController {
     description: 'Sort criteria: years, company, or default (newest)',
     enum: ['years', 'company'],
   })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number for pagination (1-based)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page for pagination',
+  })
   async getMatches(
     @Request() req,
     @Query('sortBy') sortBy?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ): Promise<AdvisorCardDto[]> {
     // Finds and returns matched advisors based on industry, geography, revenue, and active status
-    return this.matchingService.findMatches(req.user._id, sortBy);
+    const pageNum = page ? Math.max(parseInt(page, 10) || 1, 1) : undefined;
+    const limitNum = limit ? Math.max(parseInt(limit, 10) || 0, 0) : undefined;
+    return this.matchingService.findMatches(req.user._id, sortBy, pageNum, limitNum);
   }
 
   @Get('matches/stats')

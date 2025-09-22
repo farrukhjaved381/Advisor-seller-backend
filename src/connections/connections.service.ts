@@ -183,7 +183,6 @@ export class ConnectionsService {
         industries: advisor.industries.join(', '),
         geographies: advisor.geographies.join(', '),
         yearsExperience: advisor.yearsExperience,
-        licensing: advisor.licensing || 'Not specified',
       };
     });
 
@@ -197,7 +196,6 @@ export class ConnectionsService {
         <p style="margin: 5px 0;"><strong>Industries:</strong> ${advisor.industries}</p>
         <p style="margin: 5px 0;"><strong>Geographies:</strong> ${advisor.geographies}</p>
         <p style="margin: 5px 0;"><strong>Experience:</strong> ${advisor.yearsExperience} years</p>
-        ${advisor.licensing !== 'Not specified' ? `<p style="margin: 5px 0;"><strong>Licensing:</strong> ${advisor.licensing}</p>` : ''}
       </div>`,
       )
       .join('');

@@ -55,7 +55,7 @@ export class Advisor {
   })
   testimonials: { clientName: string; testimonial: string; pdfUrl?: string }[];
 
-  @Prop()
+  @Prop({ required: false })
   @ApiProperty({ description: 'Licensing info' })
   licensing?: string;
 

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional } from 'class-validator';
 
 export class AdvisorCardDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
@@ -28,6 +29,7 @@ export class AdvisorCardDto {
   @ApiProperty({ example: 15 })
   yearsExperience: number;
 
+  @IsOptional()
   @ApiProperty({ example: 'Licensed CPA, MBA Finance' })
   licensing?: string;
 

@@ -147,7 +147,6 @@ describe('Seller-Advisor Platform E2E', () => {
             industries: ['Technology', 'Finance'],
             geographies: ['North America', 'Europe'],
             yearsExperience: 15,
-            licensing: 'CPA, Series 7',
             revenueRange: { min: 100000, max: 10000000 },
           })
           .expect(201);
