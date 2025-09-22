@@ -210,11 +210,38 @@ export class AdvisorsService {
       throw new NotFoundException('Advisor profile not found');
     }
 
-    // ✅ Step 1: Update normal fields
+    // ✅ Step 1: Update normal fields with coercion for arrays/objects
     if (updateProfileDto) {
-      Object.keys(updateProfileDto).forEach((key) => {
-        advisor[key] = updateProfileDto[key];
-      });
+      const coerce = (val: any) => {
+        if (typeof val === 'string') {
+          const s = val.trim();
+          if ((s.startsWith('[') && s.endsWith(']')) || (s.startsWith('{') && s.endsWith('}'))) {
+            try { return JSON.parse(s); } catch {}
+          }
+        }
+        return val;
+      };
+      const keys = Object.keys(updateProfileDto);
+      for (const key of keys) {
+        let value: any = updateProfileDto[key];
+        value = coerce(value);
+        if ((key === 'industries' || key === 'geographies') && !Array.isArray(value)) {
+          if (typeof value === 'string') {
+            value = value.split(',').map((x) => x.trim()).filter(Boolean);
+          } else {
+            value = [];
+          }
+        }
+        advisor[key] = value;
+      }
+      // Handle bracketed range fields if they came as separate keys
+      const minKey = 'revenueRange[min]';
+      const maxKey = 'revenueRange[max]';
+      if (minKey in updateProfileDto || maxKey in updateProfileDto) {
+        advisor.revenueRange = advisor.revenueRange || ({} as any);
+        if (minKey in updateProfileDto) advisor.revenueRange.min = Number(updateProfileDto[minKey]);
+        if (maxKey in updateProfileDto) advisor.revenueRange.max = Number(updateProfileDto[maxKey]);
+      }
     }
 
     // ✅ Step 2: Handle Logo Upload (if provided)
