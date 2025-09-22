@@ -62,27 +62,27 @@ async function createApp(): Promise<INestApplication> {
 
   nestApp.use(cookieParser());
 
-  const corsOrigins =
-    process.env.NODE_ENV === 'production'
-      ? [
-          process.env.FRONTEND_URL,
-          'http://localhost:5174',
-          'https://frontend-five-pied-17.vercel.app',
-          'https://cimamplify-ui.vercel.app',
-        ]
-      : true;
+  const whitelist = [
+    process.env.FRONTEND_URL,
+    'http://localhost:5174',
+    'http://127.0.0.1:5174',
+    'https://frontend-five-pied-17.vercel.app',
+    'https://cimamplify-ui.vercel.app',
+  ].filter(Boolean);
 
   nestApp.enableCors({
-    origin: corsOrigins,
+    origin: (origin, callback) => {
+      // Allow server-to-server or tools with no origin
+      if (!origin) return callback(null, true);
+      if (whitelist.includes(origin)) return callback(null, true);
+      // Support Vercel preview URLs if needed
+      if (/^https:\/\/[a-z0-9-]+-vercel\.app$/.test(origin)) return callback(null, true);
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'Cookie',
-      'X-CSRF-Token',
-      'x-csrf-token',
-    ],
+    allowedHeaders: '*',
+    exposedHeaders: ['set-cookie'],
   });
 
   nestApp.useGlobalFilters(
