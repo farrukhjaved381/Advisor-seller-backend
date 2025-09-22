@@ -225,8 +225,12 @@ export class AdvisorsService {
       for (const key of keys) {
         let value: any = updateProfileDto[key];
         value = coerce(value);
-        if ((key === 'industries' || key === 'geographies') && !Array.isArray(value)) {
-          if (typeof value === 'string') {
+        if (key === 'industries' || key === 'geographies') {
+          if (Array.isArray(value)) {
+            if (value.length === 1 && typeof value[0] === 'string' && value[0].includes(',')) {
+              value = value[0].split(',').map((x) => x.trim()).filter(Boolean);
+            }
+          } else if (typeof value === 'string') {
             value = value.split(',').map((x) => x.trim()).filter(Boolean);
           } else {
             value = [];

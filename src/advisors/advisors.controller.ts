@@ -85,15 +85,25 @@ export class AdvisorsController {
       type: 'object',
       properties: {
         name: { type: 'string' },
-        bio: { type: 'string' },
-        industries: { type: 'string', example: 'Finance,Healthcare' },
-        logo: { type: 'string', format: 'binary' },
-        testimonials: {
-          type: 'array',
-          items: { type: 'string', format: 'binary' },
+        companyName: { type: 'string' },
+        phone: { type: 'string' },
+        website: { type: 'string' },
+        industries: { type: 'array', items: { type: 'string' } },
+        geographies: { type: 'array', items: { type: 'string' } },
+        yearsExperience: { type: 'number' },
+        numberOfTransactions: { type: 'number' },
+        currency: { type: 'string' },
+        description: { type: 'string' },
+        revenueRange: {
+          type: 'object',
+          properties: {
+            min: { type: 'number' },
+            max: { type: 'number' },
+          },
         },
-        clientName: { type: 'string', example: 'John Doe' },
-        testimonial: { type: 'string', example: 'Great advisor service' },
+        logo: { type: 'string', format: 'binary' },
+        introVideo: { type: 'string', format: 'binary' },
+        testimonials: { type: 'array', items: { type: 'string', format: 'binary' } },
       },
     },
   })
