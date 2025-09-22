@@ -185,4 +185,15 @@ export class PaymentController {
     );
     return { success: true, subscription, message: 'Subscription will cancel at period end' };
   }
+
+  @Post('resume')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADVISOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Resume subscription (undo cancel at period end)' })
+  async resume(@Request() req) {
+    console.log('[PaymentController] POST /payment/resume for user', req.user?._id);
+    const { subscription } = await this.paymentService.resume(req.user._id);
+    return { success: true, subscription };
+  }
 }

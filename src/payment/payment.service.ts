@@ -349,4 +349,9 @@ export class PaymentService {
     const user = await this.usersService.cancelSubscriptionAtPeriodEnd(userId);
     return { subscription: user?.subscription };
   }
+
+  async resume(userId: string) {
+    const user = await this.usersService.resumeSubscription(userId);
+    return { subscription: user?.subscription };
+  }
 }

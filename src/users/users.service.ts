@@ -116,10 +116,17 @@ export class UsersService {
     userId: string,
     stripeCustomerId?: string,
   ): Promise<User | null> {
+    const existing = await this.userModel.findById(userId);
     const now = new Date();
-    // Default: 1 year membership window upon payment
-    const periodStart = now;
-    const periodEnd = new Date(now.getTime());
+    let startFrom = now;
+    const existingEnd = existing?.subscription?.currentPeriodEnd
+      ? new Date(existing.subscription.currentPeriodEnd)
+      : null;
+    if (existingEnd && existingEnd > now) {
+      startFrom = existingEnd; // extend from current end
+    }
+    const periodStart = startFrom;
+    const periodEnd = new Date(startFrom.getTime());
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
 
     const updateData: any = {
@@ -171,6 +178,24 @@ export class UsersService {
       { subscription },
       { new: true },
     );
+  }
+
+  async resumeSubscription(userId: string): Promise<User | null> {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    const subscription = user.subscription || ({} as any);
+    const now = new Date();
+    if (subscription.currentPeriodEnd && new Date(subscription.currentPeriodEnd) > now) {
+      subscription.cancelAtPeriodEnd = false;
+      subscription.status = 'active';
+      delete subscription.canceledAt;
+      return this.userModel.findByIdAndUpdate(
+        userId,
+        { subscription },
+        { new: true },
+      );
+    }
+    return user; // no-op if already expired
   }
 
   async getPaymentHistory(userId: string): Promise<{
