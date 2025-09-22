@@ -81,8 +81,21 @@ async function createApp(): Promise<INestApplication> {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: '*',
+    // Be explicit to satisfy strict preflight checks in some environments
+    allowedHeaders: [
+      'Content-Type',
+      'content-type',
+      'Authorization',
+      'authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'x-csrf-token',
+      'X-CSRF-Token',
+      'Cookie',
+    ],
     exposedHeaders: ['set-cookie'],
+    optionsSuccessStatus: 204,
   });
 
   nestApp.useGlobalFilters(
