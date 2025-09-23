@@ -311,10 +311,12 @@ export class AdvisorsService {
     };
     leads: any[];
   }> {
+    console.log('[AdvisorsService] getLeadsForAdvisor start', { advisorUserId: advisorId, at: new Date().toISOString() });
     const advisorProfile = await this.advisorModel
       .findOne({ userId: advisorId })
       .select('_id');
     if (!advisorProfile) {
+      console.warn('[AdvisorsService] No advisor profile found for user', advisorId);
       throw new NotFoundException('Advisor profile not found');
     }
 
@@ -324,6 +326,7 @@ export class AdvisorsService {
       .sort({ createdAt: -1 })
       .lean() // lean for faster mapping
       .exec();
+    console.log('[AdvisorsService] Found leads', { count: leads.length, advisorProfileId: advisorProfile._id.toString() });
 
     // Map seller userIds to seller profiles
     const sellerUserIds = Array.from(
@@ -333,6 +336,7 @@ export class AdvisorsService {
           .filter((v): v is string => Boolean(v)),
       ),
     );
+    console.log('[AdvisorsService] Unique seller userIds from leads', sellerUserIds);
 
     const sellers = await this.sellerModel
       .find({ userId: { $in: sellerUserIds } })
@@ -342,6 +346,10 @@ export class AdvisorsService {
       .lean();
     const sellerMap = new Map<string, any>();
     sellers.forEach((s) => sellerMap.set(String(s.userId), s));
+    const missing = sellerUserIds.filter((id) => !sellerMap.has(id));
+    if (missing.length > 0) {
+      console.warn('[AdvisorsService] Missing seller profiles for userIds', missing);
+    }
 
     const leadsWithSeller = leads.map((l) => {
       const sellerUserId = l.sellerId ? String(l.sellerId) : null;
@@ -354,6 +362,11 @@ export class AdvisorsService {
         seller: sellerProfile,
         sellerUserId,
       };
+    });
+    console.log('[AdvisorsService] Mapped leads with seller', {
+      total: leadsWithSeller.length,
+      resolved: leadsWithSeller.filter((x) => !!x.seller).length,
+      unresolved: leadsWithSeller.filter((x) => !x.seller).length,
     });
 
     const now = new Date();
@@ -406,7 +419,7 @@ export class AdvisorsService {
       .slice(-6)
       .map(({ label, count }) => ({ month: label, count }));
 
-    return {
+    const result = {
       stats: {
         totalLeads: leadsWithSeller.length,
         leadsThisMonth,
@@ -417,5 +430,7 @@ export class AdvisorsService {
       },
       leads: leadsWithSeller,
     };
+    console.log('[AdvisorsService] getLeadsForAdvisor completed', { advisorUserId: advisorId, totalLeads: result.stats.totalLeads });
+    return result;
   }
 }

@@ -149,6 +149,9 @@ export class AdvisorsController {
   @ApiResponse({ status: 404, description: 'No leads found' })
   @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
   async getLeads(@Request() req) {
+    try {
+      console.log('[AdvisorsController] /advisors/leads requested by user', req?.user?._id?.toString(), 'at', new Date().toISOString());
+    } catch {}
     return this.advisorsService.getLeadsForAdvisor(req.user._id);
   }
 }

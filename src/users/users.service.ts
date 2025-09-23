@@ -119,12 +119,15 @@ export class UsersService {
     const existing = await this.userModel.findById(userId);
     const now = new Date();
     const alreadyVerified = !!existing?.isPaymentVerified;
+    const existingStart = existing?.subscription?.currentPeriodStart
+      ? new Date(existing.subscription.currentPeriodStart)
+      : null;
     const existingEnd = existing?.subscription?.currentPeriodEnd
       ? new Date(existing.subscription.currentPeriodEnd)
       : null;
 
-    // First-time payment: always start from now for a clear, correct period
-    // Renewal: extend from existing end if still active; otherwise start from now
+    // First-time payment: start from now
+    // Renewal: if existing end in future, extend from end; else start from now
     const startFrom = !alreadyVerified
       ? now
       : existingEnd && existingEnd > now
@@ -134,6 +137,17 @@ export class UsersService {
     const periodStart = startFrom;
     const periodEnd = new Date(startFrom.getTime());
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+
+    console.log('[UsersService] markPaymentVerified', {
+      userId: userId?.toString?.() || userId,
+      alreadyVerified,
+      existingStart,
+      existingEnd,
+      now,
+      chosenStartFrom: startFrom,
+      computedPeriodStart: periodStart,
+      computedPeriodEnd: periodEnd,
+    });
 
     const updateData: any = {
       isPaymentVerified: true,
@@ -147,7 +161,16 @@ export class UsersService {
     if (stripeCustomerId) {
       updateData.stripeCustomerId = stripeCustomerId;
     }
-    return this.userModel.findByIdAndUpdate(userId, updateData, { new: true });
+    const updated = await this.userModel.findByIdAndUpdate(userId, updateData, { new: true });
+    try {
+      console.log('[UsersService] markPaymentVerified updated subscription', {
+        userId: userId?.toString?.() || userId,
+        updatedStart: updated?.subscription?.currentPeriodStart,
+        updatedEnd: updated?.subscription?.currentPeriodEnd,
+        status: updated?.subscription?.status,
+      });
+    } catch {}
+    return updated;
   }
 
   async appendPaymentHistory(
