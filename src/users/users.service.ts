@@ -118,13 +118,19 @@ export class UsersService {
   ): Promise<User | null> {
     const existing = await this.userModel.findById(userId);
     const now = new Date();
-    let startFrom = now;
+    const alreadyVerified = !!existing?.isPaymentVerified;
     const existingEnd = existing?.subscription?.currentPeriodEnd
       ? new Date(existing.subscription.currentPeriodEnd)
       : null;
-    if (existingEnd && existingEnd > now) {
-      startFrom = existingEnd; // extend from current end
-    }
+
+    // First-time payment: always start from now for a clear, correct period
+    // Renewal: extend from existing end if still active; otherwise start from now
+    const startFrom = !alreadyVerified
+      ? now
+      : existingEnd && existingEnd > now
+        ? existingEnd
+        : now;
+
     const periodStart = startFrom;
     const periodEnd = new Date(startFrom.getTime());
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
