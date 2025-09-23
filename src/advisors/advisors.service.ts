@@ -343,11 +343,18 @@ export class AdvisorsService {
     const sellerMap = new Map<string, any>();
     sellers.forEach((s) => sellerMap.set(String(s.userId), s));
 
-    const leadsWithSeller = leads.map((l) => ({
-      ...l,
-      // Replace sellerId field content with Seller profile (to match existing frontend expectations)
-      sellerId: l.sellerId ? sellerMap.get(String(l.sellerId)) || null : null,
-    }));
+    const leadsWithSeller = leads.map((l) => {
+      const sellerUserId = l.sellerId ? String(l.sellerId) : null;
+      const sellerProfile = sellerUserId ? sellerMap.get(sellerUserId) || null : null;
+      return {
+        ...l,
+        // Preserve original seller user id
+        sellerId: l.sellerId,
+        // Add resolved seller profile under a dedicated key
+        seller: sellerProfile,
+        sellerUserId,
+      };
+    });
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);

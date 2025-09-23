@@ -9,6 +9,7 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  Header,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -146,6 +147,7 @@ export class AdvisorsController {
   @ApiOperation({ summary: 'Get leads for the current advisor' })
   @ApiResponse({ status: 200, description: 'Leads retrieved successfully' })
   @ApiResponse({ status: 404, description: 'No leads found' })
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
   async getLeads(@Request() req) {
     return this.advisorsService.getLeadsForAdvisor(req.user._id);
   }
