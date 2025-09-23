@@ -95,7 +95,7 @@ export class PaymentService {
       }
 
       // Mark user as payment verified and start/renew subscription period
-      const user = await this.usersService.markPaymentVerified(
+      let user = await this.usersService.markPaymentVerified(
         userId,
         paymentIntent.customer as string,
       );
@@ -107,6 +107,30 @@ export class PaymentService {
         'PaymentIntent:',
         paymentIntentId,
       );
+
+      // Ensure subscription period is valid (guard against anomalous future-only windows)
+      try {
+        const now = new Date();
+        const s = user?.subscription || ({} as any);
+        const start = s.currentPeriodStart ? new Date(s.currentPeriodStart) : null;
+        const end = s.currentPeriodEnd ? new Date(s.currentPeriodEnd) : null;
+        const hasValidCurrentCycle = !!(start && end && start <= now && end > now);
+        if (!hasValidCurrentCycle) {
+          const normStart = now;
+          const normEnd = new Date(now.getTime());
+          normEnd.setFullYear(normEnd.getFullYear() + 1);
+          console.warn('[PaymentService] Normalizing subscription period post-payment', {
+            userId: userId?.toString?.() || userId,
+            prevStart: start,
+            prevEnd: end,
+            normStart,
+            normEnd,
+          });
+          user = await this.usersService.normalizeSubscription(userId, normStart, normEnd);
+        }
+      } catch (e) {
+        console.warn('[PaymentService] normalize guard failed (non-fatal):', e?.message || e);
+      }
 
       // Append payment history
       // Persist to separate payment history collection

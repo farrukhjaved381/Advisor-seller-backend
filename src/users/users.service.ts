@@ -238,6 +238,31 @@ export class UsersService {
     };
   }
 
+  // Normalize/override subscription period explicitly
+  async normalizeSubscription(
+    userId: string,
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<User | null> {
+    console.log('[UsersService] normalizeSubscription', {
+      userId: userId?.toString?.() || userId,
+      periodStart,
+      periodEnd,
+    });
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        subscription: {
+          status: 'active',
+          currentPeriodStart: periodStart,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: false,
+        },
+      },
+      { new: true },
+    );
+  }
+
   async updateProfileComplete(
     userId: string,
     isComplete: boolean,
