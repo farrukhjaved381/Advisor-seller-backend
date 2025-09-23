@@ -126,13 +126,12 @@ export class UsersService {
       ? new Date(existing.subscription.currentPeriodEnd)
       : null;
 
-    // First-time payment: start from now
-    // Renewal: if existing end in future, extend from end; else start from now
-    const startFrom = !alreadyVerified
-      ? now
-      : existingEnd && existingEnd > now
-        ? existingEnd
-        : now;
+    // Determine if there is a valid current cycle (start <= now < end)
+    const hasValidCurrentCycle = !!(existingStart && existingEnd && existingStart <= now && existingEnd > now);
+    // New rule:
+    // - If there is a valid current cycle, renew from existingEnd.
+    // - Otherwise (no cycle, expired, or anomalous future-only window), start from now.
+    const startFrom = hasValidCurrentCycle ? existingEnd! : now;
 
     const periodStart = startFrom;
     const periodEnd = new Date(startFrom.getTime());
