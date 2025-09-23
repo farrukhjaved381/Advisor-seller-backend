@@ -7,6 +7,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Advisor } from './schemas/advisor.schema';
+import { Seller, SellerDocument } from '../sellers/schemas/seller.schema';
 import { CreateAdvisorProfileDto } from './dto/create-advisor-profile.dto';
 import { UpdateAdvisorProfileDto } from './dto/update-advisor-profile.dto';
 import { UsersService } from '../users/users.service';
@@ -22,6 +23,8 @@ export class AdvisorsService {
     @InjectModel(Advisor.name) private advisorModel: Model<Advisor>,
     @InjectModel(Connection.name)
     private connectionModel: Model<ConnectionDocument>,
+    @InjectModel(Seller.name)
+    private sellerModel: Model<SellerDocument>,
     private usersService: UsersService,
   ) {
     this.initializeIndexes();
@@ -306,7 +309,7 @@ export class AdvisorsService {
       leadsByType: Record<string, number>;
       monthlyTrend: { month: string; count: number }[];
     };
-    leads: ConnectionDocument[];
+    leads: any[];
   }> {
     const advisorProfile = await this.advisorModel
       .findOne({ userId: advisorId })
@@ -315,15 +318,36 @@ export class AdvisorsService {
       throw new NotFoundException('Advisor profile not found');
     }
 
+    // Pull raw leads (sellerId references User, not Seller)
     const leads = await this.connectionModel
       .find({ advisorId: advisorProfile._id })
       .sort({ createdAt: -1 })
-      .populate({
-        path: 'sellerId',
-        select:
-          'companyName industry geography annualRevenue description phone website',
-      })
+      .lean() // lean for faster mapping
       .exec();
+
+    // Map seller userIds to seller profiles
+    const sellerUserIds = Array.from(
+      new Set(
+        (leads || [])
+          .map((l) => (l.sellerId ? String(l.sellerId) : null))
+          .filter((v): v is string => Boolean(v)),
+      ),
+    );
+
+    const sellers = await this.sellerModel
+      .find({ userId: { $in: sellerUserIds } })
+      .select(
+        'userId companyName industry geography annualRevenue description phone website currency',
+      )
+      .lean();
+    const sellerMap = new Map<string, any>();
+    sellers.forEach((s) => sellerMap.set(String(s.userId), s));
+
+    const leadsWithSeller = leads.map((l) => ({
+      ...l,
+      // Replace sellerId field content with Seller profile (to match existing frontend expectations)
+      sellerId: l.sellerId ? sellerMap.get(String(l.sellerId)) || null : null,
+    }));
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -331,25 +355,25 @@ export class AdvisorsService {
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
 
-    const leadsThisMonth = leads.filter(
+    const leadsThisMonth = leadsWithSeller.filter(
       (lead) => lead.createdAt >= startOfMonth,
     ).length;
-    const leadsLastMonth = leads.filter(
+    const leadsLastMonth = leadsWithSeller.filter(
       (lead) =>
         lead.createdAt >= startOfLastMonth && lead.createdAt < startOfMonth,
     ).length;
-    const leadsThisWeek = leads.filter(
+    const leadsThisWeek = leadsWithSeller.filter(
       (lead) => lead.createdAt >= startOfWeek,
     ).length;
 
-    const leadsByType = leads.reduce<Record<string, number>>((acc, lead) => {
+    const leadsByType = leadsWithSeller.reduce<Record<string, number>>((acc, lead) => {
       const type = lead.type || 'unknown';
       acc[type] = (acc[type] || 0) + 1;
       return acc;
     }, {});
 
     const monthlyTrendMap = new Map<string, number>();
-    leads.forEach((lead) => {
+    leadsWithSeller.forEach((lead) => {
       const createdAt =
         lead.createdAt instanceof Date
           ? lead.createdAt
@@ -377,14 +401,14 @@ export class AdvisorsService {
 
     return {
       stats: {
-        totalLeads: leads.length,
+        totalLeads: leadsWithSeller.length,
         leadsThisMonth,
         leadsLastMonth,
         leadsThisWeek,
         leadsByType,
         monthlyTrend,
       },
-      leads,
+      leads: leadsWithSeller,
     };
   }
 }
