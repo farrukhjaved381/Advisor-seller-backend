@@ -121,6 +121,9 @@ export class ConnectionsService {
           sellerId: seller.userId._id,
           advisorId: advisor._id,
           type: ConnectionType.INTRODUCTION,
+          sellerCompanyName: seller.companyName,
+          sellerIndustry: seller.industry,
+          sellerGeography: seller.geography,
         });
         emailsSent++;
       } catch (error) {
@@ -249,6 +252,9 @@ export class ConnectionsService {
           sellerId: seller.userId._id,
           advisorId: advisor._id,
           type: ConnectionType.DIRECT_LIST,
+          sellerCompanyName: seller.companyName,
+          sellerIndustry: seller.industry,
+          sellerGeography: seller.geography,
         });
         notificationsSent++;
       } catch (error) {

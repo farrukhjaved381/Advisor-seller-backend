@@ -22,6 +22,16 @@ export class Connection {
   @Prop({ type: String, enum: ConnectionType, required: true })
   type: ConnectionType;
 
+  // Denormalized seller snapshot at time of connection creation
+  @Prop({ type: String })
+  sellerCompanyName?: string;
+
+  @Prop({ type: String })
+  sellerIndustry?: string;
+
+  @Prop({ type: String })
+  sellerGeography?: string;
+
   @Prop({ default: Date.now })
   createdAt: Date;
 }

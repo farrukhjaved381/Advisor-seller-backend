@@ -354,12 +354,18 @@ export class AdvisorsService {
     const leadsWithSeller = leads.map((l) => {
       const sellerUserId = l.sellerId ? String(l.sellerId) : null;
       const sellerProfile = sellerUserId ? sellerMap.get(sellerUserId) || null : null;
+      // Fallback to snapshot if live seller profile is missing
+      const snapshot = (!sellerProfile && (l as any).sellerCompanyName) ? {
+        companyName: (l as any).sellerCompanyName,
+        industry: (l as any).sellerIndustry,
+        geography: (l as any).sellerGeography,
+      } : null;
       return {
         ...l,
         // Preserve original seller user id
         sellerId: l.sellerId,
         // Add resolved seller profile under a dedicated key
-        seller: sellerProfile,
+        seller: sellerProfile || snapshot,
         sellerUserId,
       };
     });
