@@ -290,7 +290,6 @@ export class ConnectionsService {
       try {
         await this.emailService.sendEmail({
           to: advisorUser.email,
-          cc: sellerUser.email,
           subject: `New Client Introduction - ${seller.companyName}`,
           html: emailHtml,
         });
