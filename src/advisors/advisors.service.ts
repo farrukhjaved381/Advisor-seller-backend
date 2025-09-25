@@ -15,6 +15,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import {
   Connection,
   ConnectionDocument,
+  ConnectionType,
 } from '../connections/schemas/connection.schema';
 
 @Injectable()
@@ -321,12 +322,23 @@ export class AdvisorsService {
     }
 
     // Pull raw leads (sellerId references User, not Seller)
-    const leads = await this.connectionModel
+    const allLeads = await this.connectionModel
       .find({ advisorId: advisorProfile._id })
       .sort({ createdAt: -1 })
       .lean() // lean for faster mapping
       .exec();
-    console.log('[AdvisorsService] Found leads', { count: leads.length, advisorProfileId: advisorProfile._id.toString() });
+    console.log('[AdvisorsService] Found leads', { count: allLeads.length, advisorProfileId: advisorProfile._id.toString() });
+
+    const leads = (allLeads || []).filter(
+      (lead) =>
+        (lead.type || ConnectionType.INTRODUCTION) === ConnectionType.INTRODUCTION,
+    );
+    if (leads.length !== allLeads.length) {
+      console.log('[AdvisorsService] Filtered leads to introduction only', {
+        total: allLeads.length,
+        introductionCount: leads.length,
+      });
+    }
 
     // Map seller userIds to seller profiles
     const sellerUserIds = Array.from(
@@ -341,7 +353,7 @@ export class AdvisorsService {
     const sellers = await this.sellerModel
       .find({ userId: { $in: sellerUserIds } })
       .select(
-        'userId companyName industry geography annualRevenue description phone website currency',
+        'userId companyName industry geography annualRevenue description phone website currency contactEmail contactName',
       )
       .lean();
     const sellerMap = new Map<string, any>();
@@ -355,11 +367,13 @@ export class AdvisorsService {
       const sellerUserId = l.sellerId ? String(l.sellerId) : null;
       const sellerProfile = sellerUserId ? sellerMap.get(sellerUserId) || null : null;
       // Fallback to snapshot if live seller profile is missing
-      const snapshot = (!sellerProfile && (l as any).sellerCompanyName) ? {
-        companyName: (l as any).sellerCompanyName,
-        industry: (l as any).sellerIndustry,
-        geography: (l as any).sellerGeography,
-      } : null;
+      const snapshot = (!sellerProfile && (l as any).sellerCompanyName)
+        ? {
+            companyName: (l as any).sellerCompanyName,
+            industry: (l as any).sellerIndustry,
+            geography: (l as any).sellerGeography,
+          }
+        : null;
       return {
         ...l,
         // Preserve original seller user id
