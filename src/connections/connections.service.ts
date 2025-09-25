@@ -232,6 +232,22 @@ export class ConnectionsService {
       const sellerEmailText = escapeHtml(sellerUser.email);
       const dashboardHref = escapeAttr(dashboardUrl);
 
+      const sanitizeSnapshotString = (value?: string | null) =>
+        value && value.trim().length > 0 ? value.trim() : undefined;
+      const sellerAnnualRevenueValue =
+        typeof seller.annualRevenue === 'number' &&
+        Number.isFinite(seller.annualRevenue)
+          ? seller.annualRevenue
+          : undefined;
+      const sellerCurrencyValue = sanitizeSnapshotString(seller.currency) || 'USD';
+      const sellerContactEmailValue =
+        sanitizeSnapshotString(seller.contactEmail) ||
+        sanitizeSnapshotString(sellerUser.email);
+      const sellerContactNameValue =
+        sanitizeSnapshotString(seller.contactName) || sellerUser.name;
+      const sellerPhoneValue = sanitizeSnapshotString(seller.phone);
+      const sellerWebsiteValue = sanitizeSnapshotString(seller.website);
+
       let emailHtml = template;
       emailHtml = emailHtml.replace(/{{advisorName}}/g, advisorDisplayNameText);
       emailHtml = emailHtml.replace(
@@ -302,6 +318,12 @@ export class ConnectionsService {
           sellerCompanyName: seller.companyName,
           sellerIndustry: seller.industry,
           sellerGeography: seller.geography,
+          sellerAnnualRevenue: sellerAnnualRevenueValue,
+          sellerCurrency: sellerCurrencyValue,
+          sellerContactEmail: sellerContactEmailValue,
+          sellerContactName: sellerContactNameValue,
+          sellerPhone: sellerPhoneValue,
+          sellerWebsite: sellerWebsiteValue,
         });
         emailsSent++;
       } catch (error) {

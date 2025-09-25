@@ -366,28 +366,65 @@ export class AdvisorsService {
     const leadsWithSeller = leads.map((l) => {
       const sellerUserId = l.sellerId ? String(l.sellerId) : null;
       const sellerProfile = sellerUserId ? sellerMap.get(sellerUserId) || null : null;
-      // Fallback to snapshot if live seller profile is missing
-      const snapshot = (!sellerProfile && (l as any).sellerCompanyName)
+
+      const snapshotSource = l as any;
+      const snapshot: Record<string, any> = {};
+      if (snapshotSource.sellerCompanyName) snapshot.companyName = snapshotSource.sellerCompanyName;
+      if (snapshotSource.sellerIndustry) snapshot.industry = snapshotSource.sellerIndustry;
+      if (snapshotSource.sellerGeography) snapshot.geography = snapshotSource.sellerGeography;
+      if (snapshotSource.sellerAnnualRevenue !== undefined)
+        snapshot.annualRevenue = snapshotSource.sellerAnnualRevenue;
+      if (snapshotSource.sellerCurrency) snapshot.currency = snapshotSource.sellerCurrency;
+      if (snapshotSource.sellerContactEmail) snapshot.contactEmail = snapshotSource.sellerContactEmail;
+      if (snapshotSource.sellerContactName) snapshot.contactName = snapshotSource.sellerContactName;
+      if (snapshotSource.sellerPhone) snapshot.phone = snapshotSource.sellerPhone;
+      if (snapshotSource.sellerWebsite) snapshot.website = snapshotSource.sellerWebsite;
+
+      const mergedSeller = sellerProfile
         ? {
-            companyName: (l as any).sellerCompanyName,
-            industry: (l as any).sellerIndustry,
-            geography: (l as any).sellerGeography,
+            ...(Object.keys(snapshot).length > 0 ? snapshot : {}),
+            ...sellerProfile,
           }
+        : Object.keys(snapshot).length > 0
+        ? snapshot
         : null;
+
       return {
         ...l,
-        // Preserve original seller user id
         sellerId: l.sellerId,
-        // Add resolved seller profile under a dedicated key
-        seller: sellerProfile || snapshot,
+        seller: mergedSeller,
         sellerUserId,
       };
     });
     console.log('[AdvisorsService] Mapped leads with seller', {
-      total: leadsWithSeller.length,
+      source: leads.length,
+      mapped: leadsWithSeller.length,
       resolved: leadsWithSeller.filter((x) => !!x.seller).length,
       unresolved: leadsWithSeller.filter((x) => !x.seller).length,
     });
+
+    const dedupedLeads: any[] = [];
+    const seenKeys = new Set<string>();
+    for (const lead of leadsWithSeller) {
+      const baseKey = lead.sellerUserId || (lead.sellerId ? String(lead.sellerId) : null);
+      const fallbackKey = lead.seller?.companyName
+        ? `${lead.seller.companyName}`
+        : lead._id?.toString?.();
+      const key = baseKey || fallbackKey;
+      if (key && seenKeys.has(key)) {
+        continue;
+      }
+      if (key) {
+        seenKeys.add(key);
+      }
+      dedupedLeads.push(lead);
+    }
+    console.log('[AdvisorsService] Deduplicated leads', {
+      before: leadsWithSeller.length,
+      after: dedupedLeads.length,
+    });
+
+    const leadsForStats = dedupedLeads;
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -395,25 +432,25 @@ export class AdvisorsService {
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
 
-    const leadsThisMonth = leadsWithSeller.filter(
+    const leadsThisMonth = leadsForStats.filter(
       (lead) => lead.createdAt >= startOfMonth,
     ).length;
-    const leadsLastMonth = leadsWithSeller.filter(
+    const leadsLastMonth = leadsForStats.filter(
       (lead) =>
         lead.createdAt >= startOfLastMonth && lead.createdAt < startOfMonth,
     ).length;
-    const leadsThisWeek = leadsWithSeller.filter(
+    const leadsThisWeek = leadsForStats.filter(
       (lead) => lead.createdAt >= startOfWeek,
     ).length;
 
-    const leadsByType = leadsWithSeller.reduce<Record<string, number>>((acc, lead) => {
+    const leadsByType = leadsForStats.reduce<Record<string, number>>((acc, lead) => {
       const type = lead.type || 'unknown';
       acc[type] = (acc[type] || 0) + 1;
       return acc;
     }, {});
 
     const monthlyTrendMap = new Map<string, number>();
-    leadsWithSeller.forEach((lead) => {
+    leadsForStats.forEach((lead) => {
       const createdAt =
         lead.createdAt instanceof Date
           ? lead.createdAt
@@ -441,14 +478,14 @@ export class AdvisorsService {
 
     const result = {
       stats: {
-        totalLeads: leadsWithSeller.length,
+        totalLeads: leadsForStats.length,
         leadsThisMonth,
         leadsLastMonth,
         leadsThisWeek,
         leadsByType,
         monthlyTrend,
       },
-      leads: leadsWithSeller,
+      leads: leadsForStats,
     };
     console.log('[AdvisorsService] getLeadsForAdvisor completed', { advisorUserId: advisorId, totalLeads: result.stats.totalLeads });
     return result;

@@ -32,6 +32,24 @@ export class Connection {
   @Prop({ type: String })
   sellerGeography?: string;
 
+  @Prop({ type: Number })
+  sellerAnnualRevenue?: number;
+
+  @Prop({ type: String })
+  sellerCurrency?: string;
+
+  @Prop({ type: String })
+  sellerContactEmail?: string;
+
+  @Prop({ type: String })
+  sellerContactName?: string;
+
+  @Prop({ type: String })
+  sellerPhone?: string;
+
+  @Prop({ type: String })
+  sellerWebsite?: string;
+
   @Prop({ default: Date.now })
   createdAt: Date;
 }
