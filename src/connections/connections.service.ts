@@ -316,7 +316,7 @@ export class ConnectionsService {
     };
   }
 
-  // Sends direct contact list to seller and notifies all matched advisors
+  // Sends direct contact list to seller without notifying advisors
   async sendDirectContactList(
     userId: string,
   ): Promise<{ message: string; advisorCount: number }> {
@@ -349,10 +349,6 @@ export class ConnectionsService {
     // Load templates
     const directListTemplate = fs.readFileSync(
       path.join(process.cwd(), 'templates', 'direct-list.hbs'),
-      'utf8',
-    );
-    const notificationTemplate = fs.readFileSync(
-      path.join(process.cwd(), 'templates', 'match-notification.hbs'),
       'utf8',
     );
 
@@ -584,45 +580,9 @@ export class ConnectionsService {
       console.error('Failed to send contact list to seller:', error);
     }
 
-    // Send notifications to all matched advisors
-    let notificationsSent = 0;
-    for (const advisor of advisors) {
-      const advisorUser = advisor.userId as any;
-
-      const notificationHtml = notificationTemplate
-        .replace(/{{advisorName}}/g, advisorUser.name)
-        .replace(/{{sellerCompany}}/g, seller.companyName)
-        .replace(/{{sellerIndustry}}/g, seller.industry)
-        .replace(/{{sellerGeography}}/g, seller.geography)
-        .replace(/{{sellerRevenue}}/g, seller.annualRevenue.toLocaleString());
-
-      try {
-        await this.emailService.sendEmail({
-          to: advisorUser.email,
-          subject: `A Seller Was Matched To You But Will Reach Out On Their Own`,
-          html: notificationHtml,
-        });
-
-        // Record the connection
-        await this.connectionModel.create({
-          sellerId: seller.userId._id,
-          advisorId: advisor._id,
-          type: ConnectionType.DIRECT_LIST,
-          sellerCompanyName: seller.companyName,
-          sellerIndustry: seller.industry,
-          sellerGeography: seller.geography,
-        });
-        notificationsSent++;
-      } catch (error) {
-        console.error(
-          `Failed to send notification to ${advisorUser.email}:`,
-          error,
-        );
-      }
-    }
 
     return {
-      message: `Contact list sent to seller, ${notificationsSent} advisors notified`,
+      message: 'Contact list sent to seller',
       advisorCount: matches.length,
     };
   }
