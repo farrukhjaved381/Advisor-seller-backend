@@ -1,40 +1,58 @@
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <h2>Your Matched Advisors Contact List</h2>
-  <p>Dear {{sellerName}},</p>
-  
-  <p>Based on your profile, we have found {{advisorCount}} matching advisors for your business needs:</p>
-  
-  <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-    {{#each advisors}}
-    <div style="border-bottom: 1px solid #dee2e6; padding: 15px 0;">
-      <h4 style="margin: 0 0 10px 0; color: #007bff;">{{companyName}}</h4>
-      <p style="margin: 5px 0;"><strong>Phone:</strong> {{phone}}</p>
-      <p style="margin: 5px 0;"><strong>Contact:</strong> {{email}}</p>
-      <p style="margin: 5px 0;"><strong>Website:</strong> <a href="{{website}}" target="_blank" style="color: #007bff;">{{website}}</a></p>
-      <p style="margin: 5px 0;"><strong>Industries:</strong> {{industries}}</p>
-      <p style="margin: 5px 0;"><strong>Geographies:</strong> {{geographies}}</p>
-      <p style="margin: 5px 0;"><strong>Experience:</strong> {{yearsExperience}} years</p>
-      <p style="margin: 5px 0;"><strong>No. of Transactions</strong>{{numberOfTransactions}}</p>
-      <p style="margin: 5px 0;"><strong>Minimum Revenue</strong>{{min}}</p>
-      <p style="margin: 5px 0;"><strong>Maximum Revenue</strong>{{max}}</p>
-      <p style="margin: 5px 0;"><strong>Company Description:</strong> {{description}}</p>
-      
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Your Matched Advisors</title>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937;">
+    <div style="padding: 32px 16px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 720px; margin: 0 auto; border-collapse: separate; border-spacing: 0;">
+        <tr>
+          <td style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 24px; overflow: hidden; box-shadow: 0 22px 60px rgba(15, 23, 42, 0.08);">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+              <tr>
+                <td style="background: linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%); padding: 32px 36px;">
+                  <p style="margin: 0; color: #6366f1; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;">Your Match Summary</p>
+                  <h1 style="margin: 10px 0 6px; font-size: 24px; line-height: 1.3; font-weight: 700; color: #111827;">{{sellerName}}, here are your top advisor matches</h1>
+                  <p style="margin: 0; font-size: 14px; color: #4b5563; line-height: 1.6;">
+                    You selected {{advisorCount}} advisor{{pluralLabel}} from your dashboard. Their contact details and key highlights are below so you can start conversations right away.
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 24px 32px 16px;">
+                  <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.7; color: #1f2937;">
+                    Tip: Reply directly to each advisor using the buttons in this email and keep notes in your dashboard to track progress.
+                  </p>
+
+                  <div style="display: block;">
+                    {{advisorList}}
+                  </div>
+
+                  <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 18px; padding: 22px; margin: 24px 0 12px;">
+                    <h2 style="margin: 0 0 12px; font-size: 18px; color: #111827;">Next steps</h2>
+                    <ol style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.7;">
+                      <li>Reach out to advisors whose expertise aligns with your goals.</li>
+                      <li>Share your company deck or relevant materials before your first call.</li>
+                      <li>Log call outcomes on your seller dashboard to keep everything in one place.</li>
+                    </ol>
+                  </div>
+
+                  <div style="text-align: center; margin-bottom: 18px;">
+                    <a href="{{dashboardUrl}}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">Open Seller Dashboard</a>
+                  </div>
+
+                  <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">Questions? Email support@advisorchooser.com anytime.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin: 24px auto 0; max-width: 720px; font-size: 12px; color: #9ca3af; text-align: center;">
+        This email contains confidential advisor information you requested from the Advisor Chooser Platform. Please do not forward externally.
+      </p>
     </div>
-    {{/each}}
-  </div>
-  
-  <p><strong>Next Steps:</strong></p>
-  <ul>
-    <li>Review the advisor profiles above</li>
-    <li>Contact advisors directly using the provided email addresses</li>
-    <li>All advisors have been notified of your potential interest</li>
-  </ul>
-  
-  <p>Best regards,<br>
-  The Advisor Chooser Platform Team</p>
-  
-  <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-  <p style="color: #666; font-size: 12px;">
-    This contact list is confidential and for your business use only.
-  </p>
-</div>
+  </body>
+</html>
