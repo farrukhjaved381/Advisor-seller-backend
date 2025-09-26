@@ -115,6 +115,50 @@ export class ConnectionsService {
     const escapeAttr = (value: string): string =>
       escapeHtml(value).replace(/"/g, '&quot;');
 
+    const formatListPreview = (
+      values: (string | null | undefined)[] | undefined,
+      maxVisible = 3,
+    ): {
+      previewHtml: string;
+      titleAttr: string;
+      moreCount: number;
+    } => {
+      const normalized =
+        values
+          ?.map((value) => value?.trim())
+          .filter((value): value is string => Boolean(value)) ?? [];
+
+      if (normalized.length === 0) {
+        const fallback = 'Not specified';
+        return {
+          previewHtml: escapeHtml(fallback),
+          titleAttr: escapeAttr(fallback),
+          moreCount: 0,
+        };
+      }
+
+      const previewItems = normalized.slice(0, maxVisible);
+      const previewText = previewItems.join(', ');
+      const basePreviewHtml = escapeHtml(previewText);
+      const moreCount = Math.max(normalized.length - previewItems.length, 0);
+      const fullListAttr = escapeAttr(normalized.join(', '));
+
+      if (moreCount === 0) {
+        return {
+          previewHtml: basePreviewHtml,
+          titleAttr: fullListAttr,
+          moreCount,
+        };
+      }
+
+      const extraBadge = ` <span style="color:#4f46e5; font-weight:600;">+${moreCount} more</span>`;
+      return {
+        previewHtml: `${basePreviewHtml}${extraBadge}`,
+        titleAttr: fullListAttr,
+        moreCount,
+      };
+    };
+
     let emailsSent = 0;
 
     // Send introduction email to each selected advisor
@@ -130,17 +174,8 @@ export class ConnectionsService {
       const advisorInitial =
         advisorCompanyNameRaw.trim().charAt(0).toUpperCase() || 'A';
 
-      const advisorIndustriesRaw =
-        advisor.industries && advisor.industries.length > 0
-          ? advisor.industries.join(', ')
-          : 'Not specified';
-      const advisorIndustriesText = escapeHtml(advisorIndustriesRaw);
-
-      const advisorGeographiesRaw =
-        advisor.geographies && advisor.geographies.length > 0
-          ? advisor.geographies.join(', ')
-          : 'Not specified';
-      const advisorGeographiesText = escapeHtml(advisorGeographiesRaw);
+      const advisorIndustriesPreview = formatListPreview(advisor.industries);
+      const advisorGeographiesPreview = formatListPreview(advisor.geographies);
 
       const advisorDescriptionRaw =
         (advisor.description && advisor.description.trim()) ||
@@ -233,6 +268,13 @@ export class ConnectionsService {
       const sellerEmailText = escapeHtml(sellerUser.email);
       const sellerdashboardHref = escapeAttr(SellerdashboardUrl);
       const advisordashboardHref = escapeAttr(AdvisordashboardUrl);
+      const focusAreasCtaHtml =
+        advisorIndustriesPreview.moreCount > 0 ||
+        advisorGeographiesPreview.moreCount > 0
+          ? `<div style="margin: 12px 10px 0;">
+              <a href="${advisordashboardHref}" style="display: inline-block; padding: 8px 18px; border-radius: 999px; background-color: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; text-decoration: none;">Show full focus areas</a>
+            </div>`
+          : '';
 
       const sanitizeSnapshotString = (value?: string | null) =>
         value && value.trim().length > 0 ? value.trim() : undefined;
@@ -288,11 +330,19 @@ export class ConnectionsService {
       );
       emailHtml = emailHtml.replace(
         /{{advisorIndustries}}/g,
-        advisorIndustriesText,
+        advisorIndustriesPreview.previewHtml,
+      );
+      emailHtml = emailHtml.replace(
+        /{{advisorIndustriesTitle}}/g,
+        advisorIndustriesPreview.titleAttr,
       );
       emailHtml = emailHtml.replace(
         /{{advisorGeographies}}/g,
-        advisorGeographiesText,
+        advisorGeographiesPreview.previewHtml,
+      );
+      emailHtml = emailHtml.replace(
+        /{{advisorGeographiesTitle}}/g,
+        advisorGeographiesPreview.titleAttr,
       );
       emailHtml = emailHtml.replace(/{{sellerCompany}}/g, sellerCompanyText);
       emailHtml = emailHtml.replace(/{{sellerIndustry}}/g, sellerIndustryText);
@@ -315,6 +365,7 @@ export class ConnectionsService {
         /{{AdvisordashboardUrl}}/g,
         advisordashboardHref,
       );
+      emailHtml = emailHtml.replace(/{{focusAreasCta}}/g, focusAreasCtaHtml);
 
       try {
         await this.emailService.sendEmail({
@@ -419,6 +470,52 @@ export class ConnectionsService {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 
+    const formatListPreview = (
+      values: (string | null | undefined)[] | undefined,
+      maxVisible = 3,
+    ): {
+      previewHtml: string;
+      titleAttr: string;
+      moreCount: number;
+    } => {
+      const normalized =
+        values
+          ?.map((value) => value?.trim())
+          .filter((value): value is string => Boolean(value)) ?? [];
+
+      if (normalized.length === 0) {
+        const fallback = 'Not specified';
+        return {
+          previewHtml: escapeHtml(fallback),
+          titleAttr: escapeAttr(fallback),
+          moreCount: 0,
+        };
+      }
+
+      const previewItems = normalized.slice(0, maxVisible);
+      const previewText = previewItems.join(', ');
+      const basePreviewHtml = escapeHtml(previewText);
+      const moreCount = Math.max(normalized.length - previewItems.length, 0);
+      const fullListAttr = escapeAttr(normalized.join(', '));
+
+      if (moreCount === 0) {
+        return {
+          previewHtml: basePreviewHtml,
+          titleAttr: fullListAttr,
+          moreCount,
+        };
+      }
+
+      const extraBadge = ` <span style="color:#4f46e5; font-weight:600;">+${moreCount} more</span>`;
+      return {
+        previewHtml: `${basePreviewHtml}${extraBadge}`,
+        titleAttr: fullListAttr,
+        moreCount,
+      };
+    };
+
+    const sellerDashboardHref = escapeAttr(SellerdashboardUrl);
+
     const advisorListHtml = advisors
       .map((advisor) => {
         const advisorUser = advisor.userId as any;
@@ -452,14 +549,8 @@ export class ConnectionsService {
             ? escapeHtml(websiteRaw)
             : 'Website not provided';
 
-        const industriesList =
-          advisor.industries && advisor.industries.length > 0
-            ? escapeHtml(advisor.industries.join(', '))
-            : 'Not specified';
-        const geographiesList =
-          advisor.geographies && advisor.geographies.length > 0
-            ? escapeHtml(advisor.geographies.join(', '))
-            : 'Not specified';
+        const industriesPreview = formatListPreview(advisor.industries);
+        const geographiesPreview = formatListPreview(advisor.geographies);
         const descriptionText = advisor.description?.trim().length
           ? escapeHtml(advisor.description)
           : 'No description provided';
@@ -494,6 +585,13 @@ export class ConnectionsService {
         const telHref = phoneRaw
           ? escapeAttr(`tel:${phoneRaw.replace(/[^+\d]/g, '')}`)
           : '#';
+
+        const focusAreasCta =
+          industriesPreview.moreCount > 0 || geographiesPreview.moreCount > 0
+            ? `<div style="margin: 10px 8px 0;">
+                <a href="${sellerDashboardHref}" style="display: inline-block; padding: 8px 16px; border-radius: 999px; background-color: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; text-decoration: none;">Show full focus areas</a>
+              </div>`
+            : '';
 
         return `
           <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: separate; border-spacing: 0; margin-bottom: 24px;">
@@ -549,17 +647,19 @@ export class ConnectionsService {
                           <td style="width: 50%; padding: 8px;">
                             <div style="background-color: #eef2ff; border: 1px solid #c7d2fe; border-radius: 14px; padding: 14px; height: 100%;">
                               <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #4338ca; font-weight: 700;">Focus Industries</p>
-                              <p style="margin: 6px 0 0; font-size: 13px; color: #1f2937; line-height: 1.6;">${industriesList}</p>
+                              <p style="margin: 6px 0 0; font-size: 13px; color: #1f2937; line-height: 1.6;" title="${industriesPreview.titleAttr}">${industriesPreview.previewHtml}</p>
                             </div>
                           </td>
                           <td style="width: 50%; padding: 8px;">
                             <div style="background-color: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 14px; padding: 14px; height: 100%;">
                               <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #047857; font-weight: 700;">Geographic Coverage</p>
-                              <p style="margin: 6px 0 0; font-size: 13px; color: #1f2937; line-height: 1.6;">${geographiesList}</p>
+                              <p style="margin: 6px 0 0; font-size: 13px; color: #1f2937; line-height: 1.6;" title="${geographiesPreview.titleAttr}">${geographiesPreview.previewHtml}</p>
                             </div>
                           </td>
                         </tr>
                       </table>
+
+                      ${focusAreasCta}
 
                       <div style="background-color: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 16px; padding: 18px; margin: 16px 0 14px;">
                         <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
@@ -594,12 +694,15 @@ export class ConnectionsService {
       .join('');
 
     const pluralLabel = matches.length === 1 ? '' : 's';
+    const sellerNameHtml = escapeHtml(sellerUser.name);
+    const sellerDashboardLink = escapeAttr(SellerdashboardUrl);
+    const advisorDashboardLink = escapeAttr(AdvisordashboardUrl);
     const listEmailHtml = directListTemplate
-      .replace(/{{sellerName}}/g, sellerUser.name)
+      .replace(/{{sellerName}}/g, sellerNameHtml)
       .replace(/{{advisorCount}}/g, matches.length.toString())
       .replace(/{{pluralLabel}}/g, pluralLabel)
-      .replace(/{{SellerdashboardUrl}}/g, SellerdashboardUrl)
-       .replace(/{{AdvisordashboardUrl}}/g, AdvisordashboardUrl)
+      .replace(/{{SellerdashboardUrl}}/g, sellerDashboardLink)
+      .replace(/{{AdvisordashboardUrl}}/g, advisorDashboardLink)
       .replace(/{{advisorList}}/g, advisorListHtml);
 
     try {

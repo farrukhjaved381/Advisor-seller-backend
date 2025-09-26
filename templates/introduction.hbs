@@ -2,39 +2,40 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>New Client Introduction</title>
+    <title>Warm Introduction</title>
   </head>
   <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937;">
     <div style="padding: 32px 16px;">
-      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 680px; margin: 0 auto; border-collapse: separate; border-spacing: 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 720px; margin: 0 auto; border-collapse: separate; border-spacing: 0;">
         <tr>
-          <td style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 20px; overflow: hidden; box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);">
+          <td style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 24px; overflow: hidden; box-shadow: 0 22px 60px rgba(15, 23, 42, 0.08);">
             <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
               <tr>
-                <td style="background: linear-gradient(135deg, #eef2ff 0%, #f0f9ff 100%); padding: 28px 32px;">
+                <td style="background: linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%); padding: 32px 36px;">
                   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
                     <tr>
                       <td style="width: 72px; vertical-align: top;">
                         {{advisorLogoBlock}}
                       </td>
                       <td style="padding-left: 16px;">
-                        <p style="margin: 0; color: #6366f1; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;">Advisor Match</p>
-                        <h1 style="margin: 8px 0 6px; font-size: 22px; line-height: 1.3; font-weight: 700; color: #111827;">{{advisorCompanyName}}</h1>
-                        <p style="margin: 0 0 6px; font-size: 14px; color: #4b5563;">Primary contact: <strong style="color: #111827;">{{advisorName}}</strong></p>
-                        <p style="margin: 0; font-size: 13px; color: #6b7280;">{{advisorYearsExperience}} years experience · {{advisorNumberOfTransactions}} closed deals</p>
+                        <p style="margin: 0; color: #6366f1; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;">Warm Introduction</p>
+                        <h1 style="margin: 10px 0 6px; font-size: 24px; line-height: 1.35; font-weight: 700; color: #111827;">{{advisorCompanyName}}, meet {{sellerCompany}}</h1>
+                        <p style="margin: 0; font-size: 14px; color: #4b5563; line-height: 1.6;">
+                          We matched you with this opportunity because your experience aligns with what the seller is looking for.
+                        </p>
                       </td>
                     </tr>
                   </table>
                 </td>
               </tr>
               <tr>
-                <td style="padding: 28px 32px;">
-                  <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6; color: #1f2937;">
+                <td style="padding: 28px 32px 24px;">
+                  <p style="margin: 0 0 18px; font-size: 15px; line-height: 1.6; color: #1f2937;">
                     Hi {{advisorName}},<br /><br />
-                    We're excited to introduce you to <strong>{{sellerCompany}}</strong>, a seller operating in {{sellerIndustry}} across {{sellerGeography}}. {{sellerName}} is eager to connect and explore how you can work together.
+                    We're excited to introduce you to <strong>{{sellerCompany}}</strong>, operating in {{sellerIndustry}} across {{sellerGeography}}. {{sellerName}} is eager to speak with you about a potential engagement and asked us to connect you directly.
                   </p>
 
-                  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; margin-bottom: 20px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; margin-bottom: 24px;">
                     <tr>
                       <td style="width: 33.33%; padding: 10px;">
                         <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; height: 100%;">
@@ -65,24 +66,26 @@
                     </tr>
                   </table>
 
-                  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; margin-bottom: 20px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; margin-bottom: 12px;">
                     <tr>
                       <td style="width: 50%; padding: 10px;">
                         <div style="background-color: #eef2ff; border: 1px solid #c7d2fe; border-radius: 14px; padding: 14px; height: 100%;">
                           <p style="margin: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #4338ca; font-weight: 700;">Focus Industries</p>
-                          <p style="margin: 6px 0 0; font-size: 14px; color: #1f2937; line-height: 1.5;">{{advisorIndustries}}</p>
+                          <p style="margin: 6px 0 0; font-size: 14px; color: #1f2937; line-height: 1.5;" title="{{advisorIndustriesTitle}}">{{advisorIndustries}}</p>
                         </div>
                       </td>
                       <td style="width: 50%; padding: 10px;">
                         <div style="background-color: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 14px; padding: 14px; height: 100%;">
                           <p style="margin: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #047857; font-weight: 700;">Geographic Coverage</p>
-                          <p style="margin: 6px 0 0; font-size: 14px; color: #1f2937; line-height: 1.5;">{{advisorGeographies}}</p>
+                          <p style="margin: 6px 0 0; font-size: 14px; color: #1f2937; line-height: 1.5;" title="{{advisorGeographiesTitle}}">{{advisorGeographies}}</p>
                         </div>
                       </td>
                     </tr>
                   </table>
 
-                  <div style="background-color: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+                  {{focusAreasCta}}
+
+                  <div style="background-color: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 16px; padding: 20px; margin: 20px 0;">
                     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
                       <tr>
                         <td style="vertical-align: top;">
@@ -90,25 +93,26 @@
                           <p style="margin: 8px 0 0; font-size: 18px; color: #065f46; font-weight: 700;">{{advisorRevenueRange}}</p>
                         </td>
                         <td style="text-align: right; vertical-align: middle;">
-                          <span style="display: inline-block; padding: 8px 14px; border-radius: 999px; background-color: #d1fae5; color: #047857; font-size: 12px; font-weight: 700;">Aligned Opportunity</span>
+                          <span style="display: inline-block; padding: 8px 14px; border-radius: 999px; background-color: #d1fae5; color: #047857; font-size: 12px; font-weight: 700;">Strong Alignment</span>
                         </td>
                       </tr>
                     </table>
                   </div>
 
-                  <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; margin-bottom: 28px;">
-                    <h2 style="margin: 0 0 12px; font-size: 18px; color: #111827;">About {{advisorCompanyName}}</h2>
+                  <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+                    <p style="margin: 0 0 10px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6366f1; font-weight: 700;">At a Glance</p>
+                    <h2 style="margin: 0 0 12px; font-size: 20px; color: #111827;">About {{advisorCompanyName}}</h2>
                     <p style="margin: 0; font-size: 14px; line-height: 1.7; color: #1f2937;">{{advisorDescription}}</p>
                   </div>
 
-                  <div style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; margin-bottom: 28px; box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.05);">
+                  <div style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 22px; margin-bottom: 24px; box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.05);">
                     <p style="margin: 0 0 12px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6366f1; font-weight: 700;">Seller Snapshot</p>
                     <h3 style="margin: 0; font-size: 18px; color: #111827;">{{sellerCompany}}</h3>
                     <p style="margin: 6px 0 12px; font-size: 14px; color: #4b5563;">Industry: {{sellerIndustry}} · Location: {{sellerGeography}}</p>
-                    <p style="margin: 0 0 6px; font-size: 14px; color: #1f2937; line-height: 1.6;">{{sellerDescription}}</p>
-                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; margin-top: 12px;">
+                    <p style="margin: 0 0 12px; font-size: 14px; color: #1f2937; line-height: 1.6;">{{sellerDescription}}</p>
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; margin-top: 8px;">
                       <tr>
-                        <td style="width: 50%; padding: 8px 0; font-size: 13px; color: #4b5563;">Annual revenue</td>
+                        <td style="width: 50%; padding: 8px 0; font-size: 13px; color: #4b5563;">Estimated annual revenue</td>
                         <td style="width: 50%; padding: 8px 0; font-size: 13px; color: #111827; font-weight: 600; text-align: right;">${{sellerRevenue}}</td>
                       </tr>
                       <tr>
@@ -118,16 +122,16 @@
                     </table>
                   </div>
 
-                  <div style="margin-bottom: 30px;">
-                    <p style="margin: 0 0 10px; font-size: 14px; color: #1f2937; font-weight: 600;">Recommended next steps</p>
-                    <ol style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.7;">
-                      <li>Reply to this email to start the conversation.</li>
-                      <li>Share availability for an introductory call with {{sellerName}}.</li>
-                      <li>Review the opportunity details on your dashboard for additional context.</li>
+                  <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 18px; padding: 22px; margin-bottom: 24px;">
+                    <h4 style="margin: 0 0 12px; font-size: 16px; color: #111827;">Suggested next steps</h4>
+                    <ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #4b5563; line-height: 1.7;">
+                      <li>Reply to {{sellerName}} at {{sellerEmail}} to schedule a conversation.</li>
+                      <li>Share any initial materials or questions you need to evaluate fit.</li>
+                      <li>Update your Advisor Chooser dashboard with meeting outcomes.</li>
                     </ol>
                   </div>
 
-                  <div style="text-align: center; margin-bottom: 12px;">
+                  <div style="text-align: center; margin-bottom: 18px;">
                     <a href="{{AdvisordashboardUrl}}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">Open Advisor Dashboard</a>
                   </div>
 
@@ -139,8 +143,8 @@
         </tr>
       </table>
 
-      <p style="margin: 24px auto 0; max-width: 680px; font-size: 12px; color: #9ca3af; text-align: center;">
-        You are receiving this introduction because the seller selected you on the Advisor Chooser Platform. Use the contact details above to reply directly to the seller.
+      <p style="margin: 24px auto 0; max-width: 720px; font-size: 12px; color: #9ca3af; text-align: center;">
+        You are receiving this introduction because {{sellerCompany}} selected you on the Advisor Chooser Platform. Coordinate directly with the seller using the details above.
       </p>
     </div>
   </body>

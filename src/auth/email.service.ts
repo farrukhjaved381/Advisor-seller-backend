@@ -28,6 +28,21 @@ export class EmailService {
     });
   }
 
+  private escapeHtml(value: string | number | null | undefined): string {
+    const stringValue =
+      value === null || value === undefined ? '' : String(value);
+    return stringValue
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  private escapeAttr(value: string | number | null | undefined): string {
+    return this.escapeHtml(value);
+  }
+
   async sendEmail(options: {
     to: string;
     cc?: string;
@@ -64,31 +79,66 @@ export class EmailService {
     }
     const verificationUrl = `${frontendUrl}/verify-email?${params.toString()}`;
 
+    const displayName = name?.trim() || 'there';
+    const safeName = this.escapeHtml(displayName);
+    const verificationHref = this.escapeAttr(verificationUrl);
+    const verificationText = this.escapeHtml(verificationUrl);
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
       subject: 'Verify Your Email - Advisor Chooser Platform',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Welcome to Advisor Chooser Platform!</h2>
-          <p>Hello ${name},</p>
-          <p>Thank you for registering with us. Please verify your email address by clicking the button below:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationUrl}" 
-               style="background-color: #007bff; color: white; padding: 12px 24px; 
-                      text-decoration: none; border-radius: 5px; display: inline-block;">
-              Verify Email Address
-            </a>
-          </div>
-          <p>Or copy and paste this link in your browser:</p>
-          <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
-          <p>This link will expire in 24 hours.</p>
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-          <p style="color: #666; font-size: 12px;">
-            This is an automated email. Please do not reply to this message.
-          </p>
-        </div>
-      `,
+      html: `<!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <title>Verify Your Email</title>
+          </head>
+          <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937;">
+            <div style="padding: 32px 16px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 640px; margin: 0 auto; border-collapse: separate; border-spacing: 0;">
+                <tr>
+                  <td style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 22px; overflow: hidden; box-shadow: 0 20px 54px rgba(15, 23, 42, 0.08);">
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                      <tr>
+                        <td style="background: linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%); padding: 30px 34px;">
+                          <p style="margin: 0; color: #6366f1; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;">Account Verification</p>
+                          <h1 style="margin: 12px 0 6px; font-size: 24px; line-height: 1.35; font-weight: 700; color: #111827;">Confirm your email to access Advisor Chooser</h1>
+                          <p style="margin: 0; font-size: 14px; color: #4b5563; line-height: 1.6;">
+                            Hi ${safeName}, thanks for joining Advisor Chooser. Verify your address to activate your account and start building your profile.
+                          </p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 28px 32px 24px;">
+                          <p style="margin: 0 0 18px; font-size: 15px; line-height: 1.6; color: #1f2937;">
+                            Click the button below within 24 hours to complete verification. This helps keep every advisor and seller on the platform secure.
+                          </p>
+                          <div style="text-align: center; margin: 26px 0;">
+                            <a href="${verificationHref}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">Verify Email Address</a>
+                          </div>
+                          <p style="margin: 0 0 12px; font-size: 13px; color: #4b5563;">Or copy and paste this link into your browser:</p>
+                          <p style="margin: 0 0 18px; font-size: 12px; color: #6b7280; word-break: break-all;">${verificationText}</p>
+                          <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px; margin-bottom: 24px;">
+                            <h2 style="margin: 0 0 10px; font-size: 16px; color: #111827;">What happens next</h2>
+                            <ol style="margin: 0; padding-left: 18px; font-size: 13px; color: #4b5563; line-height: 1.7;">
+                              <li>Complete your advisor or seller profile.</li>
+                              <li>Receive a confirmation from our team once verified.</li>
+                              <li>Start matching with opportunities tailored to you.</li>
+                            </ol>
+                          </div>
+                          <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">Need help? Email support@advisorchooser.com.</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 22px auto 0; max-width: 640px; font-size: 12px; color: #9ca3af; text-align: center;">If you did not create an Advisor Chooser account, you can safely ignore this message.</p>
+            </div>
+          </body>
+        </html>`,
     };
 
     try {
@@ -110,32 +160,62 @@ export class EmailService {
       process.env.FRONTEND_URL || 'https://frontend-five-pied-17.vercel.app';
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
+    const displayName = name?.trim() || 'there';
+    const safeName = this.escapeHtml(displayName);
+    const resetHref = this.escapeAttr(resetUrl);
+    const resetText = this.escapeHtml(resetUrl);
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
       subject: 'Reset Your Password - Advisor Chooser Platform',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Password Reset Request</h2>
-          <p>Hello ${name},</p>
-          <p>You requested to reset your password. Click the button below to set a new password:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" 
-               style="background-color: #dc3545; color: white; padding: 12px 24px; 
-                      text-decoration: none; border-radius: 5px; display: inline-block;">
-              Reset Password
-            </a>
-          </div>
-          <p>Or copy and paste this link in your browser:</p>
-          <p style="word-break: break-all; color: #666;">${resetUrl}</p>
-          <p>This link will expire in 1 hour.</p>
-          <p><strong>If you didn't request this, please ignore this email.</strong></p>
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-          <p style="color: #666; font-size: 12px;">
-            This is an automated email. Please do not reply to this message.
-          </p>
-        </div>
-      `,
+      html: `<!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <title>Password Reset</title>
+          </head>
+          <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937;">
+            <div style="padding: 32px 16px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 640px; margin: 0 auto; border-collapse: separate; border-spacing: 0;">
+                <tr>
+                  <td style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 22px; overflow: hidden; box-shadow: 0 20px 54px rgba(15, 23, 42, 0.08);">
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                      <tr>
+                        <td style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); padding: 30px 34px;">
+                          <p style="margin: 0; color: #ef4444; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;">Security Notice</p>
+                          <h1 style="margin: 12px 0 6px; font-size: 24px; line-height: 1.35; font-weight: 700; color: #991b1b;">Password reset requested</h1>
+                          <p style="margin: 0; font-size: 14px; color: #4b5563; line-height: 1.6;">
+                            Hi ${safeName}, we received a request to reset your Advisor Chooser password. Use the button below within the next hour to create a new one.
+                          </p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 28px 32px 24px;">
+                          <div style="text-align: center; margin: 26px 0;">
+                            <a href="${resetHref}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #ef4444, #f97316); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">Reset Password</a>
+                          </div>
+                          <p style="margin: 0 0 12px; font-size: 13px; color: #4b5563;">Or paste this secure link into your browser:</p>
+                          <p style="margin: 0 0 18px; font-size: 12px; color: #6b7280; word-break: break-all;">${resetText}</p>
+                          <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px; margin-bottom: 16px;">
+                            <ul style="margin: 0; padding-left: 16px; font-size: 13px; color: #4b5563; line-height: 1.7;">
+                              <li>The link expires in 60 minutes.</li>
+                              <li>If you did not request this, your existing password remains unchanged.</li>
+                              <li>Contact support@advisorchooser.com if you notice anything unusual.</li>
+                            </ul>
+                          </div>
+                          <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">This is an automated message. Please do not reply.</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 22px auto 0; max-width: 640px; font-size: 12px; color: #9ca3af; text-align: center;">If you did not request a reset, no further action is required.</p>
+            </div>
+          </body>
+        </html>`,
     };
 
     try {
