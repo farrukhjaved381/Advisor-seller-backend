@@ -89,8 +89,12 @@ export class ConnectionsService {
     const frontendUrl =
       process.env.FRONTEND_URL?.replace(/\/$/, '') ||
       'https://frontend-five-pied-17.vercel.app';
-    const dashboardUrl = `${frontendUrl}/seller-dashboard`;
-    const formatCurrency = (value: number | undefined, currencyCode?: string) => {
+    const SellerdashboardUrl = `${frontendUrl}/seller-login`;
+    const AdvisordashboardUrl = `${frontendUrl}/advisor-login`;
+    const formatCurrency = (
+      value: number | undefined,
+      currencyCode?: string,
+    ) => {
       if (typeof value !== 'number' || Number.isNaN(value)) {
         return null;
       }
@@ -106,10 +110,7 @@ export class ConnectionsService {
     };
 
     const escapeHtml = (value: string): string =>
-      value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+      value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     const escapeAttr = (value: string): string =>
       escapeHtml(value).replace(/"/g, '&quot;');
@@ -230,7 +231,8 @@ export class ConnectionsService {
       const sellerCompanyText = escapeHtml(seller.companyName);
       const sellerNameText = escapeHtml(sellerUser.name);
       const sellerEmailText = escapeHtml(sellerUser.email);
-      const dashboardHref = escapeAttr(dashboardUrl);
+      const sellerdashboardHref = escapeAttr(SellerdashboardUrl);
+      const advisordashboardHref = escapeAttr(AdvisordashboardUrl);
 
       const sanitizeSnapshotString = (value?: string | null) =>
         value && value.trim().length > 0 ? value.trim() : undefined;
@@ -239,7 +241,8 @@ export class ConnectionsService {
         Number.isFinite(seller.annualRevenue)
           ? seller.annualRevenue
           : undefined;
-      const sellerCurrencyValue = sanitizeSnapshotString(seller.currency) || 'USD';
+      const sellerCurrencyValue =
+        sanitizeSnapshotString(seller.currency) || 'USD';
       const sellerContactEmailValue =
         sanitizeSnapshotString(seller.contactEmail) ||
         sanitizeSnapshotString(sellerUser.email);
@@ -293,7 +296,10 @@ export class ConnectionsService {
       );
       emailHtml = emailHtml.replace(/{{sellerCompany}}/g, sellerCompanyText);
       emailHtml = emailHtml.replace(/{{sellerIndustry}}/g, sellerIndustryText);
-      emailHtml = emailHtml.replace(/{{sellerGeography}}/g, sellerGeographyText);
+      emailHtml = emailHtml.replace(
+        /{{sellerGeography}}/g,
+        sellerGeographyText,
+      );
       emailHtml = emailHtml.replace(/{{sellerRevenue}}/g, sellerRevenueDisplay);
       emailHtml = emailHtml.replace(
         /{{sellerDescription}}/g,
@@ -301,7 +307,14 @@ export class ConnectionsService {
       );
       emailHtml = emailHtml.replace(/{{sellerName}}/g, sellerNameText);
       emailHtml = emailHtml.replace(/{{sellerEmail}}/g, sellerEmailText);
-      emailHtml = emailHtml.replace(/{{dashboardUrl}}/g, dashboardHref);
+      emailHtml = emailHtml.replace(
+        /{{SellerdashboardUrl}}/g,
+        sellerdashboardHref,
+      );
+      emailHtml = emailHtml.replace(
+        /{{AdvisordashboardUrl}}/g,
+        advisordashboardHref,
+      );
 
       try {
         await this.emailService.sendEmail({
@@ -376,7 +389,8 @@ export class ConnectionsService {
     const frontendUrl =
       process.env.FRONTEND_URL?.replace(/\/$/, '') ||
       'https://frontend-five-pied-17.vercel.app';
-    const dashboardUrl = `${frontendUrl}/seller-dashboard`;
+        const SellerdashboardUrl = `${frontendUrl}/seller-login`;
+    const AdvisordashboardUrl = `${frontendUrl}/advisor-login`;
 
     const formatCurrencyValue = (
       value: number | undefined,
@@ -397,10 +411,7 @@ export class ConnectionsService {
     };
 
     const escapeHtml = (value: string) =>
-      value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+      value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const escapeAttr = (value: string) =>
       value
         .replace(/&/g, '&amp;')
@@ -437,7 +448,9 @@ export class ConnectionsService {
         const websiteHref =
           websiteRaw.length > 0 ? escapeAttr(websiteLink) : '#';
         const websiteDisplay =
-          websiteRaw.length > 0 ? escapeHtml(websiteRaw) : 'Website not provided';
+          websiteRaw.length > 0
+            ? escapeHtml(websiteRaw)
+            : 'Website not provided';
 
         const industriesList =
           advisor.industries && advisor.industries.length > 0
@@ -447,10 +460,9 @@ export class ConnectionsService {
           advisor.geographies && advisor.geographies.length > 0
             ? escapeHtml(advisor.geographies.join(', '))
             : 'Not specified';
-        const descriptionText =
-          advisor.description?.trim().length
-            ? escapeHtml(advisor.description)
-            : 'No description provided';
+        const descriptionText = advisor.description?.trim().length
+          ? escapeHtml(advisor.description)
+          : 'No description provided';
         const yearsExperience =
           typeof advisor.yearsExperience === 'number'
             ? advisor.yearsExperience.toString()
@@ -478,9 +490,7 @@ export class ConnectionsService {
         }
         const revenueRangeHtml = escapeHtml(revenueRange);
 
-        const mailtoHref = emailRaw
-          ? escapeAttr(`mailto:${emailRaw}`)
-          : '#';
+        const mailtoHref = emailRaw ? escapeAttr(`mailto:${emailRaw}`) : '#';
         const telHref = phoneRaw
           ? escapeAttr(`tel:${phoneRaw.replace(/[^+\d]/g, '')}`)
           : '#';
@@ -588,7 +598,8 @@ export class ConnectionsService {
       .replace(/{{sellerName}}/g, sellerUser.name)
       .replace(/{{advisorCount}}/g, matches.length.toString())
       .replace(/{{pluralLabel}}/g, pluralLabel)
-      .replace(/{{dashboardUrl}}/g, dashboardUrl)
+      .replace(/{{SellerdashboardUrl}}/g, SellerdashboardUrl)
+       .replace(/{{AdvisordashboardUrl}}/g, AdvisordashboardUrl)
       .replace(/{{advisorList}}/g, advisorListHtml);
 
     try {
@@ -600,7 +611,6 @@ export class ConnectionsService {
     } catch (error) {
       console.error('Failed to send contact list to seller:', error);
     }
-
 
     return {
       message: 'Contact list sent to seller',
