@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose'; // MongoDB integration
 import { ThrottlerModule } from '@nestjs/throttler'; // Rate limiting
 import { ConfigModule, ConfigService } from '@nestjs/config'; // For env config
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { AdvisorsModule } from './advisors/advisors.module';
@@ -35,6 +36,7 @@ import { join } from 'path';
         limit: 100,
       },
     ]),
+    ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,
     AdvisorsModule,

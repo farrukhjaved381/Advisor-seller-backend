@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsOptional,
   ArrayMaxSize,
+  ArrayMinSize,
   ValidateNested,
   Min,
   Max,
@@ -80,17 +81,16 @@ export class CreateAdvisorProfileDto {
   @ApiProperty({ description: 'Licensing information' })
   licensing: string;
 
-  @IsOptional()
   @IsArray()
-  @ArrayMaxSize(5)
+  @ArrayMinSize(5, { message: 'Exactly 5 testimonials are required' })
+  @ArrayMaxSize(5, { message: 'Exactly 5 testimonials are required' })
   @ValidateNested({ each: true })
   @Type(() => TestimonialDto)
   @ApiProperty({
-    description: 'Array of testimonials (max 5)',
+    description: 'Array of testimonials (exactly 5)',
     type: [TestimonialDto],
-    required: false,
   })
-  testimonials?: TestimonialDto[];
+  testimonials: TestimonialDto[];
 
   @ValidateNested()
   @Type(() => RevenueRangeDto)

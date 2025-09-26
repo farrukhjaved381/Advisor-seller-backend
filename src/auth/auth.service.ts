@@ -31,6 +31,8 @@ export interface AuthResponse {
     isEmailVerified: boolean;
     isPaymentVerified: boolean;
     isProfileComplete?: boolean;
+    subscription?: any;
+    billing?: any;
   };
 }
 
@@ -410,6 +412,8 @@ export class AuthService {
         isEmailVerified: latestUser.isEmailVerified,
         isPaymentVerified: latestUser.isPaymentVerified,
         isProfileComplete,
+        subscription: latestUser.subscription || { status: 'none' },
+        billing: latestUser.billing || null,
       },
     };
   }

@@ -46,11 +46,48 @@ export class User extends Document {
 
   @Prop({
     type: {
-      status: { type: String, enum: ['none', 'active', 'canceled', 'expired'], default: 'none' },
+      defaultPaymentMethodId: { type: String },
+      cardBrand: { type: String },
+      cardLast4: { type: String },
+      expMonth: { type: Number },
+      expYear: { type: Number },
+      updatedAt: { type: Date },
+    },
+    default: null,
+  })
+  @ApiProperty({
+    description: 'Stored billing details for automatic renewals',
+    type: 'object',
+    properties: {
+      defaultPaymentMethodId: { type: 'string' },
+      cardBrand: { type: 'string' },
+      cardLast4: { type: 'string' },
+      expMonth: { type: 'number' },
+      expYear: { type: 'number' },
+      updatedAt: { type: 'string', format: 'date-time' },
+    },
+  })
+  billing?: {
+    defaultPaymentMethodId?: string;
+    cardBrand?: string;
+    cardLast4?: string;
+    expMonth?: number;
+    expYear?: number;
+    updatedAt?: Date;
+  } | null;
+
+  @Prop({
+    type: {
+      status: {
+        type: String,
+        enum: ['none', 'active', 'canceled', 'expired', 'past_due'],
+        default: 'none',
+      },
       currentPeriodStart: { type: Date },
       currentPeriodEnd: { type: Date },
       cancelAtPeriodEnd: { type: Boolean, default: false },
       canceledAt: { type: Date },
+      lastAutoRenewAttempt: { type: Date },
     },
     default: { status: 'none' },
   })
@@ -59,19 +96,24 @@ export class User extends Document {
     type: 'object',
     additionalProperties: false,
     properties: {
-      status: { type: 'string', enum: ['none', 'active', 'canceled', 'expired'] },
+      status: {
+        type: 'string',
+        enum: ['none', 'active', 'canceled', 'expired', 'past_due'],
+      },
       currentPeriodStart: { type: 'string', format: 'date-time' },
       currentPeriodEnd: { type: 'string', format: 'date-time' },
       cancelAtPeriodEnd: { type: 'boolean' },
       canceledAt: { type: 'string', format: 'date-time' },
+      lastAutoRenewAttempt: { type: 'string', format: 'date-time' },
     },
   })
   subscription?: {
-    status: 'none' | 'active' | 'canceled' | 'expired';
+    status: 'none' | 'active' | 'canceled' | 'expired' | 'past_due';
     currentPeriodStart?: Date;
     currentPeriodEnd?: Date;
     cancelAtPeriodEnd?: boolean;
     canceledAt?: Date;
+    lastAutoRenewAttempt?: Date;
   };
 
   @Prop({

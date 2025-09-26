@@ -63,6 +63,20 @@ export class AdvisorsService {
     userId: string,
     createDto: CreateAdvisorProfileDto,
   ): Promise<Advisor> {
+    if (
+      !Array.isArray(createDto.testimonials) ||
+      createDto.testimonials.length !== 5 ||
+      createDto.testimonials.some(
+        (testimonial) =>
+          !testimonial?.clientName?.trim() ||
+          !testimonial?.testimonial?.trim(),
+      )
+    ) {
+      throw new BadRequestException(
+        'Exactly 5 testimonials with client name and testimonial text are required',
+      );
+    }
+
     const existingProfile = await this.advisorModel.findOne({ userId });
     if (existingProfile) {
       throw new ConflictException('Advisor profile already exists');
@@ -181,6 +195,7 @@ export class AdvisorsService {
     }
 
     advisor.testimonials.push(testimonialData);
+
     return advisor.save();
   }
 
@@ -229,6 +244,56 @@ export class AdvisorsService {
       for (const key of keys) {
         let value: any = updateProfileDto[key];
         value = coerce(value);
+        if (key === 'testimonials') {
+          let testimonialsValue = value;
+          if (typeof testimonialsValue === 'string') {
+            try {
+              testimonialsValue = JSON.parse(testimonialsValue);
+            } catch {
+              testimonialsValue = [];
+            }
+          }
+          if (!Array.isArray(testimonialsValue)) {
+            throw new BadRequestException('Testimonials must be an array');
+          }
+          const normalized = testimonialsValue
+            .slice(0, 5)
+            .map((testimonial) => {
+              const clientName =
+                typeof testimonial?.clientName === 'string'
+                  ? testimonial.clientName.trim()
+                  : '';
+              const testimonialText =
+                typeof testimonial?.testimonial === 'string'
+                  ? testimonial.testimonial.trim()
+                  : '';
+              const pdfUrl =
+                typeof testimonial?.pdfUrl === 'string' &&
+                testimonial.pdfUrl.trim().length > 0
+                  ? testimonial.pdfUrl.trim()
+                  : undefined;
+              return {
+                clientName,
+                testimonial: testimonialText,
+                ...(pdfUrl ? { pdfUrl } : {}),
+              };
+            });
+
+          if (
+            normalized.length !== 5 ||
+            normalized.some(
+              (testimonial) =>
+                !testimonial.clientName || !testimonial.testimonial,
+            )
+          ) {
+            throw new BadRequestException(
+              'Exactly 5 testimonials with client name and testimonial text are required',
+            );
+          }
+
+          advisor.testimonials = normalized;
+          continue;
+        }
         if (key === 'industries' || key === 'geographies') {
           if (Array.isArray(value)) {
             if (value.length === 1 && typeof value[0] === 'string' && value[0].includes(',')) {
@@ -296,6 +361,20 @@ export class AdvisorsService {
           pdfUrl,
         });
       }
+    }
+
+    if (
+      !Array.isArray(advisor.testimonials) ||
+      advisor.testimonials.length !== 5 ||
+      advisor.testimonials.some(
+        (testimonial) =>
+          !testimonial?.clientName?.trim() ||
+          !testimonial?.testimonial?.trim(),
+      )
+    ) {
+      throw new BadRequestException(
+        'Advisor profile must include exactly 5 testimonials with client name and testimonial text',
+      );
     }
 
     return advisor.save();

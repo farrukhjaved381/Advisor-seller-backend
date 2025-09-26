@@ -11,6 +11,8 @@ import { Coupon, CouponDocument } from './schemas/coupon.schema';
 import { Advisor, AdvisorDocument } from '../advisors/schemas/advisor.schema';
 import { UsersService } from '../users/users.service';
 import { PaymentHistory, PaymentHistoryDocument } from './schemas/payment-history.schema';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { User } from '../users/schemas/user.schema';
 
 @Injectable()
 export class PaymentService {
@@ -32,12 +34,38 @@ export class PaymentService {
     );
   }
 
+  private async ensureStripeCustomer(
+    userId: string,
+  ): Promise<{ user: User; customerId: string }> {
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    let customerId = user.stripeCustomerId;
+    if (!customerId) {
+      const customer = await this.stripe.customers.create({
+        email: user.email,
+        name: user.name,
+        metadata: {
+          userId: userId.toString(),
+        },
+      });
+      customerId = customer.id;
+      await this.usersService.setStripeCustomerId(userId, customerId);
+    }
+
+    return { user, customerId };
+  }
+
   // Creates payment intent for advisor membership fee
   async createPaymentIntent(
     userId: string,
     couponCode?: string,
   ): Promise<{ clientSecret: string; amount: number }> {
     console.log('[PaymentService] createPaymentIntent for user', userId, 'coupon:', couponCode);
+    const { user, customerId } = await this.ensureStripeCustomer(userId);
+
     let amount = this.membershipFee;
     let coupon: Coupon | null = null;
 
@@ -50,18 +78,21 @@ export class PaymentService {
     // If amount is 0 (free trial), set minimum amount for Stripe
     const stripeAmount = amount === 0 ? 50 : amount; // 50 cents minimum for free trial only
 
-    const paymentIntent = await this.stripe.paymentIntents.create({
-      amount: stripeAmount,
-      currency: 'usd',
-      automatic_payment_methods: {
+      const paymentIntent = await this.stripe.paymentIntents.create({
+        amount: stripeAmount,
+        currency: 'usd',
+        customer: customerId,
+        setup_future_usage: 'off_session',
+        automatic_payment_methods: {
         enabled: true,
-        allow_redirects: 'never', // Keep as never for backend-only confirmation
+        allow_redirects: 'never',
       },
       metadata: {
-        userId: userId.toString(), // Convert ObjectId to string for Stripe metadata
+        userId: userId.toString(),
         couponCode: couponCode || '',
         originalAmount: this.membershipFee.toString(),
         actualAmount: amount.toString(),
+        customerId,
       },
     });
 
@@ -94,10 +125,77 @@ export class PaymentService {
         throw new BadRequestException('Payment does not belong to this user');
       }
 
+      const { user: userRecord, customerId: ensuredCustomerId } =
+        await this.ensureStripeCustomer(userId);
+
+      let customerId =
+        (paymentIntent.customer as string | null | undefined) ||
+        ensuredCustomerId ||
+        null;
+
+      if (!paymentIntent.customer && customerId) {
+        await this.stripe.paymentIntents.update(paymentIntentId, {
+          customer: customerId,
+        });
+      }
+
+      const paymentMethodId =
+        typeof paymentIntent.payment_method === 'string'
+          ? paymentIntent.payment_method
+          : paymentIntent.payment_method?.id;
+
+      let billingDetails:
+        | {
+            paymentMethodId?: string;
+            cardBrand?: string;
+            cardLast4?: string;
+            cardExpMonth?: number;
+            cardExpYear?: number;
+          }
+        | undefined;
+
+      if (paymentMethodId && customerId) {
+        try {
+          await this.stripe.paymentMethods.attach(paymentMethodId, {
+            customer: customerId,
+          });
+        } catch (error: any) {
+          if (error?.code !== 'resource_already_exists') {
+            throw error;
+          }
+        }
+
+        await this.stripe.customers.update(customerId, {
+          invoice_settings: { default_payment_method: paymentMethodId },
+        });
+
+       let cardDetails: Stripe.PaymentMethod.Card | null = null;
+
+try {
+  const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
+  cardDetails = paymentMethod?.card ?? null;
+} catch (error) {
+  console.warn(
+    '[PaymentService] Unable to retrieve payment method details',
+    (error as Error)?.message || error,
+  );
+}
+
+const billingDetails = {
+  paymentMethodId,
+  cardBrand: cardDetails?.brand,
+  cardLast4: cardDetails?.last4,
+  cardExpMonth: cardDetails?.exp_month,
+  cardExpYear: cardDetails?.exp_year,
+};
+
+      }
+
       // Mark user as payment verified and start/renew subscription period
       let user = await this.usersService.markPaymentVerified(
         userId,
-        paymentIntent.customer as string,
+        customerId || undefined,
+        billingDetails,
       );
 
       // Payment confirmed - user can now create advisor profile
@@ -226,6 +324,154 @@ export class PaymentService {
       success: true,
       message:
         'Free trial activated successfully. You can now create your profile.',
+    };
+  }
+
+  async createSetupIntent(
+    userId: string,
+  ): Promise<{ clientSecret: string }> {
+    const { customerId } = await this.ensureStripeCustomer(userId);
+    const setupIntent = await this.stripe.setupIntents.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      usage: 'off_session',
+      metadata: {
+        userId: userId.toString(),
+        customerId,
+      },
+    });
+
+    return { clientSecret: setupIntent.client_secret! };
+  }
+
+  async updatePaymentMethod(
+    userId: string,
+    paymentMethodId: string,
+  ): Promise<{
+    success: boolean;
+    billing: Record<string, any>;
+    subscription?: User['subscription'];
+    autoChargeFailed?: boolean;
+  }> {
+    const { user, customerId } = await this.ensureStripeCustomer(userId);
+    const previousMethodId = user.billing?.defaultPaymentMethodId;
+
+    try {
+      await this.stripe.paymentMethods.attach(paymentMethodId, {
+        customer: customerId,
+      });
+    } catch (error: any) {
+      if (error?.code !== 'resource_already_exists') {
+        throw error;
+      }
+    }
+
+    await this.stripe.customers.update(customerId, {
+      invoice_settings: { default_payment_method: paymentMethodId },
+    });
+
+    const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
+    const card = paymentMethod?.card;
+    const billingDetails = {
+      paymentMethodId,
+      cardBrand: card?.brand,
+      cardLast4: card?.last4,
+      cardExpMonth: card?.exp_month,
+      cardExpYear: card?.exp_year,
+    };
+
+    await this.usersService.updateBillingDetails(userId, billingDetails);
+
+    if (
+      previousMethodId &&
+      previousMethodId !== paymentMethodId
+    ) {
+      try {
+        await this.stripe.paymentMethods.detach(previousMethodId);
+      } catch (error) {
+        console.warn(
+          '[PaymentService] Failed to detach previous payment method',
+          { previousMethodId, error: error?.message || error },
+        );
+      }
+    }
+
+    let subscriptionUpdate;
+    let autoChargeFailed = false;
+    const subscriptionEnd = user.subscription?.currentPeriodEnd
+      ? new Date(user.subscription.currentPeriodEnd)
+      : null;
+    const requiresImmediateRenewal =
+      subscriptionEnd &&
+      subscriptionEnd <= new Date() &&
+      ['past_due', 'expired'].includes(user.subscription?.status as any);
+
+    if (requiresImmediateRenewal) {
+      try {
+        const paymentIntent = await this.stripe.paymentIntents.create({
+          amount: this.membershipFee,
+          currency: 'usd',
+          customer: customerId,
+          payment_method: paymentMethodId,
+          off_session: true,
+          confirm: true,
+          metadata: {
+            userId: String((user as any)._id),
+            origin: 'manual_card_update',
+            originalAmount: this.membershipFee.toString(),
+            actualAmount: this.membershipFee.toString(),
+            customerId,
+          },
+        });
+
+        const updatedUser = await this.usersService.markPaymentVerified(
+          userId,
+          customerId,
+          billingDetails,
+        );
+        subscriptionUpdate = updatedUser?.subscription;
+
+        const periodStart = updatedUser?.subscription?.currentPeriodStart
+          ? new Date(updatedUser.subscription.currentPeriodStart)
+          : user.subscription?.currentPeriodStart;
+        const periodEnd = updatedUser?.subscription?.currentPeriodEnd
+          ? new Date(updatedUser.subscription.currentPeriodEnd)
+          : user.subscription?.currentPeriodEnd;
+
+        await this.paymentHistoryModel.create({
+          userId: (user as any)._id,
+          provider: 'stripe',
+          paymentId: paymentIntent.id,
+          amount:
+            paymentIntent.amount_received || paymentIntent.amount || this.membershipFee,
+          currency: paymentIntent.currency || 'usd',
+          status: paymentIntent.status,
+          description: 'Membership renewal after card update',
+          periodStart,
+          periodEnd,
+          metadata: paymentIntent.metadata || {},
+        });
+      } catch (error: any) {
+        console.error('[PaymentService] Renewal charge after card update failed', {
+          userId: String((user as any)._id),
+          error: error?.message || error,
+        });
+          await this.usersService.markSubscriptionStatus(userId, 'past_due');
+          autoChargeFailed = true;
+      }
+    }
+
+    return {
+      success: true,
+      billing: {
+        defaultPaymentMethodId: billingDetails.paymentMethodId,
+        cardBrand: billingDetails.cardBrand,
+        cardLast4: billingDetails.cardLast4,
+        expMonth: billingDetails.cardExpMonth,
+        expYear: billingDetails.cardExpYear,
+      },
+      subscription: subscriptionUpdate,
+      autoChargeFailed,
     };
   }
 
@@ -377,5 +623,108 @@ export class PaymentService {
   async resume(userId: string) {
     const user = await this.usersService.resumeSubscription(userId);
     return { subscription: user?.subscription };
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  async processAutomaticRenewals(): Promise<void> {
+    const now = new Date();
+    let users: User[] = [];
+    try {
+      users = await this.usersService.findAdvisorsDueForRenewal(now);
+    } catch (error) {
+      console.error('[PaymentService] Failed to fetch users for auto-renewal', error);
+      return;
+    }
+
+    if (!users.length) {
+      return;
+    }
+
+    for (const user of users) {
+      const userIdStr = String((user as any)._id);
+      const attemptAt = new Date();
+      await this.usersService.recordAutoRenewAttempt(userIdStr, attemptAt);
+
+      if (!user.stripeCustomerId || !user.billing?.defaultPaymentMethodId) {
+        await this.usersService.markSubscriptionStatus(userIdStr, 'past_due');
+        continue;
+      }
+
+      try {
+        const paymentIntent = await this.stripe.paymentIntents.create({
+          amount: this.membershipFee,
+          currency: 'usd',
+          customer: user.stripeCustomerId,
+          payment_method: user.billing.defaultPaymentMethodId,
+          off_session: true,
+          confirm: true,
+          metadata: {
+            userId: userIdStr,
+            origin: 'auto_renewal',
+            originalAmount: this.membershipFee.toString(),
+            actualAmount: this.membershipFee.toString(),
+            customerId: user.stripeCustomerId,
+          },
+        });
+
+        const billingDetails = {
+          paymentMethodId: user.billing.defaultPaymentMethodId,
+          cardBrand: user.billing.cardBrand,
+          cardLast4: user.billing.cardLast4,
+          cardExpMonth: user.billing.expMonth,
+          cardExpYear: user.billing.expYear,
+        };
+
+        const updatedUser = await this.usersService.markPaymentVerified(
+          userIdStr,
+          user.stripeCustomerId,
+          billingDetails,
+        );
+
+        const periodStart = updatedUser?.subscription?.currentPeriodStart
+          ? new Date(updatedUser.subscription.currentPeriodStart)
+          : user.subscription?.currentPeriodStart;
+        const periodEnd = updatedUser?.subscription?.currentPeriodEnd
+          ? new Date(updatedUser.subscription.currentPeriodEnd)
+          : user.subscription?.currentPeriodEnd;
+
+        await this.paymentHistoryModel.create({
+          userId: (user as any)._id,
+          provider: 'stripe',
+          paymentId: paymentIntent.id,
+          amount: paymentIntent.amount_received || paymentIntent.amount || this.membershipFee,
+          currency: paymentIntent.currency || 'usd',
+          status: paymentIntent.status,
+          description: 'Automatic membership renewal',
+          periodStart,
+          periodEnd,
+          metadata: paymentIntent.metadata || {},
+        });
+      } catch (error: any) {
+        console.error('[PaymentService] Automatic renewal failed', {
+          userId: userIdStr,
+          error: error?.message || error,
+        });
+
+        await this.usersService.markSubscriptionStatus(userIdStr, 'past_due');
+
+        await this.paymentHistoryModel.create({
+          userId: (user as any)._id,
+          provider: 'stripe',
+          paymentId:
+            error?.payment_intent?.id || `auto-renew-failed-${Date.now()}`,
+          amount: this.membershipFee,
+          currency: 'usd',
+          status: 'failed',
+          description: 'Automatic renewal failed',
+          periodStart: user.subscription?.currentPeriodStart,
+          periodEnd: user.subscription?.currentPeriodEnd,
+          metadata: {
+            reason: error?.message || 'Automatic renewal failed',
+            code: error?.code,
+          },
+        });
+      }
+    }
   }
 }

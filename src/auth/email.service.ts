@@ -112,7 +112,7 @@ export class EmailService {
                       <tr>
                         <td style="padding: 28px 32px 24px;">
                           <p style="margin: 0 0 18px; font-size: 15px; line-height: 1.6; color: #1f2937;">
-                            Click the button below within 24 hours to complete verification. This helps keep every advisor and seller on the platform secure.
+                            Click the button below within 24 hours to complete verification. This helps keep every advisor on the platform secure.
                           </p>
                           <div style="text-align: center; margin: 26px 0;">
                             <a href="${verificationHref}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">Verify Email Address</a>
@@ -122,7 +122,7 @@ export class EmailService {
                           <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px; margin-bottom: 24px;">
                             <h2 style="margin: 0 0 10px; font-size: 16px; color: #111827;">What happens next</h2>
                             <ol style="margin: 0; padding-left: 18px; font-size: 13px; color: #4b5563; line-height: 1.7;">
-                              <li>Complete your advisor or seller profile.</li>
+                              <li>Complete your advisor profile.</li>
                               <li>Receive a confirmation from our team once verified.</li>
                               <li>Start matching with opportunities tailored to you.</li>
                             </ol>

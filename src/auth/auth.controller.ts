@@ -252,6 +252,8 @@ export class AuthController {
       isProfileComplete,
       subscription: req.user.subscription || { status: 'none' },
       isSubscriptionActive,
+      billing: req.user.billing || null,
+      stripeCustomerId: req.user.stripeCustomerId || null,
     };
   }
 

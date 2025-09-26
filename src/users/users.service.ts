@@ -115,6 +115,13 @@ export class UsersService {
   async markPaymentVerified(
     userId: string,
     stripeCustomerId?: string,
+    billingDetails?: {
+      paymentMethodId?: string;
+      cardBrand?: string;
+      cardLast4?: string;
+      cardExpMonth?: number;
+      cardExpYear?: number;
+    },
   ): Promise<User | null> {
     const existing = await this.userModel.findById(userId);
     const now = new Date();
@@ -160,6 +167,16 @@ export class UsersService {
     if (stripeCustomerId) {
       updateData.stripeCustomerId = stripeCustomerId;
     }
+    if (billingDetails && billingDetails.paymentMethodId) {
+      updateData.billing = {
+        defaultPaymentMethodId: billingDetails.paymentMethodId,
+        cardBrand: billingDetails.cardBrand,
+        cardLast4: billingDetails.cardLast4,
+        expMonth: billingDetails.cardExpMonth,
+        expYear: billingDetails.cardExpYear,
+        updatedAt: new Date(),
+      };
+    }
     const updated = await this.userModel.findByIdAndUpdate(userId, updateData, { new: true });
     try {
       console.log('[UsersService] markPaymentVerified updated subscription', {
@@ -186,6 +203,99 @@ export class UsersService {
     return this.userModel.findByIdAndUpdate(
       userId,
       { $push: { paymentHistory: { ...record, createdAt: new Date() } } },
+      { new: true },
+    );
+  }
+
+  async setStripeCustomerId(userId: string, customerId: string): Promise<User | null> {
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      { stripeCustomerId: customerId },
+      { new: true },
+    );
+  }
+
+  async updateBillingDetails(
+    userId: string,
+    details: {
+      paymentMethodId?: string;
+      cardBrand?: string;
+      cardLast4?: string;
+      cardExpMonth?: number;
+      cardExpYear?: number;
+    },
+  ): Promise<User | null> {
+    const billing = {
+      defaultPaymentMethodId: details.paymentMethodId,
+      cardBrand: details.cardBrand,
+      cardLast4: details.cardLast4,
+      expMonth: details.cardExpMonth,
+      expYear: details.cardExpYear,
+      updatedAt: new Date(),
+    };
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      { billing },
+      { new: true },
+    );
+  }
+
+  async findAdvisorsDueForRenewal(cutoff: Date): Promise<User[]> {
+    return this.userModel
+      .find({
+        role: UserRole.ADVISOR,
+        'subscription.status': { $in: ['active', 'past_due'] },
+        'subscription.currentPeriodEnd': { $lte: cutoff },
+        stripeCustomerId: { $exists: true, $ne: null },
+        'billing.defaultPaymentMethodId': { $exists: true, $ne: null },
+        $and: [
+          {
+            $or: [
+              { 'subscription.cancelAtPeriodEnd': { $exists: false } },
+              { 'subscription.cancelAtPeriodEnd': false },
+            ],
+          },
+          {
+            $or: [
+              { 'subscription.lastAutoRenewAttempt': { $exists: false } },
+              {
+                'subscription.lastAutoRenewAttempt': {
+                  $lte: new Date(cutoff.getTime() - 12 * 60 * 60 * 1000),
+                },
+              },
+            ],
+          },
+        ],
+      })
+      .limit(200)
+      .exec();
+  }
+
+  async recordAutoRenewAttempt(userId: string, attemptDate: Date): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, {
+      $set: { 'subscription.lastAutoRenewAttempt': attemptDate },
+    });
+  }
+
+  async markSubscriptionStatus(
+    userId: string,
+    status: 'expired' | 'past_due',
+  ): Promise<User | null> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      return null;
+    }
+    const subscription = user.subscription || ({} as any);
+    subscription.status = status;
+    if (status === 'expired') {
+      subscription.cancelAtPeriodEnd = true;
+    }
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        subscription,
+        isPaymentVerified: false,
+      },
       { new: true },
     );
   }

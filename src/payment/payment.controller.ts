@@ -20,6 +20,7 @@ import { PaymentService } from './payment.service';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 import { RedeemCouponDto } from './dto/redeem-coupon.dto';
+import { UpdatePaymentMethodDto } from './dto/update-payment-method.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CsrfGuard } from '../auth/guards/csrf.guard';
@@ -123,6 +124,31 @@ export class PaymentController {
   async redeemCoupon(@Request() req, @Body() redeemCouponDto: RedeemCouponDto) {
     // Redeems free trial coupon and activates advisor profile without payment
     return this.paymentService.redeemCoupon(req.user._id, redeemCouponDto.code);
+  }
+
+  @Post('setup-intent')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADVISOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a setup intent to store/update default payment method' })
+  async createSetupIntent(@Request() req) {
+    return this.paymentService.createSetupIntent(req.user._id);
+  }
+
+  @Post('update-payment-method')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADVISOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Attach and set a new default payment method for automatic renewals' })
+  @ApiBody({ type: UpdatePaymentMethodDto })
+  async updatePaymentMethod(
+    @Request() req,
+    @Body() updatePaymentMethodDto: UpdatePaymentMethodDto,
+  ) {
+    return this.paymentService.updatePaymentMethod(
+      req.user._id,
+      updatePaymentMethodDto.paymentMethodId,
+    );
   }
 
   @Get('setup-coupons')
