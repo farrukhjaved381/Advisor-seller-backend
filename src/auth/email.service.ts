@@ -173,7 +173,7 @@ export class EmailService {
         <html lang="en">
           <head>
             <meta charset="UTF-8" />
-            <title>Password Reset</title>
+            <title>Reset Your Password</title>
           </head>
           <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937;">
             <div style="padding: 32px 16px;">
@@ -182,26 +182,26 @@ export class EmailService {
                   <td style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 22px; overflow: hidden; box-shadow: 0 20px 54px rgba(15, 23, 42, 0.08);">
                     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
                       <tr>
-                        <td style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); padding: 30px 34px;">
-                          <p style="margin: 0; color: #ef4444; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;">Security Notice</p>
-                          <h1 style="margin: 12px 0 6px; font-size: 24px; line-height: 1.35; font-weight: 700; color: #991b1b;">Password reset requested</h1>
+                        <td style="background: linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%); padding: 30px 34px;">
+                          <p style="margin: 0; color: #6366f1; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;">Account Security</p>
+                          <h1 style="margin: 12px 0 6px; font-size: 24px; line-height: 1.35; font-weight: 700; color: #111827;">Reset your password</h1>
                           <p style="margin: 0; font-size: 14px; color: #4b5563; line-height: 1.6;">
-                            Hi ${safeName}, we received a request to reset your Advisor Chooser password. Use the button below within the next hour to create a new one.
+                            Hi ${safeName}, use the button below to set a new password for your Advisor Chooser account.
                           </p>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 28px 32px 24px;">
                           <div style="text-align: center; margin: 26px 0;">
-                            <a href="${resetHref}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #ef4444, #f97316); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">Reset Password</a>
+                            <a href="${resetHref}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">Reset Password</a>
                           </div>
-                          <p style="margin: 0 0 12px; font-size: 13px; color: #4b5563;">Or paste this secure link into your browser:</p>
+                          <p style="margin: 0 0 12px; font-size: 13px; color: #4b5563;">Or copy and paste this secure link into your browser:</p>
                           <p style="margin: 0 0 18px; font-size: 12px; color: #6b7280; word-break: break-all;">${resetText}</p>
-                          <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px; margin-bottom: 16px;">
+                          <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px; margin-bottom: 24px;">
                             <ul style="margin: 0; padding-left: 16px; font-size: 13px; color: #4b5563; line-height: 1.7;">
                               <li>The link expires in 60 minutes.</li>
-                              <li>If you did not request this, your existing password remains unchanged.</li>
-                              <li>Contact support@advisorchooser.com if you notice anything unusual.</li>
+                              <li>If you didn’t request a reset, your current password stays active.</li>
+                              <li>Need help? Email support@advisorchooser.com anytime.</li>
                             </ul>
                           </div>
                           <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">This is an automated message. Please do not reply.</p>
@@ -212,7 +212,7 @@ export class EmailService {
                 </tr>
               </table>
 
-              <p style="margin: 22px auto 0; max-width: 640px; font-size: 12px; color: #9ca3af; text-align: center;">If you did not request a reset, no further action is required.</p>
+              <p style="margin: 22px auto 0; max-width: 640px; font-size: 12px; color: #9ca3af; text-align: center;">If you didn’t request a password reset, no action is required.</p>
             </div>
           </body>
         </html>`,

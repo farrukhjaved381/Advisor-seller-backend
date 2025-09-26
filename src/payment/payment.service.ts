@@ -139,10 +139,49 @@ export class PaymentService {
         });
       }
 
-      const paymentMethodId =
+      let paymentMethodId =
         typeof paymentIntent.payment_method === 'string'
           ? paymentIntent.payment_method
           : paymentIntent.payment_method?.id;
+
+      let cardBrand: string | undefined;
+      let cardLast4: string | undefined;
+      let cardExpMonth: number | undefined;
+      let cardExpYear: number | undefined;
+
+      if (!paymentMethodId) {
+        const latestChargeId =
+          typeof paymentIntent.latest_charge === 'string'
+            ? paymentIntent.latest_charge
+            : paymentIntent.latest_charge?.id;
+        if (latestChargeId) {
+          try {
+            const charge = await this.stripe.charges.retrieve(latestChargeId);
+            const chargePaymentMethod = charge.payment_method;
+            if (typeof chargePaymentMethod === 'string') {
+              paymentMethodId = chargePaymentMethod;
+            } else if (chargePaymentMethod) {
+              const candidate = (chargePaymentMethod as Stripe.PaymentMethod).id;
+              if (typeof candidate === 'string' && candidate.length > 0) {
+                paymentMethodId = candidate;
+              }
+            }
+            const chargeCard = charge.payment_method_details?.card;
+            if (chargeCard) {
+              cardBrand = chargeCard.brand || cardBrand;
+              cardLast4 = chargeCard.last4 || cardLast4;
+              cardExpMonth = chargeCard.exp_month || cardExpMonth;
+              cardExpYear = chargeCard.exp_year || cardExpYear;
+            }
+          } catch (error) {
+            console.warn(
+              '[PaymentService] Unable to retrieve charge details for payment intent',
+              paymentIntent.id,
+              (error as Error)?.message || error,
+            );
+          }
+        }
+      }
 
       let billingDetails:
         | {
@@ -169,26 +208,33 @@ export class PaymentService {
           invoice_settings: { default_payment_method: paymentMethodId },
         });
 
-       let cardDetails: Stripe.PaymentMethod.Card | null = null;
+        if (!cardBrand || !cardLast4 || !cardExpMonth || !cardExpYear) {
+          try {
+            const paymentMethod = await this.stripe.paymentMethods.retrieve(
+              paymentMethodId,
+            );
+            const methodCard = paymentMethod?.card;
+            if (methodCard) {
+              cardBrand = methodCard.brand || cardBrand;
+              cardLast4 = methodCard.last4 || cardLast4;
+              cardExpMonth = methodCard.exp_month || cardExpMonth;
+              cardExpYear = methodCard.exp_year || cardExpYear;
+            }
+          } catch (error) {
+            console.warn(
+              '[PaymentService] Unable to retrieve payment method details',
+              (error as Error)?.message || error,
+            );
+          }
+        }
 
-try {
-  const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
-  cardDetails = paymentMethod?.card ?? null;
-} catch (error) {
-  console.warn(
-    '[PaymentService] Unable to retrieve payment method details',
-    (error as Error)?.message || error,
-  );
-}
-
-const billingDetails = {
-  paymentMethodId,
-  cardBrand: cardDetails?.brand,
-  cardLast4: cardDetails?.last4,
-  cardExpMonth: cardDetails?.exp_month,
-  cardExpYear: cardDetails?.exp_year,
-};
-
+        billingDetails = {
+          paymentMethodId,
+          cardBrand,
+          cardLast4,
+          cardExpMonth,
+          cardExpYear,
+        };
       }
 
       // Mark user as payment verified and start/renew subscription period
