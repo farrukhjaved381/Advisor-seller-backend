@@ -634,6 +634,118 @@ export class PaymentService {
         }
         break;
       }
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        const enrichedInvoice = invoice as Stripe.Invoice & {
+          payment_intent?: string | Stripe.PaymentIntent;
+        };
+        const billingReason = invoice.billing_reason;
+        const paymentIntentSource = enrichedInvoice.payment_intent;
+        const paymentIntentId =
+          typeof paymentIntentSource === 'string'
+            ? paymentIntentSource
+            : paymentIntentSource?.id;
+
+        let userId = invoice.metadata?.userId as string | undefined;
+        if (!userId && paymentIntentId) {
+          try {
+            const intent = await this.stripe.paymentIntents.retrieve(
+              paymentIntentId,
+            );
+            userId = intent.metadata?.userId;
+          } catch (error) {
+            console.warn(
+              '[PaymentService] Unable to retrieve PaymentIntent for invoice.payment_succeeded',
+              paymentIntentId,
+              (error as Error)?.message || error,
+            );
+          }
+        }
+
+        if (userId && paymentIntentId) {
+          const historyExists = await this.paymentHistoryModel.exists({
+            paymentId: paymentIntentId,
+          });
+          if (!historyExists) {
+            try {
+              await this.confirmPayment(userId, paymentIntentId);
+            } catch (error) {
+              console.warn(
+                '[PaymentService] confirmPayment via webhook failed',
+                {
+                  userId,
+                  paymentIntentId,
+                  billingReason,
+                  error: (error as Error)?.message || error,
+                },
+              );
+            }
+          }
+        }
+        break;
+      }
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        const enrichedInvoice = invoice as Stripe.Invoice & {
+          payment_intent?: string | Stripe.PaymentIntent;
+        };
+        const paymentIntentSource = enrichedInvoice.payment_intent;
+        const paymentIntentId =
+          typeof paymentIntentSource === 'string'
+            ? paymentIntentSource
+            : paymentIntentSource?.id;
+
+        let userId = invoice.metadata?.userId as string | undefined;
+        let failureReason: string | undefined;
+        if (!userId && paymentIntentId) {
+          try {
+            const intent = await this.stripe.paymentIntents.retrieve(
+              paymentIntentId,
+            );
+            userId = intent.metadata?.userId;
+            failureReason = intent.last_payment_error?.message;
+          } catch (error) {
+            console.warn(
+              '[PaymentService] Unable to retrieve PaymentIntent for invoice.payment_failed',
+              paymentIntentId,
+              (error as Error)?.message || error,
+            );
+          }
+        }
+
+        if (userId) {
+          await this.usersService.markSubscriptionStatus(userId, 'past_due');
+
+          const failurePaymentId = paymentIntentId || `invoice-${invoice.id}`;
+          const exists = await this.paymentHistoryModel.exists({
+            paymentId: failurePaymentId,
+          });
+
+          if (!exists) {
+            await this.paymentHistoryModel.create({
+              userId,
+              provider: 'stripe',
+              paymentId: failurePaymentId,
+              amount: invoice.amount_due || 0,
+              currency: invoice.currency || 'usd',
+              status: 'failed',
+              description: 'Automatic renewal failed (webhook)',
+              periodStart: invoice.period_start
+                ? new Date(invoice.period_start * 1000)
+                : undefined,
+              periodEnd: invoice.period_end
+                ? new Date(invoice.period_end * 1000)
+                : undefined,
+              metadata: {
+                invoiceId: invoice.id,
+                code: invoice.status,
+                reason: failureReason,
+              },
+            });
+          }
+        }
+        break;
+      }
       default:
         console.log(`Unhandled event type ${event.type}`);
     }
