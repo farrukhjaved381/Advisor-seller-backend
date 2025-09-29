@@ -23,7 +23,6 @@ import { RedeemCouponDto } from './dto/redeem-coupon.dto';
 import { UpdatePaymentMethodDto } from './dto/update-payment-method.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { CsrfGuard } from '../auth/guards/csrf.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/schemas/user.schema';
 import type { Request as ExpressRequest } from 'express';
@@ -34,7 +33,7 @@ export class PaymentController {
   constructor(private paymentService: PaymentService) {}
 
   @Post('create-intent')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
   @Throttle({ default: { limit: 10, ttl: 3600 } })
@@ -66,7 +65,7 @@ export class PaymentController {
   }
 
   @Post('confirm')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
   @Throttle({ default: { limit: 5, ttl: 3600 } })
@@ -98,7 +97,7 @@ export class PaymentController {
   }
 
   @Post('redeem-coupon')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
   @Throttle({ default: { limit: 3, ttl: 3600 } })
@@ -130,7 +129,7 @@ export class PaymentController {
   }
 
   @Post('setup-intent')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a setup intent to store/update default payment method' })
@@ -139,7 +138,7 @@ export class PaymentController {
   }
 
   @Post('update-payment-method')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Attach and set a new default payment method for automatic renewals' })
