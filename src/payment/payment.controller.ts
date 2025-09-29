@@ -34,7 +34,8 @@ export class PaymentController {
   constructor(private paymentService: PaymentService) {}
 
   @Post('create-intent')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
   @Throttle({ default: { limit: 10, ttl: 3600 } })
   @ApiOperation({ summary: 'Create payment intent for advisor membership' })
@@ -65,7 +66,8 @@ export class PaymentController {
   }
 
   @Post('confirm')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
   @Throttle({ default: { limit: 5, ttl: 3600 } })
   @ApiOperation({ summary: 'Confirm payment and activate advisor profile' })
@@ -96,7 +98,8 @@ export class PaymentController {
   }
 
   @Post('redeem-coupon')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
   @Throttle({ default: { limit: 3, ttl: 3600 } })
   @ApiOperation({ summary: 'Redeem coupon for free trial activation' })
@@ -127,7 +130,7 @@ export class PaymentController {
   }
 
   @Post('setup-intent')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a setup intent to store/update default payment method' })
@@ -136,7 +139,7 @@ export class PaymentController {
   }
 
   @Post('update-payment-method')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Attach and set a new default payment method for automatic renewals' })

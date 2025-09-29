@@ -26,12 +26,17 @@ export class PaymentService {
     private configService: ConfigService,
     private usersService: UsersService,
   ) {
-    this.stripe = new Stripe(
+    const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+    if (!secretKey) {
+      throw new Error('STRIPE_SECRET_KEY is not configured');
+    }
+
+    const configuredApiVersion = (this.stripe = new Stripe(
       this.configService.get('STRIPE_SECRET_KEY') || 'sk_test_default',
       {
         apiVersion: '2025-08-27.basil',
       },
-    );
+    ));
   }
 
   private async ensureStripeCustomer(
@@ -72,14 +77,18 @@ export class PaymentService {
     // Apply coupon if provided
     if (couponCode) {
       coupon = await this.validateCoupon(couponCode);
+      if (coupon.type === 'free_trial') {
+        throw new BadRequestException(
+          'Free trial coupons should be redeemed instead of creating a payment intent.',
+        );
+      }
       amount = this.calculateDiscountedAmount(amount, coupon);
     }
 
-    // If amount is 0 (free trial), set minimum amount for Stripe
-    const stripeAmount = amount === 0 ? 50 : amount; // 50 cents minimum for free trial only
+    const stripeAmount = Math.max(amount, 50);
 
-      const paymentIntent = await this.stripe.paymentIntents.create({
-        amount: stripeAmount,
+    const paymentIntent = await this.stripe.paymentIntents.create({
+      amount: stripeAmount,
         currency: 'usd',
         customer: customerId,
         setup_future_usage: 'off_session',
