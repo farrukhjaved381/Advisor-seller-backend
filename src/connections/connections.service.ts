@@ -157,10 +157,10 @@ export class ConnectionsService {
     if (contextType === 'seller-copy') {
       return {
         introGreeting: `Hi ${data.sellerNameText},`,
-        introMessage: `Here's a copy of the warm introduction we just shared with <strong>${data.advisorCompanyNameText}</strong>. Reply-all or reach out directly using the advisor's details below to keep the conversation moving.`,
+        introMessage: `Here's is the warm introduction we just shared with <strong>${data.advisorCompanyNameText}</strong>. Reply-all or reach out directly using the advisor's details below to keep the conversation moving.`,
         primaryCtaLabel: this.escapeHtml('Open Seller Dashboard'),
         primaryCtaUrl: data.sellerdashboardHref,
-        footerNote: `You're receiving this copy because you asked us to introduce you to ${data.advisorCompanyNameText}.`,
+        footerNote: `You're receiving this because you asked us to introduce you to ${data.advisorCompanyNameText}.`,
         focusAreasCta: data.focusAreasCtaSeller ?? '',
       };
     }
@@ -531,7 +531,7 @@ export class ConnectionsService {
         try {
           await this.emailService.sendEmail({
             to: sellerUser.email,
-            subject: `Copy: Introduction sent to ${emailData.raw.advisorCompanyName}`,
+            subject: `Introduction sent to ${emailData.raw.advisorCompanyName}`,
             html: sellerCopyHtml,
           });
         } catch (sellerError) {
