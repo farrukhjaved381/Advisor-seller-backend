@@ -361,6 +361,8 @@ export class PaymentService {
         save_default_payment_method: 'on_subscription',
         payment_method_types: ['card'],
       },
+      default_payment_method: paymentMethodId,
+      collection_method: 'charge_automatically',
       expand: Array.from(this.invoiceExpandParams),
       metadata: {
         userId: String((user as any)._id),

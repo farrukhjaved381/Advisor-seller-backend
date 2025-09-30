@@ -116,10 +116,6 @@ export class SellersService {
                             <p style="margin: 0; font-size: 14px; color: #1f2937; line-height: 1.7;">This may seem like a lot, but the goal is to find the right steward for your company and to have a great exit. Finally, do not sell your company without the help of an advisor!</p>
                           </div>
 
-                          <div style="text-align: center; margin: 18px 0 12px;">
-                            <a href="${sellerDashboardHref}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">Open Seller Dashboard</a>
-                          </div>
-
                           <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">Questions? We're here at support@advisorchooser.com.</p>
                         </td>
                       </tr>
