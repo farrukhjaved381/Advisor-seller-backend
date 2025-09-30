@@ -404,6 +404,22 @@ export class PaymentService {
       | Stripe.PaymentIntent
       | undefined;
 
+    console.log('[PaymentService] createSubscription', {
+      userId: String((user as any)._id),
+      subscriptionId: subscription.id,
+      status: subscription.status,
+      latestInvoiceId: latestInvoice?.id,
+      paymentIntentStatus: paymentIntent?.status,
+      requiresAction: this.paymentIntentRequiresAction(paymentIntent),
+    });
+
+    if (!paymentIntent) {
+      console.warn('[PaymentService] No payment intent returned for subscription', {
+        subscriptionId: subscription.id,
+        status: subscription.status,
+      });
+    }
+
     await this.usersService.updateSubscriptionFromStripe(
       String((user as any)._id),
       {
@@ -487,6 +503,24 @@ export class PaymentService {
       },
       billingDetails,
     );
+
+    console.log('[PaymentService] finalizeSubscription', {
+      userId,
+      subscriptionId: subscription.id,
+      status: subscription.status,
+      paymentIntentStatus: paymentIntent?.status,
+      invoiceId: latestInvoice?.id,
+      invoicePaid: latestInvoice?.paid,
+    });
+
+    console.log('[PaymentService] finalizeSubscription', {
+      userId,
+      subscriptionId: subscription.id,
+      status: subscription.status,
+      paymentIntentStatus: paymentIntent?.status,
+      invoiceId: latestInvoice?.id,
+      invoicePaid: latestInvoice?.paid,
+    });
 
     if (
       subscription.status === 'active' ||
