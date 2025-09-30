@@ -21,6 +21,8 @@ import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 import { RedeemCouponDto } from './dto/redeem-coupon.dto';
 import { UpdatePaymentMethodDto } from './dto/update-payment-method.dto';
+import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+import { FinalizeSubscriptionDto } from './dto/finalize-subscription.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -64,6 +66,24 @@ export class PaymentController {
     );
   }
 
+  @Post('create-subscription')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADVISOR)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 10, ttl: 3600 } })
+  @ApiOperation({ summary: 'Create Stripe subscription for advisor membership' })
+  @ApiBody({ type: CreateSubscriptionDto })
+  async createSubscription(
+    @Request() req,
+    @Body() createSubscriptionDto: CreateSubscriptionDto,
+  ) {
+    return this.paymentService.createSubscription(
+      req.user._id,
+      createSubscriptionDto.paymentMethodId,
+      createSubscriptionDto.couponCode,
+    );
+  }
+
   @Post('confirm')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADVISOR)
@@ -93,6 +113,22 @@ export class PaymentController {
     return this.paymentService.confirmPayment(
       req.user._id,
       confirmPaymentDto.paymentIntentId,
+    );
+  }
+
+  @Post('finalize-subscription')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADVISOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Finalize a subscription after additional authentication' })
+  @ApiBody({ type: FinalizeSubscriptionDto })
+  async finalizeSubscription(
+    @Request() req,
+    @Body() finalizeSubscriptionDto: FinalizeSubscriptionDto,
+  ) {
+    return this.paymentService.finalizeSubscription(
+      req.user._id,
+      finalizeSubscriptionDto.subscriptionId,
     );
   }
 

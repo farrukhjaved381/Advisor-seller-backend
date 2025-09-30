@@ -44,6 +44,10 @@ export class User extends Document {
   @ApiProperty({ description: 'Stripe customer ID' })
   stripeCustomerId?: string;
 
+  @Prop()
+  @ApiProperty({ description: 'Stripe subscription ID' })
+  stripeSubscriptionId?: string;
+
   @Prop({
     type: {
       defaultPaymentMethodId: { type: String },
@@ -80,7 +84,17 @@ export class User extends Document {
     type: {
       status: {
         type: String,
-        enum: ['none', 'active', 'canceled', 'expired', 'past_due'],
+        enum: [
+          'none',
+          'active',
+          'canceled',
+          'expired',
+          'past_due',
+          'trialing',
+          'incomplete',
+          'incomplete_expired',
+          'unpaid',
+        ],
         default: 'none',
       },
       currentPeriodStart: { type: Date },
@@ -108,7 +122,16 @@ export class User extends Document {
     },
   })
   subscription?: {
-    status: 'none' | 'active' | 'canceled' | 'expired' | 'past_due';
+    status:
+      | 'none'
+      | 'active'
+      | 'canceled'
+      | 'expired'
+      | 'past_due'
+      | 'trialing'
+      | 'incomplete'
+      | 'incomplete_expired'
+      | 'unpaid';
     currentPeriodStart?: Date;
     currentPeriodEnd?: Date;
     cancelAtPeriodEnd?: boolean;

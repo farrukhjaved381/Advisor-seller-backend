@@ -240,6 +240,68 @@ export class UsersService {
     );
   }
 
+  async updateSubscriptionFromStripe(
+    userId: string,
+    details: {
+      subscriptionId: string;
+      status: string;
+      currentPeriodStart?: Date;
+      currentPeriodEnd?: Date;
+      cancelAtPeriodEnd?: boolean;
+      couponCode?: string;
+    },
+    billingDetails?: {
+      paymentMethodId?: string;
+      cardBrand?: string;
+      cardLast4?: string;
+      cardExpMonth?: number;
+      cardExpYear?: number;
+    },
+  ): Promise<User | null> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const subscription = user.subscription || ({} as any);
+    subscription.status = details.status as any;
+    if (details.currentPeriodStart) {
+      subscription.currentPeriodStart = details.currentPeriodStart;
+    }
+    if (details.currentPeriodEnd) {
+      subscription.currentPeriodEnd = details.currentPeriodEnd;
+    }
+    if (typeof details.cancelAtPeriodEnd === 'boolean') {
+      subscription.cancelAtPeriodEnd = details.cancelAtPeriodEnd;
+    }
+
+    const updateData: any = {
+      subscription,
+      isPaymentVerified: ['active', 'trialing', 'past_due'].includes(
+        details.status,
+      ),
+    };
+
+    if (details.subscriptionId) {
+      updateData.stripeSubscriptionId = details.subscriptionId;
+    }
+
+    if (billingDetails && billingDetails.paymentMethodId) {
+      updateData.billing = {
+        defaultPaymentMethodId: billingDetails.paymentMethodId,
+        cardBrand: billingDetails.cardBrand,
+        cardLast4: billingDetails.cardLast4,
+        expMonth: billingDetails.cardExpMonth,
+        expYear: billingDetails.cardExpYear,
+        updatedAt: new Date(),
+      };
+    }
+
+    return this.userModel.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    });
+  }
+
   async findAdvisorsDueForRenewal(cutoff: Date): Promise<User[]> {
     return this.userModel
       .find({
