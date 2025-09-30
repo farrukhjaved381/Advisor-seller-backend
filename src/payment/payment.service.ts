@@ -415,30 +415,42 @@ export class PaymentService {
       latestInvoice = latestInvoiceRaw as StripeInvoiceExpanded | undefined;
     }
 
-    let paymentIntent = latestInvoice?.payment_intent as
-      | Stripe.PaymentIntent
-      | string
-      | undefined;
+    const invoicePaymentIntent = latestInvoice
+      ? (latestInvoice.payment_intent as
+          | Stripe.PaymentIntent
+          | string
+          | undefined) ??
+        (latestInvoice as any).latest_payment_intent
+      : undefined;
+    let paymentIntent: Stripe.PaymentIntent | undefined;
 
-    if (typeof paymentIntent === 'string') {
-      paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntent);
+    if (typeof invoicePaymentIntent === 'string') {
+      paymentIntent = await this.stripe.paymentIntents.retrieve(
+        invoicePaymentIntent,
+      );
+    } else {
+      paymentIntent = invoicePaymentIntent || undefined;
     }
 
     if (latestInvoice) {
-      console.log('[PaymentService] createSubscription invoice summary', {
+      const paid =
+        typeof latestInvoice.paid === 'boolean'
+          ? latestInvoice.paid
+          : latestInvoice.status === 'paid';
+      console.log('[PaymentService] finalizeSubscription invoice summary', {
         invoiceId: latestInvoice.id,
         status: latestInvoice.status,
-        paid: latestInvoice.paid,
+        paid,
         amountDue: latestInvoice.amount_due,
         amountPaid: latestInvoice.amount_paid,
-        paymentIntentType: typeof latestInvoice.payment_intent,
+        paymentIntentType: typeof invoicePaymentIntent,
         paymentIntentId:
-          typeof latestInvoice.payment_intent === 'string'
-            ? latestInvoice.payment_intent
-            : latestInvoice.payment_intent?.id,
+          typeof invoicePaymentIntent === 'string'
+            ? invoicePaymentIntent
+            : invoicePaymentIntent?.id,
       });
     } else {
-      console.warn('[PaymentService] createSubscription missing invoice object', {
+      console.warn('[PaymentService] finalizeSubscription missing invoice object', {
         subscriptionId: subscription.id,
       });
     }
@@ -449,10 +461,12 @@ export class PaymentService {
           latestInvoice.id,
           { expand: ['payment_intent'] },
         )) as StripeInvoiceExpanded;
-        const refreshedPI = refreshedInvoice.payment_intent as
-          | Stripe.PaymentIntent
-          | string
-          | undefined;
+        const refreshedPI =
+          (refreshedInvoice.payment_intent as
+            | Stripe.PaymentIntent
+            | string
+            | undefined) ??
+          (refreshedInvoice as any).latest_payment_intent;
         if (typeof refreshedPI === 'string') {
           paymentIntent = await this.stripe.paymentIntents.retrieve(refreshedPI);
         } else if (refreshedPI) {
@@ -468,9 +482,49 @@ export class PaymentService {
             typeof refreshedPI === 'string'
               ? undefined
               : refreshedPI?.status,
+          keys: Object.keys(refreshedInvoice),
         });
       } catch (error) {
         console.warn('[PaymentService] Unable to refresh invoice payment intent', {
+          invoiceId: latestInvoice.id,
+          error: (error as Error)?.message || error,
+        });
+      }
+    }
+
+    if (!paymentIntent && latestInvoice?.id) {
+      try {
+        const paidInvoiceResponse = await this.stripe.invoices.pay(
+          latestInvoice.id,
+          {
+            payment_method: paymentMethodId,
+          },
+        );
+        const paidInvoice = paidInvoiceResponse as StripeInvoiceExpanded;
+        const paidPI =
+          (paidInvoice.payment_intent as
+            | Stripe.PaymentIntent
+            | string
+            | undefined) ??
+          (paidInvoice as any).latest_payment_intent;
+        if (typeof paidPI === 'string') {
+          paymentIntent = await this.stripe.paymentIntents.retrieve(paidPI);
+        } else if (paidPI) {
+          paymentIntent = paidPI;
+        }
+        console.log('[PaymentService] invoice pay result', {
+          invoiceId: paidInvoice.id,
+          paymentIntentId:
+            typeof paidPI === 'string'
+              ? paidPI
+              : paidPI?.id,
+          paymentIntentStatus:
+            typeof paidPI === 'string'
+              ? undefined
+              : paidPI?.status,
+        });
+      } catch (error) {
+        console.warn('[PaymentService] Unable to pay invoice immediately', {
           invoiceId: latestInvoice.id,
           error: (error as Error)?.message || error,
         });
