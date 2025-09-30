@@ -68,8 +68,7 @@ export class AdvisorsService {
       createDto.testimonials.length !== 5 ||
       createDto.testimonials.some(
         (testimonial) =>
-          !testimonial?.clientName?.trim() ||
-          !testimonial?.testimonial?.trim(),
+          !testimonial?.clientName?.trim() || !testimonial?.testimonial?.trim(),
       )
     ) {
       throw new BadRequestException(
@@ -234,8 +233,13 @@ export class AdvisorsService {
       const coerce = (val: any) => {
         if (typeof val === 'string') {
           const s = val.trim();
-          if ((s.startsWith('[') && s.endsWith(']')) || (s.startsWith('{') && s.endsWith('}'))) {
-            try { return JSON.parse(s); } catch {}
+          if (
+            (s.startsWith('[') && s.endsWith(']')) ||
+            (s.startsWith('{') && s.endsWith('}'))
+          ) {
+            try {
+              return JSON.parse(s);
+            } catch {}
           }
         }
         return val;
@@ -296,11 +300,21 @@ export class AdvisorsService {
         }
         if (key === 'industries' || key === 'geographies') {
           if (Array.isArray(value)) {
-            if (value.length === 1 && typeof value[0] === 'string' && value[0].includes(',')) {
-              value = value[0].split(',').map((x) => x.trim()).filter(Boolean);
+            if (
+              value.length === 1 &&
+              typeof value[0] === 'string' &&
+              value[0].includes(',')
+            ) {
+              value = value[0]
+                .split(',')
+                .map((x) => x.trim())
+                .filter(Boolean);
             }
           } else if (typeof value === 'string') {
-            value = value.split(',').map((x) => x.trim()).filter(Boolean);
+            value = value
+              .split(',')
+              .map((x) => x.trim())
+              .filter(Boolean);
           } else {
             value = [];
           }
@@ -316,8 +330,10 @@ export class AdvisorsService {
           (advisor as any).revenueRange = {};
         }
         const rr: any = advisor.revenueRange as any;
-        if (minKey in updateProfileDto) rr.min = Number(updateProfileDto[minKey]);
-        if (maxKey in updateProfileDto) rr.max = Number(updateProfileDto[maxKey]);
+        if (minKey in updateProfileDto)
+          rr.min = Number(updateProfileDto[minKey]);
+        if (maxKey in updateProfileDto)
+          rr.max = Number(updateProfileDto[maxKey]);
       }
     }
 
@@ -368,8 +384,7 @@ export class AdvisorsService {
       advisor.testimonials.length !== 5 ||
       advisor.testimonials.some(
         (testimonial) =>
-          !testimonial?.clientName?.trim() ||
-          !testimonial?.testimonial?.trim(),
+          !testimonial?.clientName?.trim() || !testimonial?.testimonial?.trim(),
       )
     ) {
       throw new BadRequestException(
@@ -391,12 +406,18 @@ export class AdvisorsService {
     };
     leads: any[];
   }> {
-    console.log('[AdvisorsService] getLeadsForAdvisor start', { advisorUserId: advisorId, at: new Date().toISOString() });
+    console.log('[AdvisorsService] getLeadsForAdvisor start', {
+      advisorUserId: advisorId,
+      at: new Date().toISOString(),
+    });
     const advisorProfile = await this.advisorModel
       .findOne({ userId: advisorId })
       .select('_id');
     if (!advisorProfile) {
-      console.warn('[AdvisorsService] No advisor profile found for user', advisorId);
+      console.warn(
+        '[AdvisorsService] No advisor profile found for user',
+        advisorId,
+      );
       throw new NotFoundException('Advisor profile not found');
     }
 
@@ -406,11 +427,15 @@ export class AdvisorsService {
       .sort({ createdAt: -1 })
       .lean() // lean for faster mapping
       .exec();
-    console.log('[AdvisorsService] Found leads', { count: allLeads.length, advisorProfileId: advisorProfile._id.toString() });
+    console.log('[AdvisorsService] Found leads', {
+      count: allLeads.length,
+      advisorProfileId: advisorProfile._id.toString(),
+    });
 
     const leads = (allLeads || []).filter(
       (lead) =>
-        (lead.type || ConnectionType.INTRODUCTION) === ConnectionType.INTRODUCTION,
+        (lead.type || ConnectionType.INTRODUCTION) ===
+        ConnectionType.INTRODUCTION,
     );
     if (leads.length !== allLeads.length) {
       console.log('[AdvisorsService] Filtered leads to introduction only', {
@@ -427,7 +452,10 @@ export class AdvisorsService {
           .filter((v): v is string => Boolean(v)),
       ),
     );
-    console.log('[AdvisorsService] Unique seller userIds from leads', sellerUserIds);
+    console.log(
+      '[AdvisorsService] Unique seller userIds from leads',
+      sellerUserIds,
+    );
 
     const sellers = await this.sellerModel
       .find({ userId: { $in: sellerUserIds } })
@@ -439,25 +467,38 @@ export class AdvisorsService {
     sellers.forEach((s) => sellerMap.set(String(s.userId), s));
     const missing = sellerUserIds.filter((id) => !sellerMap.has(id));
     if (missing.length > 0) {
-      console.warn('[AdvisorsService] Missing seller profiles for userIds', missing);
+      console.warn(
+        '[AdvisorsService] Missing seller profiles for userIds',
+        missing,
+      );
     }
 
     const leadsWithSeller = leads.map((l) => {
       const sellerUserId = l.sellerId ? String(l.sellerId) : null;
-      const sellerProfile = sellerUserId ? sellerMap.get(sellerUserId) || null : null;
+      const sellerProfile = sellerUserId
+        ? sellerMap.get(sellerUserId) || null
+        : null;
 
       const snapshotSource = l as any;
       const snapshot: Record<string, any> = {};
-      if (snapshotSource.sellerCompanyName) snapshot.companyName = snapshotSource.sellerCompanyName;
-      if (snapshotSource.sellerIndustry) snapshot.industry = snapshotSource.sellerIndustry;
-      if (snapshotSource.sellerGeography) snapshot.geography = snapshotSource.sellerGeography;
+      if (snapshotSource.sellerCompanyName)
+        snapshot.companyName = snapshotSource.sellerCompanyName;
+      if (snapshotSource.sellerIndustry)
+        snapshot.industry = snapshotSource.sellerIndustry;
+      if (snapshotSource.sellerGeography)
+        snapshot.geography = snapshotSource.sellerGeography;
       if (snapshotSource.sellerAnnualRevenue !== undefined)
         snapshot.annualRevenue = snapshotSource.sellerAnnualRevenue;
-      if (snapshotSource.sellerCurrency) snapshot.currency = snapshotSource.sellerCurrency;
-      if (snapshotSource.sellerContactEmail) snapshot.contactEmail = snapshotSource.sellerContactEmail;
-      if (snapshotSource.sellerContactName) snapshot.contactName = snapshotSource.sellerContactName;
-      if (snapshotSource.sellerPhone) snapshot.phone = snapshotSource.sellerPhone;
-      if (snapshotSource.sellerWebsite) snapshot.website = snapshotSource.sellerWebsite;
+      if (snapshotSource.sellerCurrency)
+        snapshot.currency = snapshotSource.sellerCurrency;
+      if (snapshotSource.sellerContactEmail)
+        snapshot.contactEmail = snapshotSource.sellerContactEmail;
+      if (snapshotSource.sellerContactName)
+        snapshot.contactName = snapshotSource.sellerContactName;
+      if (snapshotSource.sellerPhone)
+        snapshot.phone = snapshotSource.sellerPhone;
+      if (snapshotSource.sellerWebsite)
+        snapshot.website = snapshotSource.sellerWebsite;
 
       const mergedSeller = sellerProfile
         ? {
@@ -465,8 +506,8 @@ export class AdvisorsService {
             ...sellerProfile,
           }
         : Object.keys(snapshot).length > 0
-        ? snapshot
-        : null;
+          ? snapshot
+          : null;
 
       return {
         ...l,
@@ -485,7 +526,8 @@ export class AdvisorsService {
     const dedupedLeads: any[] = [];
     const seenKeys = new Set<string>();
     for (const lead of leadsWithSeller) {
-      const baseKey = lead.sellerUserId || (lead.sellerId ? String(lead.sellerId) : null);
+      const baseKey =
+        lead.sellerUserId || (lead.sellerId ? String(lead.sellerId) : null);
       const fallbackKey = lead.seller?.companyName
         ? `${lead.seller.companyName}`
         : lead._id?.toString?.();
@@ -522,11 +564,14 @@ export class AdvisorsService {
       (lead) => lead.createdAt >= startOfWeek,
     ).length;
 
-    const leadsByType = leadsForStats.reduce<Record<string, number>>((acc, lead) => {
-      const type = lead.type || 'unknown';
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {});
+    const leadsByType = leadsForStats.reduce<Record<string, number>>(
+      (acc, lead) => {
+        const type = lead.type || 'unknown';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      },
+      {},
+    );
 
     const monthlyTrendMap = new Map<string, number>();
     leadsForStats.forEach((lead) => {
@@ -566,7 +611,10 @@ export class AdvisorsService {
       },
       leads: leadsForStats,
     };
-    console.log('[AdvisorsService] getLeadsForAdvisor completed', { advisorUserId: advisorId, totalLeads: result.stats.totalLeads });
+    console.log('[AdvisorsService] getLeadsForAdvisor completed', {
+      advisorUserId: advisorId,
+      totalLeads: result.stats.totalLeads,
+    });
     return result;
   }
 }

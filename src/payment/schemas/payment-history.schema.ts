@@ -15,7 +15,9 @@ export class PaymentHistory {
   provider: string;
 
   @Prop({ required: true })
-  @ApiProperty({ description: 'Payment identifier (e.g., Stripe PaymentIntent ID)' })
+  @ApiProperty({
+    description: 'Payment identifier (e.g., Stripe PaymentIntent ID)',
+  })
   paymentId: string;
 
   @Prop({ required: true })
@@ -27,7 +29,9 @@ export class PaymentHistory {
   currency: string;
 
   @Prop({ required: true })
-  @ApiProperty({ description: 'Status of the payment (succeeded, failed, etc.)' })
+  @ApiProperty({
+    description: 'Status of the payment (succeeded, failed, etc.)',
+  })
   status: string;
 
   @Prop()
@@ -47,5 +51,6 @@ export class PaymentHistory {
   metadata?: Record<string, any>;
 }
 
-export const PaymentHistorySchema = SchemaFactory.createForClass(PaymentHistory);
+export const PaymentHistorySchema =
+  SchemaFactory.createForClass(PaymentHistory);
 PaymentHistorySchema.index({ userId: 1, createdAt: -1 });

@@ -209,16 +209,22 @@ export class AuthController {
         const now = new Date();
         const end = new Date(now.getTime());
         end.setFullYear(end.getFullYear() + 1);
-        await this.usersService.updateProfileComplete(req.user._id.toString(), req.user.isProfileComplete);
+        await this.usersService.updateProfileComplete(
+          req.user._id.toString(),
+          req.user.isProfileComplete,
+        );
         // Directly update subscription without changing other fields
-        await (this as any).usersService['userModel'].findByIdAndUpdate(req.user._id, {
-          subscription: {
-            status: 'active',
-            currentPeriodStart: now,
-            currentPeriodEnd: end,
-            cancelAtPeriodEnd: false,
+        await (this as any).usersService['userModel'].findByIdAndUpdate(
+          req.user._id,
+          {
+            subscription: {
+              status: 'active',
+              currentPeriodStart: now,
+              currentPeriodEnd: end,
+              cancelAtPeriodEnd: false,
+            },
           },
-        });
+        );
         // reflect in-memory object for response
         req.user.subscription = {
           status: 'active',
@@ -229,7 +235,10 @@ export class AuthController {
       }
     } catch (e) {
       // non-fatal
-      console.warn('[AuthController] lazy subscription init failed:', e?.message || e);
+      console.warn(
+        '[AuthController] lazy subscription init failed:',
+        e?.message || e,
+      );
     }
 
     // Compute subscription active state

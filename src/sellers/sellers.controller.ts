@@ -111,7 +111,12 @@ export class SellersController {
     // Finds and returns matched advisors based on industry, geography, revenue, and active status
     const pageNum = page ? Math.max(parseInt(page, 10) || 1, 1) : undefined;
     const limitNum = limit ? Math.max(parseInt(limit, 10) || 0, 0) : undefined;
-    return this.matchingService.findMatches(req.user._id, sortBy, pageNum, limitNum);
+    return this.matchingService.findMatches(
+      req.user._id,
+      sortBy,
+      pageNum,
+      limitNum,
+    );
   }
 
   @Get('matches/stats')

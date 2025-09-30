@@ -134,11 +134,16 @@ export class UsersService {
       : null;
 
     // Determine if there is a valid current cycle (start <= now < end)
-    const hasValidCurrentCycle = !!(existingStart && existingEnd && existingStart <= now && existingEnd > now);
+    const hasValidCurrentCycle = !!(
+      existingStart &&
+      existingEnd &&
+      existingStart <= now &&
+      existingEnd > now
+    );
     // New rule:
     // - If there is a valid current cycle, renew from existingEnd.
     // - Otherwise (no cycle, expired, or anomalous future-only window), start from now.
-    const startFrom = hasValidCurrentCycle ? existingEnd! : now;
+    const startFrom = hasValidCurrentCycle ? existingEnd : now;
 
     const periodStart = startFrom;
     const periodEnd = new Date(startFrom.getTime());
@@ -177,7 +182,9 @@ export class UsersService {
         updatedAt: new Date(),
       };
     }
-    const updated = await this.userModel.findByIdAndUpdate(userId, updateData, { new: true });
+    const updated = await this.userModel.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    });
     try {
       console.log('[UsersService] markPaymentVerified updated subscription', {
         userId: userId?.toString?.() || userId,
@@ -207,7 +214,10 @@ export class UsersService {
     );
   }
 
-  async setStripeCustomerId(userId: string, customerId: string): Promise<User | null> {
+  async setStripeCustomerId(
+    userId: string,
+    customerId: string,
+  ): Promise<User | null> {
     return this.userModel.findByIdAndUpdate(
       userId,
       { stripeCustomerId: customerId },
@@ -233,11 +243,7 @@ export class UsersService {
       expYear: details.cardExpYear,
       updatedAt: new Date(),
     };
-    return this.userModel.findByIdAndUpdate(
-      userId,
-      { billing },
-      { new: true },
-    );
+    return this.userModel.findByIdAndUpdate(userId, { billing }, { new: true });
   }
 
   async updateSubscriptionFromStripe(
@@ -333,7 +339,10 @@ export class UsersService {
       .exec();
   }
 
-  async recordAutoRenewAttempt(userId: string, attemptDate: Date): Promise<void> {
+  async recordAutoRenewAttempt(
+    userId: string,
+    attemptDate: Date,
+  ): Promise<void> {
     await this.userModel.findByIdAndUpdate(userId, {
       $set: { 'subscription.lastAutoRenewAttempt': attemptDate },
     });
@@ -365,7 +374,7 @@ export class UsersService {
   async cancelSubscriptionAtPeriodEnd(userId: string): Promise<User | null> {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('User not found');
-    const subscription = user.subscription || { status: 'none' } as any;
+    const subscription = user.subscription || ({ status: 'none' } as any);
     if (!subscription.currentPeriodEnd) {
       // Nothing to cancel
       return user;
@@ -385,7 +394,10 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not found');
     const subscription = user.subscription || ({} as any);
     const now = new Date();
-    if (subscription.currentPeriodEnd && new Date(subscription.currentPeriodEnd) > now) {
+    if (
+      subscription.currentPeriodEnd &&
+      new Date(subscription.currentPeriodEnd) > now
+    ) {
       subscription.cancelAtPeriodEnd = false;
       subscription.status = 'active';
       delete subscription.canceledAt;

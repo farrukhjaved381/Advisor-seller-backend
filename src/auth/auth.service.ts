@@ -140,9 +140,7 @@ export class AuthService {
     return this.generateAuthResponse(user);
   }
 
-  async verifyEmail(
-    token: string,
-  ): Promise<{
+  async verifyEmail(token: string): Promise<{
     message: string;
     success: boolean;
     user?: {

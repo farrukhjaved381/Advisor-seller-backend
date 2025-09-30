@@ -175,7 +175,7 @@ export class PaymentService {
         ? ((await this.stripe.invoices.retrieve(
             invoice,
           )) as StripeInvoiceExpanded)
-        : (invoice as StripeInvoiceExpanded);
+        : invoice;
 
     const amount =
       expandedInvoice.amount_paid || expandedInvoice.amount_due || 0;
@@ -274,7 +274,7 @@ export class PaymentService {
           ? ((await this.stripe.invoices.retrieve(
               latestInvoiceRaw,
             )) as StripeInvoiceExpanded)
-          : (latestInvoiceRaw as StripeInvoiceExpanded);
+          : latestInvoiceRaw;
       paymentIntent = invoice.payment_intent as
         | Stripe.PaymentIntent
         | undefined;
@@ -388,17 +388,23 @@ export class PaymentService {
       )) as StripeSubscriptionExpanded;
 
     if (subscription.latest_invoice) {
-      console.log('[PaymentService] createSubscription latest_invoice summary', {
-        type: typeof subscription.latest_invoice,
-        id:
-          typeof subscription.latest_invoice === 'string'
-            ? subscription.latest_invoice
-            : (subscription.latest_invoice as StripeInvoiceExpanded).id,
-      });
+      console.log(
+        '[PaymentService] createSubscription latest_invoice summary',
+        {
+          type: typeof subscription.latest_invoice,
+          id:
+            typeof subscription.latest_invoice === 'string'
+              ? subscription.latest_invoice
+              : (subscription.latest_invoice as StripeInvoiceExpanded).id,
+        },
+      );
     } else {
-      console.warn('[PaymentService] createSubscription missing latest_invoice', {
-        subscriptionId: subscription.id,
-      });
+      console.warn(
+        '[PaymentService] createSubscription missing latest_invoice',
+        {
+          subscriptionId: subscription.id,
+        },
+      );
     }
 
     const latestInvoiceRaw = subscription.latest_invoice as
@@ -407,27 +413,24 @@ export class PaymentService {
       | undefined;
     let latestInvoice: StripeInvoiceExpanded | undefined;
     if (typeof latestInvoiceRaw === 'string') {
-      latestInvoice = (await this.stripe.invoices.retrieve(
-        latestInvoiceRaw,
-        { expand: ['payment_intent'] },
-      )) as StripeInvoiceExpanded;
+      latestInvoice = (await this.stripe.invoices.retrieve(latestInvoiceRaw, {
+        expand: ['payment_intent'],
+      })) as StripeInvoiceExpanded;
     } else {
-      latestInvoice = latestInvoiceRaw as StripeInvoiceExpanded | undefined;
+      latestInvoice = latestInvoiceRaw;
     }
 
     const invoicePaymentIntent = latestInvoice
-      ? (latestInvoice.payment_intent as
+      ? ((latestInvoice.payment_intent as
           | Stripe.PaymentIntent
           | string
-          | undefined) ??
-        (latestInvoice as any).latest_payment_intent
+          | undefined) ?? (latestInvoice as any).latest_payment_intent)
       : undefined;
     let paymentIntent: Stripe.PaymentIntent | undefined;
 
     if (typeof invoicePaymentIntent === 'string') {
-      paymentIntent = await this.stripe.paymentIntents.retrieve(
-        invoicePaymentIntent,
-      );
+      paymentIntent =
+        await this.stripe.paymentIntents.retrieve(invoicePaymentIntent);
     } else {
       paymentIntent = invoicePaymentIntent || undefined;
     }
@@ -450,9 +453,12 @@ export class PaymentService {
             : invoicePaymentIntent?.id,
       });
     } else {
-      console.warn('[PaymentService] finalizeSubscription missing invoice object', {
-        subscriptionId: subscription.id,
-      });
+      console.warn(
+        '[PaymentService] finalizeSubscription missing invoice object',
+        {
+          subscriptionId: subscription.id,
+        },
+      );
     }
 
     if (!paymentIntent && latestInvoice?.id) {
@@ -465,30 +471,29 @@ export class PaymentService {
           (refreshedInvoice.payment_intent as
             | Stripe.PaymentIntent
             | string
-            | undefined) ??
-          (refreshedInvoice as any).latest_payment_intent;
+            | undefined) ?? (refreshedInvoice as any).latest_payment_intent;
         if (typeof refreshedPI === 'string') {
-          paymentIntent = await this.stripe.paymentIntents.retrieve(refreshedPI);
+          paymentIntent =
+            await this.stripe.paymentIntents.retrieve(refreshedPI);
         } else if (refreshedPI) {
           paymentIntent = refreshedPI;
         }
         console.log('[PaymentService] refreshed invoice payment intent', {
           invoiceId: refreshedInvoice.id,
           paymentIntentId:
-            typeof refreshedPI === 'string'
-              ? refreshedPI
-              : refreshedPI?.id,
+            typeof refreshedPI === 'string' ? refreshedPI : refreshedPI?.id,
           paymentIntentStatus:
-            typeof refreshedPI === 'string'
-              ? undefined
-              : refreshedPI?.status,
+            typeof refreshedPI === 'string' ? undefined : refreshedPI?.status,
           keys: Object.keys(refreshedInvoice),
         });
       } catch (error) {
-        console.warn('[PaymentService] Unable to refresh invoice payment intent', {
-          invoiceId: latestInvoice.id,
-          error: (error as Error)?.message || error,
-        });
+        console.warn(
+          '[PaymentService] Unable to refresh invoice payment intent',
+          {
+            invoiceId: latestInvoice.id,
+            error: (error as Error)?.message || error,
+          },
+        );
       }
     }
 
@@ -505,8 +510,7 @@ export class PaymentService {
           (paidInvoice.payment_intent as
             | Stripe.PaymentIntent
             | string
-            | undefined) ??
-          (paidInvoice as any).latest_payment_intent;
+            | undefined) ?? (paidInvoice as any).latest_payment_intent;
         if (typeof paidPI === 'string') {
           paymentIntent = await this.stripe.paymentIntents.retrieve(paidPI);
         } else if (paidPI) {
@@ -514,14 +518,9 @@ export class PaymentService {
         }
         console.log('[PaymentService] invoice pay result', {
           invoiceId: paidInvoice.id,
-          paymentIntentId:
-            typeof paidPI === 'string'
-              ? paidPI
-              : paidPI?.id,
+          paymentIntentId: typeof paidPI === 'string' ? paidPI : paidPI?.id,
           paymentIntentStatus:
-            typeof paidPI === 'string'
-              ? undefined
-              : paidPI?.status,
+            typeof paidPI === 'string' ? undefined : paidPI?.status,
         });
       } catch (error) {
         console.warn('[PaymentService] Unable to pay invoice immediately', {
@@ -541,10 +540,13 @@ export class PaymentService {
     });
 
     if (!paymentIntent) {
-      console.warn('[PaymentService] No payment intent returned for subscription', {
-        subscriptionId: subscription.id,
-        status: subscription.status,
-      });
+      console.warn(
+        '[PaymentService] No payment intent returned for subscription',
+        {
+          subscriptionId: subscription.id,
+          status: subscription.status,
+        },
+      );
     }
 
     await this.usersService.updateSubscriptionFromStripe(
@@ -594,19 +596,17 @@ export class PaymentService {
     if (latestInvoiceRaw) {
       latestInvoice =
         typeof latestInvoiceRaw === 'string'
-          ? ((await this.stripe.invoices.retrieve(
-              latestInvoiceRaw,
-              { expand: ['payment_intent'] },
-            )) as StripeInvoiceExpanded)
-          : (latestInvoiceRaw as StripeInvoiceExpanded);
+          ? ((await this.stripe.invoices.retrieve(latestInvoiceRaw, {
+              expand: ['payment_intent'],
+            })) as StripeInvoiceExpanded)
+          : latestInvoiceRaw;
       const invoicePaymentIntent = latestInvoice.payment_intent as
         | Stripe.PaymentIntent
         | string
         | undefined;
       if (typeof invoicePaymentIntent === 'string') {
-        paymentIntent = await this.stripe.paymentIntents.retrieve(
-          invoicePaymentIntent,
-        );
+        paymentIntent =
+          await this.stripe.paymentIntents.retrieve(invoicePaymentIntent);
       } else {
         paymentIntent = invoicePaymentIntent || undefined;
       }
@@ -621,9 +621,12 @@ export class PaymentService {
         paymentIntentStatus: paymentIntent?.status,
       });
     } else {
-      console.warn('[PaymentService] finalizeSubscription missing latest invoice', {
-        subscriptionId: subscription.id,
-      });
+      console.warn(
+        '[PaymentService] finalizeSubscription missing latest invoice',
+        {
+          subscriptionId: subscription.id,
+        },
+      );
     }
 
     const paymentMethodId =
@@ -777,7 +780,7 @@ export class PaymentService {
       const { user: userRecord, customerId: ensuredCustomerId } =
         await this.ensureStripeCustomer(userId);
 
-      let customerId =
+      const customerId =
         (paymentIntent.customer as string | null | undefined) ||
         ensuredCustomerId ||
         null;
@@ -1158,7 +1161,7 @@ export class PaymentService {
                 ? ((await this.stripe.invoices.retrieve(
                     latestInvoiceRaw,
                   )) as StripeInvoiceExpanded)
-                : (latestInvoiceRaw as StripeInvoiceExpanded);
+                : latestInvoiceRaw;
             if (latestInvoice && !latestInvoice.paid && latestInvoice.id) {
               await this.stripe.invoices.pay(latestInvoice.id, {
                 payment_method: paymentMethodId,
@@ -1301,7 +1304,7 @@ export class PaymentService {
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = event.data.object;
         await this.handleStripeSubscriptionEvent(subscription);
         break;
       }
@@ -1314,7 +1317,7 @@ export class PaymentService {
             ? paymentIntentSource
             : paymentIntentSource?.id;
 
-        let userId = invoice.metadata?.userId as string | undefined;
+        let userId = invoice.metadata?.userId;
         if (!userId && paymentIntentId) {
           try {
             const intent =
@@ -1359,7 +1362,7 @@ export class PaymentService {
             ? paymentIntentSource
             : paymentIntentSource?.id;
 
-        let userId = invoice.metadata?.userId as string | undefined;
+        let userId = invoice.metadata?.userId;
         let failureReason: string | undefined;
         if (!userId && paymentIntentId) {
           try {

@@ -104,7 +104,10 @@ export class AdvisorsController {
         },
         logo: { type: 'string', format: 'binary' },
         introVideo: { type: 'string', format: 'binary' },
-        testimonials: { type: 'array', items: { type: 'string', format: 'binary' } },
+        testimonials: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
       },
     },
   })
@@ -147,10 +150,18 @@ export class AdvisorsController {
   @ApiOperation({ summary: 'Get leads for the current advisor' })
   @ApiResponse({ status: 200, description: 'Leads retrieved successfully' })
   @ApiResponse({ status: 404, description: 'No leads found' })
-  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  @Header(
+    'Cache-Control',
+    'no-store, no-cache, must-revalidate, proxy-revalidate',
+  )
   async getLeads(@Request() req) {
     try {
-      console.log('[AdvisorsController] /advisors/leads requested by user', req?.user?._id?.toString(), 'at', new Date().toISOString());
+      console.log(
+        '[AdvisorsController] /advisors/leads requested by user',
+        req?.user?._id?.toString(),
+        'at',
+        new Date().toISOString(),
+      );
     } catch {}
     return this.advisorsService.getLeadsForAdvisor(req.user._id);
   }

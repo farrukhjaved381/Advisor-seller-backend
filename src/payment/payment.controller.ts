@@ -71,7 +71,9 @@ export class PaymentController {
   @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
   @Throttle({ default: { limit: 10, ttl: 3600 } })
-  @ApiOperation({ summary: 'Create Stripe subscription for advisor membership' })
+  @ApiOperation({
+    summary: 'Create Stripe subscription for advisor membership',
+  })
   @ApiBody({ type: CreateSubscriptionDto })
   async createSubscription(
     @Request() req,
@@ -120,7 +122,9 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Finalize a subscription after additional authentication' })
+  @ApiOperation({
+    summary: 'Finalize a subscription after additional authentication',
+  })
   @ApiBody({ type: FinalizeSubscriptionDto })
   async finalizeSubscription(
     @Request() req,
@@ -168,7 +172,9 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create a setup intent to store/update default payment method' })
+  @ApiOperation({
+    summary: 'Create a setup intent to store/update default payment method',
+  })
   async createSetupIntent(@Request() req) {
     return this.paymentService.createSetupIntent(req.user._id);
   }
@@ -177,7 +183,10 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADVISOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Attach and set a new default payment method for automatic renewals' })
+  @ApiOperation({
+    summary:
+      'Attach and set a new default payment method for automatic renewals',
+  })
   @ApiBody({ type: UpdatePaymentMethodDto })
   async updatePaymentMethod(
     @Request() req,
@@ -233,7 +242,10 @@ export class PaymentController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get subscription and payment history' })
   async getHistory(@Request() req) {
-    console.log('[PaymentController] GET /payment/history for user', req.user?._id);
+    console.log(
+      '[PaymentController] GET /payment/history for user',
+      req.user?._id,
+    );
     return this.paymentService.getHistory(req.user._id);
   }
 
@@ -243,11 +255,18 @@ export class PaymentController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cancel subscription at period end' })
   async cancel(@Request() req) {
-    console.log('[PaymentController] POST /payment/cancel for user', req.user?._id);
+    console.log(
+      '[PaymentController] POST /payment/cancel for user',
+      req.user?._id,
+    );
     const { subscription } = await this.paymentService.cancelAtPeriodEnd(
       req.user._id,
     );
-    return { success: true, subscription, message: 'Subscription will cancel at period end' };
+    return {
+      success: true,
+      subscription,
+      message: 'Subscription will cancel at period end',
+    };
   }
 
   @Post('resume')
@@ -256,7 +275,10 @@ export class PaymentController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Resume subscription (undo cancel at period end)' })
   async resume(@Request() req) {
-    console.log('[PaymentController] POST /payment/resume for user', req.user?._id);
+    console.log(
+      '[PaymentController] POST /payment/resume for user',
+      req.user?._id,
+    );
     const { subscription } = await this.paymentService.resume(req.user._id);
     return { success: true, subscription };
   }

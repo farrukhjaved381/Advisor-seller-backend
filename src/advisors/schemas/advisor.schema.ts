@@ -94,6 +94,9 @@ export class Advisor {
   @Prop({ default: true })
   @ApiProperty({ description: 'Whether to send leads' })
   sendLeads: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  workedWithCimamplify: boolean;
 }
 
 function arrayLimit(val: any[]) {

@@ -76,7 +76,8 @@ async function createApp(): Promise<INestApplication> {
       if (!origin) return callback(null, true);
       if (whitelist.includes(origin)) return callback(null, true);
       // Support Vercel preview URLs if needed
-      if (/^https:\/\/[a-z0-9-]+-vercel\.app$/.test(origin)) return callback(null, true);
+      if (/^https:\/\/[a-z0-9-]+-vercel\.app$/.test(origin))
+        return callback(null, true);
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,

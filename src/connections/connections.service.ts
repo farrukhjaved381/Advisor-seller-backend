@@ -31,6 +31,392 @@ export class ConnectionsService {
     private emailService: EmailService,
   ) {}
 
+  private escapeHtml(value: string | number | null | undefined): string {
+    const stringValue =
+      value === null || value === undefined ? '' : String(value);
+    return stringValue
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  private escapeAttr(value: string | number | null | undefined): string {
+    return this.escapeHtml(value);
+  }
+
+  private formatCurrency(
+    value: number | undefined,
+    currencyCode?: string,
+  ): string | null {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+      return null;
+    }
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currencyCode || 'USD',
+        maximumFractionDigits: 0,
+      }).format(value);
+    } catch (error) {
+      return value.toLocaleString();
+    }
+  }
+
+  private sanitizeSnapshotString(value?: string | null): string | undefined {
+    if (!value) {
+      return undefined;
+    }
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  private formatListPreview(
+    values: (string | null | undefined)[] | undefined,
+    maxVisible = 3,
+  ): {
+    previewHtml: string;
+    titleAttr: string;
+    moreCount: number;
+  } {
+    const normalized =
+      values
+        ?.map((value) => value?.trim())
+        .filter((value): value is string => Boolean(value)) ?? [];
+
+    if (normalized.length === 0) {
+      const fallback = 'Not specified';
+      return {
+        previewHtml: this.escapeHtml(fallback),
+        titleAttr: this.escapeAttr(fallback),
+        moreCount: 0,
+      };
+    }
+
+    const previewItems = normalized.slice(0, maxVisible);
+    const previewText = previewItems.join(', ');
+    const basePreviewHtml = this.escapeHtml(previewText);
+    const moreCount = Math.max(normalized.length - previewItems.length, 0);
+    const fullListAttr = this.escapeAttr(normalized.join(', '));
+
+    if (moreCount === 0) {
+      return {
+        previewHtml: basePreviewHtml,
+        titleAttr: fullListAttr,
+        moreCount,
+      };
+    }
+
+    const extraBadge = ` <span style="color:#4f46e5; font-weight:600;">+${moreCount} more</span>`;
+    return {
+      previewHtml: `${basePreviewHtml}${extraBadge}`,
+      titleAttr: fullListAttr,
+      moreCount,
+    };
+  }
+
+  private applyTemplate(
+    template: string,
+    replacements: Record<string, string>,
+  ): string {
+    let result = template;
+    for (const [key, rawValue] of Object.entries(replacements)) {
+      const value = String(rawValue ?? '');
+      const pattern = new RegExp(`{{${key}}}`, 'g');
+      result = result.replace(pattern, value);
+    }
+    return result;
+  }
+
+  private buildIntroductionContext(
+    contextType: 'advisor-introduction' | 'seller-copy' | 'direct-list',
+    data: {
+      advisorDisplayNameText: string;
+      advisorCompanyNameText: string;
+      sellerCompanyText: string;
+      sellerIndustryText: string;
+      sellerGeographyText: string;
+      sellerNameText: string;
+      sellerEmailText: string;
+      sellerdashboardHref: string;
+      advisordashboardHref: string;
+      focusAreasCtaSeller: string;
+    },
+  ): Record<string, string> {
+    if (contextType === 'advisor-introduction') {
+      return {
+        introGreeting: `Hi ${data.advisorDisplayNameText},`,
+        introMessage: `We're excited to introduce you to <strong>${data.sellerCompanyText}</strong>, operating in ${data.sellerIndustryText} across ${data.sellerGeographyText}. ${data.sellerNameText} is eager to speak with you about a potential engagement and asked us to connect you directly.`,
+        primaryCtaLabel: this.escapeHtml('Open Advisor Dashboard'),
+        primaryCtaUrl: data.advisordashboardHref,
+        footerNote: `You are receiving this introduction because ${data.sellerCompanyText} selected you on the Advisor Chooser Platform. Coordinate directly with the seller using the details above.`,
+      };
+    }
+
+    if (contextType === 'seller-copy') {
+      return {
+        introGreeting: `Hi ${data.sellerNameText},`,
+        introMessage: `Here's a copy of the warm introduction we just shared with <strong>${data.advisorCompanyNameText}</strong>. Reply-all or reach out directly using the advisor's details below to keep the conversation moving.`,
+        primaryCtaLabel: this.escapeHtml('Open Seller Dashboard'),
+        primaryCtaUrl: data.sellerdashboardHref,
+        footerNote: `You're receiving this copy because you asked us to introduce you to ${data.advisorCompanyNameText}.`,
+        focusAreasCta: data.focusAreasCtaSeller ?? '',
+      };
+    }
+
+    return {
+      introGreeting: `Hi ${data.advisorDisplayNameText},`,
+      introMessage: `We matched you with <strong>${data.sellerCompanyText}</strong>. They opted to reach out directly, so expect to hear from ${data.sellerNameText} soon. You can also reach them at ${data.sellerEmailText}.`,
+      primaryCtaLabel: this.escapeHtml('Open Advisor Dashboard'),
+      primaryCtaUrl: data.advisordashboardHref,
+      footerNote: `You're receiving this notification because ${data.sellerCompanyText} selected you on Advisor Chooser and chose to handle outreach directly.`,
+    };
+  }
+
+  private buildIntroductionEmailData(params: {
+    advisor: AdvisorDocument;
+    advisorUser: any;
+    seller: SellerDocument;
+    sellerUser: User;
+    sellerDashboardUrl: string;
+    advisorDashboardUrl: string;
+  }): {
+    replacements: Record<string, string>;
+    contextData: {
+      advisorDisplayNameText: string;
+      advisorCompanyNameText: string;
+      sellerCompanyText: string;
+      sellerIndustryText: string;
+      sellerGeographyText: string;
+      sellerNameText: string;
+      sellerEmailText: string;
+      sellerdashboardHref: string;
+      advisordashboardHref: string;
+      focusAreasCtaSeller: string;
+    };
+    snapshot: {
+      sellerAnnualRevenue?: number;
+      sellerCurrency?: string;
+      sellerContactEmail?: string;
+      sellerContactName?: string;
+      sellerPhone?: string;
+      sellerWebsite?: string;
+    };
+    raw: {
+      advisorCompanyName: string;
+      sellerCompanyName: string;
+    };
+  } {
+    const {
+      advisor,
+      advisorUser,
+      seller,
+      sellerUser,
+      sellerDashboardUrl,
+      advisorDashboardUrl,
+    } = params;
+
+    const advisordashboardHref = this.escapeAttr(advisorDashboardUrl);
+    const sellerdashboardHref = this.escapeAttr(sellerDashboardUrl);
+
+    const advisorCompanyNameRaw =
+      advisor.companyName || advisorUser?.name || 'Advisor Company';
+    const advisorCompanyNameText = this.escapeHtml(advisorCompanyNameRaw);
+    const advisorCompanyNameAttr = this.escapeAttr(advisorCompanyNameRaw);
+    const advisorDisplayNameRaw =
+      advisorUser?.name?.trim()?.length > 0
+        ? advisorUser.name
+        : advisorCompanyNameRaw;
+    const advisorDisplayNameText = this.escapeHtml(advisorDisplayNameRaw);
+    const advisorInitial =
+      advisorCompanyNameRaw.trim().charAt(0).toUpperCase() || 'A';
+
+    const advisorIndustriesPreview = this.formatListPreview(advisor.industries);
+    const advisorGeographiesPreview = this.formatListPreview(
+      advisor.geographies,
+    );
+
+    const advisorDescriptionRaw =
+      (advisor.description && advisor.description.trim()) ||
+      'No description provided';
+    const advisorDescriptionText = this.escapeHtml(advisorDescriptionRaw);
+
+    const advisorPhoneRaw = advisor.phone?.trim() || '';
+    const advisorPhoneText = this.escapeHtml(
+      advisorPhoneRaw.length > 0 ? advisorPhoneRaw : 'Not provided',
+    );
+    const advisorTelHref =
+      advisorPhoneRaw.length > 0
+        ? this.escapeAttr(`tel:${advisorPhoneRaw.replace(/[^+\d]/g, '')}`)
+        : '#';
+
+    const advisorEmailRaw = advisorUser?.email?.trim() || '';
+    const advisorEmailText = this.escapeHtml(
+      advisorEmailRaw.length > 0 ? advisorEmailRaw : 'Not provided',
+    );
+    const advisorEmailHref =
+      advisorEmailRaw.length > 0
+        ? this.escapeAttr(`mailto:${advisorEmailRaw}`)
+        : '#';
+
+    const advisorWebsiteRaw = advisor.website?.trim() || '';
+    const advisorWebsiteDisplay =
+      advisorWebsiteRaw.length > 0
+        ? this.escapeHtml(advisorWebsiteRaw)
+        : 'Website not provided';
+    const advisorWebsiteHref =
+      advisorWebsiteRaw.length > 0
+        ? this.escapeAttr(
+            advisorWebsiteRaw.startsWith('http')
+              ? advisorWebsiteRaw
+              : `https://${advisorWebsiteRaw}`,
+          )
+        : '#';
+
+    const yearsExperienceRaw =
+      typeof advisor.yearsExperience === 'number'
+        ? advisor.yearsExperience.toString()
+        : '—';
+    const yearsExperienceText = this.escapeHtml(yearsExperienceRaw);
+
+    const numberOfTransactionsRaw =
+      typeof advisor.numberOfTransactions === 'number'
+        ? advisor.numberOfTransactions.toString()
+        : '—';
+    const numberOfTransactionsText = this.escapeHtml(numberOfTransactionsRaw);
+
+    const revenueMin = this.formatCurrency(
+      advisor.revenueRange?.min,
+      advisor.currency,
+    );
+    const revenueMax = this.formatCurrency(
+      advisor.revenueRange?.max,
+      advisor.currency,
+    );
+    let advisorRevenueRangeRaw = 'Not specified';
+    if (revenueMin && revenueMax) {
+      advisorRevenueRangeRaw = `${revenueMin} – ${revenueMax}`;
+    } else if (revenueMin) {
+      advisorRevenueRangeRaw = `From ${revenueMin}`;
+    } else if (revenueMax) {
+      advisorRevenueRangeRaw = `Up to ${revenueMax}`;
+    }
+    const advisorRevenueRangeText = this.escapeHtml(advisorRevenueRangeRaw);
+
+    const advisorLogoUrl = advisor.logoUrl?.trim();
+    const advisorLogoSrc = advisorLogoUrl
+      ? this.escapeAttr(advisorLogoUrl)
+      : '';
+    const advisorLogoBlock = advisorLogoUrl
+      ? `<div style="width:64px; height:64px; border-radius:16px; overflow:hidden; border:2px solid #ffffff; box-shadow:0 12px 28px rgba(79, 70, 229, 0.25);"><img src="${advisorLogoSrc}" alt="${advisorCompanyNameAttr}" style="width:100%; height:100%; object-fit:cover; display:block;" /></div>`
+      : `<div style="width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg, #4f46e5, #7c3aed); color:#ffffff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:24px; box-shadow:0 12px 28px rgba(79, 70, 229, 0.2);">${advisorInitial}</div>`;
+
+    const sellerDescriptionRaw =
+      (seller.description && seller.description.trim()) ||
+      'No description provided';
+    const sellerDescriptionText = this.escapeHtml(sellerDescriptionRaw);
+    const sellerIndustryRaw = seller.industry || 'Not specified';
+    const sellerIndustryText = this.escapeHtml(sellerIndustryRaw);
+    const sellerGeographyRaw = seller.geography || 'Not specified';
+    const sellerGeographyText = this.escapeHtml(sellerGeographyRaw);
+    const sellerRevenueDisplayRaw =
+      typeof seller.annualRevenue === 'number'
+        ? seller.annualRevenue.toLocaleString()
+        : 'Not provided';
+    const sellerRevenueDisplay = this.escapeHtml(sellerRevenueDisplayRaw);
+    const sellerCompanyText = this.escapeHtml(seller.companyName);
+    const sellerNameText = this.escapeHtml(sellerUser.name);
+    const sellerEmailText = this.escapeHtml(sellerUser.email);
+
+    const focusAreasCtaAdvisor =
+      advisorIndustriesPreview.moreCount > 0 ||
+      advisorGeographiesPreview.moreCount > 0
+        ? `<div style="margin: 12px 10px 0;">
+              <a href="${advisordashboardHref}" style="display: inline-block; padding: 8px 18px; border-radius: 999px; background-color: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; text-decoration: none;">Show full focus areas</a>
+            </div>`
+        : '';
+
+    const focusAreasCtaSeller =
+      advisorIndustriesPreview.moreCount > 0 ||
+      advisorGeographiesPreview.moreCount > 0
+        ? `<div style="margin: 12px 10px 0;">
+              <a href="${sellerdashboardHref}" style="display: inline-block; padding: 8px 18px; border-radius: 999px; background-color: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; text-decoration: none;">Open seller dashboard</a>
+            </div>`
+        : '';
+
+    const sellerAnnualRevenueValue =
+      typeof seller.annualRevenue === 'number' &&
+      Number.isFinite(seller.annualRevenue)
+        ? seller.annualRevenue
+        : undefined;
+    const sellerCurrencyValue =
+      this.sanitizeSnapshotString(seller.currency) || 'USD';
+    const sellerContactEmailValue =
+      this.sanitizeSnapshotString(seller.contactEmail) ||
+      this.sanitizeSnapshotString(sellerUser.email);
+    const sellerContactNameValue =
+      this.sanitizeSnapshotString(seller.contactName) || sellerUser.name;
+    const sellerPhoneValue = this.sanitizeSnapshotString(seller.phone);
+    const sellerWebsiteValue = this.sanitizeSnapshotString(seller.website);
+
+    const replacements: Record<string, string> = {
+      advisorName: advisorDisplayNameText,
+      advisorCompanyName: advisorCompanyNameText,
+      advisorLogoBlock,
+      advisorYearsExperience: yearsExperienceText,
+      advisorNumberOfTransactions: numberOfTransactionsText,
+      advisorPhone: advisorPhoneText,
+      advisorTelHref,
+      advisorEmail: advisorEmailText,
+      advisorEmailHref,
+      advisorWebsiteText: advisorWebsiteDisplay,
+      advisorWebsiteHref,
+      advisorRevenueRange: advisorRevenueRangeText,
+      advisorDescription: advisorDescriptionText,
+      advisorIndustries: advisorIndustriesPreview.previewHtml,
+      advisorIndustriesTitle: advisorIndustriesPreview.titleAttr,
+      advisorGeographies: advisorGeographiesPreview.previewHtml,
+      advisorGeographiesTitle: advisorGeographiesPreview.titleAttr,
+      sellerCompany: sellerCompanyText,
+      sellerIndustry: sellerIndustryText,
+      sellerGeography: sellerGeographyText,
+      sellerRevenue: sellerRevenueDisplay,
+      sellerDescription: sellerDescriptionText,
+      sellerName: sellerNameText,
+      sellerEmail: sellerEmailText,
+      focusAreasCta: focusAreasCtaAdvisor,
+    };
+
+    return {
+      replacements,
+      contextData: {
+        advisorDisplayNameText,
+        advisorCompanyNameText,
+        sellerCompanyText,
+        sellerIndustryText,
+        sellerGeographyText,
+        sellerNameText,
+        sellerEmailText,
+        sellerdashboardHref,
+        advisordashboardHref,
+        focusAreasCtaSeller,
+      },
+      snapshot: {
+        sellerAnnualRevenue: sellerAnnualRevenueValue,
+        sellerCurrency: sellerCurrencyValue,
+        sellerContactEmail: sellerContactEmailValue,
+        sellerContactName: sellerContactNameValue,
+        sellerPhone: sellerPhoneValue,
+        sellerWebsite: sellerWebsiteValue,
+      },
+      raw: {
+        advisorCompanyName: advisorCompanyNameRaw,
+        sellerCompanyName: seller.companyName,
+      },
+    };
+  }
+
   // Sends professional introduction emails to selected advisors, copying the seller
   async sendIntroductions(
     userId: string,
@@ -91,73 +477,6 @@ export class ConnectionsService {
       'https://frontend-five-pied-17.vercel.app';
     const SellerdashboardUrl = `${frontendUrl}/seller-login`;
     const AdvisordashboardUrl = `${frontendUrl}/advisor-login`;
-    const formatCurrency = (
-      value: number | undefined,
-      currencyCode?: string,
-    ) => {
-      if (typeof value !== 'number' || Number.isNaN(value)) {
-        return null;
-      }
-      try {
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: currencyCode || 'USD',
-          maximumFractionDigits: 0,
-        }).format(value);
-      } catch (error) {
-        return value.toLocaleString();
-      }
-    };
-
-    const escapeHtml = (value: string): string =>
-      value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    const escapeAttr = (value: string): string =>
-      escapeHtml(value).replace(/"/g, '&quot;');
-
-    const formatListPreview = (
-      values: (string | null | undefined)[] | undefined,
-      maxVisible = 3,
-    ): {
-      previewHtml: string;
-      titleAttr: string;
-      moreCount: number;
-    } => {
-      const normalized =
-        values
-          ?.map((value) => value?.trim())
-          .filter((value): value is string => Boolean(value)) ?? [];
-
-      if (normalized.length === 0) {
-        const fallback = 'Not specified';
-        return {
-          previewHtml: escapeHtml(fallback),
-          titleAttr: escapeAttr(fallback),
-          moreCount: 0,
-        };
-      }
-
-      const previewItems = normalized.slice(0, maxVisible);
-      const previewText = previewItems.join(', ');
-      const basePreviewHtml = escapeHtml(previewText);
-      const moreCount = Math.max(normalized.length - previewItems.length, 0);
-      const fullListAttr = escapeAttr(normalized.join(', '));
-
-      if (moreCount === 0) {
-        return {
-          previewHtml: basePreviewHtml,
-          titleAttr: fullListAttr,
-          moreCount,
-        };
-      }
-
-      const extraBadge = ` <span style="color:#4f46e5; font-weight:600;">+${moreCount} more</span>`;
-      return {
-        previewHtml: `${basePreviewHtml}${extraBadge}`,
-        titleAttr: fullListAttr,
-        moreCount,
-      };
-    };
 
     let emailsSent = 0;
 
@@ -165,216 +484,35 @@ export class ConnectionsService {
     for (const advisor of selectedAdvisors) {
       const advisorUser = advisor.userId as any;
 
-      const advisorCompanyNameRaw =
-        advisor.companyName || advisorUser?.name || 'Advisor Company';
-      const advisorCompanyNameText = escapeHtml(advisorCompanyNameRaw);
-      const advisorCompanyNameAttr = escapeAttr(advisorCompanyNameRaw);
-      const advisorDisplayNameRaw = advisorUser?.name || advisorCompanyNameRaw;
-      const advisorDisplayNameText = escapeHtml(advisorDisplayNameRaw);
-      const advisorInitial =
-        advisorCompanyNameRaw.trim().charAt(0).toUpperCase() || 'A';
+      const emailData = this.buildIntroductionEmailData({
+        advisor,
+        advisorUser,
+        seller,
+        sellerUser,
+        sellerDashboardUrl: SellerdashboardUrl,
+        advisorDashboardUrl: AdvisordashboardUrl,
+      });
 
-      const advisorIndustriesPreview = formatListPreview(advisor.industries);
-      const advisorGeographiesPreview = formatListPreview(advisor.geographies);
+      const advisorHtml = this.applyTemplate(template, {
+        ...emailData.replacements,
+        ...this.buildIntroductionContext(
+          'advisor-introduction',
+          emailData.contextData,
+        ),
+      });
 
-      const advisorDescriptionRaw =
-        (advisor.description && advisor.description.trim()) ||
-        'No description provided';
-      const advisorDescriptionText = escapeHtml(advisorDescriptionRaw);
-
-      const advisorPhoneRaw = advisor.phone?.trim() || '';
-      const advisorPhoneText = escapeHtml(
-        advisorPhoneRaw.length > 0 ? advisorPhoneRaw : 'Not provided',
-      );
-      const advisorTelHref =
-        advisorPhoneRaw.length > 0
-          ? escapeAttr(`tel:${advisorPhoneRaw.replace(/[^+\d]/g, '')}`)
-          : '#';
-
-      const advisorEmailRaw = advisorUser?.email?.trim() || '';
-      const advisorEmailText = escapeHtml(
-        advisorEmailRaw.length > 0 ? advisorEmailRaw : 'Not provided',
-      );
-      const advisorEmailHref =
-        advisorEmailRaw.length > 0
-          ? escapeAttr(`mailto:${advisorEmailRaw}`)
-          : '#';
-
-      const advisorWebsiteRaw = advisor.website?.trim() || '';
-      const advisorWebsiteDisplay =
-        advisorWebsiteRaw.length > 0
-          ? escapeHtml(advisorWebsiteRaw)
-          : 'Website not provided';
-      const advisorWebsiteHref =
-        advisorWebsiteRaw.length > 0
-          ? escapeAttr(
-              advisorWebsiteRaw.startsWith('http')
-                ? advisorWebsiteRaw
-                : `https://${advisorWebsiteRaw}`,
-            )
-          : '#';
-
-      const yearsExperienceRaw =
-        typeof advisor.yearsExperience === 'number'
-          ? advisor.yearsExperience.toString()
-          : '—';
-      const yearsExperienceText = escapeHtml(yearsExperienceRaw);
-
-      const numberOfTransactionsRaw =
-        typeof advisor.numberOfTransactions === 'number'
-          ? advisor.numberOfTransactions.toString()
-          : '—';
-      const numberOfTransactionsText = escapeHtml(numberOfTransactionsRaw);
-
-      const revenueMin = formatCurrency(
-        advisor.revenueRange?.min,
-        advisor.currency,
-      );
-      const revenueMax = formatCurrency(
-        advisor.revenueRange?.max,
-        advisor.currency,
-      );
-      let advisorRevenueRangeRaw = 'Not specified';
-      if (revenueMin && revenueMax) {
-        advisorRevenueRangeRaw = `${revenueMin} – ${revenueMax}`;
-      } else if (revenueMin) {
-        advisorRevenueRangeRaw = `From ${revenueMin}`;
-      } else if (revenueMax) {
-        advisorRevenueRangeRaw = `Up to ${revenueMax}`;
-      }
-      const advisorRevenueRangeText = escapeHtml(advisorRevenueRangeRaw);
-
-      const advisorLogoUrl = advisor.logoUrl?.trim();
-      const advisorLogoSrc = advisorLogoUrl ? escapeAttr(advisorLogoUrl) : '';
-      const advisorLogoBlock = advisorLogoUrl
-        ? `<div style="width:64px; height:64px; border-radius:16px; overflow:hidden; border:2px solid #ffffff; box-shadow:0 12px 28px rgba(79, 70, 229, 0.25);"><img src="${advisorLogoSrc}" alt="${advisorCompanyNameAttr}" style="width:100%; height:100%; object-fit:cover; display:block;" /></div>`
-        : `<div style="width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg, #4f46e5, #7c3aed); color:#ffffff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:24px; box-shadow:0 12px 28px rgba(79, 70, 229, 0.2);">${advisorInitial}</div>`;
-
-      const sellerDescriptionRaw =
-        (seller.description && seller.description.trim()) ||
-        'No description provided';
-      const sellerDescriptionText = escapeHtml(sellerDescriptionRaw);
-      const sellerIndustryRaw = seller.industry || 'Not specified';
-      const sellerIndustryText = escapeHtml(sellerIndustryRaw);
-      const sellerGeographyRaw = seller.geography || 'Not specified';
-      const sellerGeographyText = escapeHtml(sellerGeographyRaw);
-      const sellerRevenueDisplayRaw =
-        typeof seller.annualRevenue === 'number'
-          ? seller.annualRevenue.toLocaleString()
-          : 'Not provided';
-      const sellerRevenueDisplay = escapeHtml(sellerRevenueDisplayRaw);
-      const sellerCompanyText = escapeHtml(seller.companyName);
-      const sellerNameText = escapeHtml(sellerUser.name);
-      const sellerEmailText = escapeHtml(sellerUser.email);
-      const sellerdashboardHref = escapeAttr(SellerdashboardUrl);
-      const advisordashboardHref = escapeAttr(AdvisordashboardUrl);
-      const focusAreasCtaHtml =
-        advisorIndustriesPreview.moreCount > 0 ||
-        advisorGeographiesPreview.moreCount > 0
-          ? `<div style="margin: 12px 10px 0;">
-              <a href="${advisordashboardHref}" style="display: inline-block; padding: 8px 18px; border-radius: 999px; background-color: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; text-decoration: none;">Show full focus areas</a>
-            </div>`
-          : '';
-
-      const sanitizeSnapshotString = (value?: string | null) =>
-        value && value.trim().length > 0 ? value.trim() : undefined;
-      const sellerAnnualRevenueValue =
-        typeof seller.annualRevenue === 'number' &&
-        Number.isFinite(seller.annualRevenue)
-          ? seller.annualRevenue
-          : undefined;
-      const sellerCurrencyValue =
-        sanitizeSnapshotString(seller.currency) || 'USD';
-      const sellerContactEmailValue =
-        sanitizeSnapshotString(seller.contactEmail) ||
-        sanitizeSnapshotString(sellerUser.email);
-      const sellerContactNameValue =
-        sanitizeSnapshotString(seller.contactName) || sellerUser.name;
-      const sellerPhoneValue = sanitizeSnapshotString(seller.phone);
-      const sellerWebsiteValue = sanitizeSnapshotString(seller.website);
-
-      let emailHtml = template;
-      emailHtml = emailHtml.replace(/{{advisorName}}/g, advisorDisplayNameText);
-      emailHtml = emailHtml.replace(
-        /{{advisorCompanyName}}/g,
-        advisorCompanyNameText,
-      );
-      emailHtml = emailHtml.replace(/{{advisorLogoBlock}}/g, advisorLogoBlock);
-      emailHtml = emailHtml.replace(
-        /{{advisorYearsExperience}}/g,
-        yearsExperienceText,
-      );
-      emailHtml = emailHtml.replace(
-        /{{advisorNumberOfTransactions}}/g,
-        numberOfTransactionsText,
-      );
-      emailHtml = emailHtml.replace(/{{advisorPhone}}/g, advisorPhoneText);
-      emailHtml = emailHtml.replace(/{{advisorTelHref}}/g, advisorTelHref);
-      emailHtml = emailHtml.replace(/{{advisorEmail}}/g, advisorEmailText);
-      emailHtml = emailHtml.replace(/{{advisorEmailHref}}/g, advisorEmailHref);
-      emailHtml = emailHtml.replace(
-        /{{advisorWebsiteText}}/g,
-        advisorWebsiteDisplay,
-      );
-      emailHtml = emailHtml.replace(
-        /{{advisorWebsiteHref}}/g,
-        advisorWebsiteHref,
-      );
-      emailHtml = emailHtml.replace(
-        /{{advisorRevenueRange}}/g,
-        advisorRevenueRangeText,
-      );
-      emailHtml = emailHtml.replace(
-        /{{advisorDescription}}/g,
-        advisorDescriptionText,
-      );
-      emailHtml = emailHtml.replace(
-        /{{advisorIndustries}}/g,
-        advisorIndustriesPreview.previewHtml,
-      );
-      emailHtml = emailHtml.replace(
-        /{{advisorIndustriesTitle}}/g,
-        advisorIndustriesPreview.titleAttr,
-      );
-      emailHtml = emailHtml.replace(
-        /{{advisorGeographies}}/g,
-        advisorGeographiesPreview.previewHtml,
-      );
-      emailHtml = emailHtml.replace(
-        /{{advisorGeographiesTitle}}/g,
-        advisorGeographiesPreview.titleAttr,
-      );
-      emailHtml = emailHtml.replace(/{{sellerCompany}}/g, sellerCompanyText);
-      emailHtml = emailHtml.replace(/{{sellerIndustry}}/g, sellerIndustryText);
-      emailHtml = emailHtml.replace(
-        /{{sellerGeography}}/g,
-        sellerGeographyText,
-      );
-      emailHtml = emailHtml.replace(/{{sellerRevenue}}/g, sellerRevenueDisplay);
-      emailHtml = emailHtml.replace(
-        /{{sellerDescription}}/g,
-        sellerDescriptionText,
-      );
-      emailHtml = emailHtml.replace(/{{sellerName}}/g, sellerNameText);
-      emailHtml = emailHtml.replace(/{{sellerEmail}}/g, sellerEmailText);
-      emailHtml = emailHtml.replace(
-        /{{SellerdashboardUrl}}/g,
-        sellerdashboardHref,
-      );
-      emailHtml = emailHtml.replace(
-        /{{AdvisordashboardUrl}}/g,
-        advisordashboardHref,
-      );
-      emailHtml = emailHtml.replace(/{{focusAreasCta}}/g, focusAreasCtaHtml);
+      const sellerCopyHtml = this.applyTemplate(template, {
+        ...emailData.replacements,
+        ...this.buildIntroductionContext('seller-copy', emailData.contextData),
+      });
 
       try {
         await this.emailService.sendEmail({
-          to: advisorUser.email,
-          subject: `New Client Introduction - ${seller.companyName}`,
-          html: emailHtml,
+          to: advisorUser?.email,
+          subject: `New Client Introduction - ${emailData.raw.sellerCompanyName}`,
+          html: advisorHtml,
         });
 
-        // Record the connection
         await this.connectionModel.create({
           sellerId: seller.userId._id,
           advisorId: advisor._id,
@@ -382,16 +520,30 @@ export class ConnectionsService {
           sellerCompanyName: seller.companyName,
           sellerIndustry: seller.industry,
           sellerGeography: seller.geography,
-          sellerAnnualRevenue: sellerAnnualRevenueValue,
-          sellerCurrency: sellerCurrencyValue,
-          sellerContactEmail: sellerContactEmailValue,
-          sellerContactName: sellerContactNameValue,
-          sellerPhone: sellerPhoneValue,
-          sellerWebsite: sellerWebsiteValue,
+          sellerAnnualRevenue: emailData.snapshot.sellerAnnualRevenue,
+          sellerCurrency: emailData.snapshot.sellerCurrency,
+          sellerContactEmail: emailData.snapshot.sellerContactEmail,
+          sellerContactName: emailData.snapshot.sellerContactName,
+          sellerPhone: emailData.snapshot.sellerPhone,
+          sellerWebsite: emailData.snapshot.sellerWebsite,
         });
+
+        try {
+          await this.emailService.sendEmail({
+            to: sellerUser.email,
+            subject: `Copy: Introduction sent to ${emailData.raw.advisorCompanyName}`,
+            html: sellerCopyHtml,
+          });
+        } catch (sellerError) {
+          console.error(
+            `Failed to send introduction copy to seller ${sellerUser.email}:`,
+            sellerError,
+          );
+        }
+
         emailsSent++;
       } catch (error) {
-        console.error(`Failed to send email to ${advisorUser.email}:`, error);
+        console.error(`Failed to send email to ${advisorUser?.email}:`, error);
       }
     }
 
@@ -437,10 +589,22 @@ export class ConnectionsService {
       'utf8',
     );
 
+    const introductionTemplatePath = path.join(
+      process.cwd(),
+      'templates',
+      'introduction.hbs',
+    );
+    let introductionTemplate = '';
+    try {
+      introductionTemplate = fs.readFileSync(introductionTemplatePath, 'utf8');
+    } catch (error) {
+      throw new Error('Introduction email template not found');
+    }
+
     const frontendUrl =
       process.env.FRONTEND_URL?.replace(/\/$/, '') ||
       'https://frontend-five-pied-17.vercel.app';
-        const SellerdashboardUrl = `${frontendUrl}/seller-login`;
+    const SellerdashboardUrl = `${frontendUrl}/seller-login`;
     const AdvisordashboardUrl = `${frontendUrl}/advisor-login`;
 
     const formatCurrencyValue = (
@@ -713,6 +877,52 @@ export class ConnectionsService {
       });
     } catch (error) {
       console.error('Failed to send contact list to seller:', error);
+    }
+
+    for (const advisor of advisors) {
+      const advisorUser = advisor.userId as any;
+
+      const emailData = this.buildIntroductionEmailData({
+        advisor,
+        advisorUser,
+        seller,
+        sellerUser,
+        sellerDashboardUrl: SellerdashboardUrl,
+        advisorDashboardUrl: AdvisordashboardUrl,
+      });
+
+      const advisorHtml = this.applyTemplate(introductionTemplate, {
+        ...emailData.replacements,
+        ...this.buildIntroductionContext('direct-list', emailData.contextData),
+      });
+
+      try {
+        await this.emailService.sendEmail({
+          to: advisorUser?.email,
+          subject: `Advisor Chooser Match: ${emailData.raw.sellerCompanyName} will reach out directly`,
+          html: advisorHtml,
+        });
+
+        await this.connectionModel.create({
+          sellerId: seller.userId._id,
+          advisorId: advisor._id,
+          type: ConnectionType.DIRECT_LIST,
+          sellerCompanyName: seller.companyName,
+          sellerIndustry: seller.industry,
+          sellerGeography: seller.geography,
+          sellerAnnualRevenue: emailData.snapshot.sellerAnnualRevenue,
+          sellerCurrency: emailData.snapshot.sellerCurrency,
+          sellerContactEmail: emailData.snapshot.sellerContactEmail,
+          sellerContactName: emailData.snapshot.sellerContactName,
+          sellerPhone: emailData.snapshot.sellerPhone,
+          sellerWebsite: emailData.snapshot.sellerWebsite,
+        });
+      } catch (error) {
+        console.error(
+          `Failed to send direct outreach notice to ${advisorUser?.email}:`,
+          error,
+        );
+      }
     }
 
     return {
