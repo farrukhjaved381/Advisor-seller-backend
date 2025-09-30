@@ -109,4 +109,8 @@ export class CreateAdvisorProfileDto {
   @IsString()
   @ApiProperty({ description: 'Introduction video URL', required: false })
   introVideoUrl?: string;
+
+  @IsOptional()
+  @ApiProperty({ description: 'Worked with Cimamplify', required: false })
+  workedWithCimamplify?: boolean;
 }
