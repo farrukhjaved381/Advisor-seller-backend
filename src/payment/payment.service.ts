@@ -395,14 +395,20 @@ export class PaymentService {
     if (typeof latestInvoiceRaw === 'string') {
       latestInvoice = (await this.stripe.invoices.retrieve(
         latestInvoiceRaw,
+        { expand: ['payment_intent'] },
       )) as StripeInvoiceExpanded;
     } else {
       latestInvoice = latestInvoiceRaw as StripeInvoiceExpanded | undefined;
     }
 
-    const paymentIntent = latestInvoice?.payment_intent as
+    let paymentIntent = latestInvoice?.payment_intent as
       | Stripe.PaymentIntent
+      | string
       | undefined;
+
+    if (typeof paymentIntent === 'string') {
+      paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntent);
+    }
 
     console.log('[PaymentService] createSubscription', {
       userId: String((user as any)._id),
@@ -469,11 +475,18 @@ export class PaymentService {
         typeof latestInvoiceRaw === 'string'
           ? ((await this.stripe.invoices.retrieve(
               latestInvoiceRaw,
+              { expand: ['payment_intent'] },
             )) as StripeInvoiceExpanded)
           : (latestInvoiceRaw as StripeInvoiceExpanded);
       paymentIntent = latestInvoice.payment_intent as
         | Stripe.PaymentIntent
+        | string
         | undefined;
+      if (typeof paymentIntent === 'string') {
+        paymentIntent = await this.stripe.paymentIntents.retrieve(
+          paymentIntent,
+        );
+      }
     }
 
     const paymentMethodId =
