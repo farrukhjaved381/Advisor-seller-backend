@@ -387,6 +387,20 @@ export class PaymentService {
         subscriptionParams,
       )) as StripeSubscriptionExpanded;
 
+    if (subscription.latest_invoice) {
+      console.log('[PaymentService] createSubscription latest_invoice summary', {
+        type: typeof subscription.latest_invoice,
+        id:
+          typeof subscription.latest_invoice === 'string'
+            ? subscription.latest_invoice
+            : (subscription.latest_invoice as StripeInvoiceExpanded).id,
+      });
+    } else {
+      console.warn('[PaymentService] createSubscription missing latest_invoice', {
+        subscriptionId: subscription.id,
+      });
+    }
+
     const latestInvoiceRaw = subscription.latest_invoice as
       | StripeInvoiceExpanded
       | string
@@ -408,6 +422,59 @@ export class PaymentService {
 
     if (typeof paymentIntent === 'string') {
       paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntent);
+    }
+
+    if (latestInvoice) {
+      console.log('[PaymentService] createSubscription invoice summary', {
+        invoiceId: latestInvoice.id,
+        status: latestInvoice.status,
+        paid: latestInvoice.paid,
+        amountDue: latestInvoice.amount_due,
+        amountPaid: latestInvoice.amount_paid,
+        paymentIntentType: typeof latestInvoice.payment_intent,
+        paymentIntentId:
+          typeof latestInvoice.payment_intent === 'string'
+            ? latestInvoice.payment_intent
+            : latestInvoice.payment_intent?.id,
+      });
+    } else {
+      console.warn('[PaymentService] createSubscription missing invoice object', {
+        subscriptionId: subscription.id,
+      });
+    }
+
+    if (!paymentIntent && latestInvoice?.id) {
+      try {
+        const refreshedInvoice = (await this.stripe.invoices.retrieve(
+          latestInvoice.id,
+          { expand: ['payment_intent'] },
+        )) as StripeInvoiceExpanded;
+        const refreshedPI = refreshedInvoice.payment_intent as
+          | Stripe.PaymentIntent
+          | string
+          | undefined;
+        if (typeof refreshedPI === 'string') {
+          paymentIntent = await this.stripe.paymentIntents.retrieve(refreshedPI);
+        } else if (refreshedPI) {
+          paymentIntent = refreshedPI;
+        }
+        console.log('[PaymentService] refreshed invoice payment intent', {
+          invoiceId: refreshedInvoice.id,
+          paymentIntentId:
+            typeof refreshedPI === 'string'
+              ? refreshedPI
+              : refreshedPI?.id,
+          paymentIntentStatus:
+            typeof refreshedPI === 'string'
+              ? undefined
+              : refreshedPI?.status,
+        });
+      } catch (error) {
+        console.warn('[PaymentService] Unable to refresh invoice payment intent', {
+          invoiceId: latestInvoice.id,
+          error: (error as Error)?.message || error,
+        });
+      }
     }
 
     console.log('[PaymentService] createSubscription', {
@@ -478,15 +545,31 @@ export class PaymentService {
               { expand: ['payment_intent'] },
             )) as StripeInvoiceExpanded)
           : (latestInvoiceRaw as StripeInvoiceExpanded);
-      paymentIntent = latestInvoice.payment_intent as
+      const invoicePaymentIntent = latestInvoice.payment_intent as
         | Stripe.PaymentIntent
         | string
         | undefined;
-      if (typeof paymentIntent === 'string') {
+      if (typeof invoicePaymentIntent === 'string') {
         paymentIntent = await this.stripe.paymentIntents.retrieve(
-          paymentIntent,
+          invoicePaymentIntent,
         );
+      } else {
+        paymentIntent = invoicePaymentIntent || undefined;
       }
+      console.log('[PaymentService] finalizeSubscription invoice summary', {
+        userId,
+        invoiceId: latestInvoice.id,
+        status: latestInvoice.status,
+        paid: latestInvoice.paid,
+        amountDue: latestInvoice.amount_due,
+        amountPaid: latestInvoice.amount_paid,
+        paymentIntentId: paymentIntent?.id,
+        paymentIntentStatus: paymentIntent?.status,
+      });
+    } else {
+      console.warn('[PaymentService] finalizeSubscription missing latest invoice', {
+        subscriptionId: subscription.id,
+      });
     }
 
     const paymentMethodId =
