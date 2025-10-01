@@ -613,6 +613,14 @@ export class ConnectionsService {
     const sellerRevenueDisplay = this.escapeHtml(sellerRevenueDisplayRaw);
     const sellerCompanyText = this.escapeHtml(seller.companyName);
 
+    const sellerContactNameValue =
+      this.sanitizeSnapshotString(seller.contactName) || sellerUser.name;
+    const sellerContactEmailValue =
+      this.sanitizeSnapshotString(seller.contactEmail) ||
+      this.sanitizeSnapshotString(sellerUser.email);
+    const sellerPhoneValue = this.sanitizeSnapshotString(seller.phone);
+    const sellerWebsiteValue = this.sanitizeSnapshotString(seller.website);
+
     const sellerContactEmailRaw = sellerContactEmailValue || '';
     const sellerContactEmailText = this.escapeHtml(
       sellerContactEmailRaw.length > 0 ? sellerContactEmailRaw : 'Not provided',
@@ -623,7 +631,7 @@ export class ConnectionsService {
         : '#';
 
     const sellerContactNameText = this.escapeHtml(sellerContactNameValue);
-    const sellerPhoneRaw = seller.phone?.trim() || '';
+    const sellerPhoneRaw = sellerPhoneValue || '';
     const sellerPhoneText = this.escapeHtml(
       sellerPhoneRaw.length > 0 ? sellerPhoneRaw : 'Not provided',
     );
@@ -632,7 +640,7 @@ export class ConnectionsService {
         ? this.escapeAttr(`tel:${sellerPhoneRaw.replace(/[^+\d]/g, '')}`)
         : '#';
 
-    const sellerWebsiteRaw = seller.website?.trim() || '';
+    const sellerWebsiteRaw = sellerWebsiteValue || '';
     const sellerWebsiteText =
       sellerWebsiteRaw.length > 0
         ? this.escapeHtml(sellerWebsiteRaw)
@@ -672,13 +680,6 @@ export class ConnectionsService {
         : undefined;
     const sellerCurrencyValue =
       this.sanitizeSnapshotString(seller.currency) || 'USD';
-    const sellerContactEmailValue =
-      this.sanitizeSnapshotString(seller.contactEmail) ||
-      this.sanitizeSnapshotString(sellerUser.email);
-    const sellerContactNameValue =
-      this.sanitizeSnapshotString(seller.contactName) || sellerUser.name;
-    const sellerPhoneValue = this.sanitizeSnapshotString(seller.phone);
-    const sellerWebsiteValue = this.sanitizeSnapshotString(seller.website);
 
     const replacements: Record<string, string> = {
       advisorName: advisorDisplayNameText,
