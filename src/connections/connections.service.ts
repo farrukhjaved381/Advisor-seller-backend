@@ -237,6 +237,7 @@ export class ConnectionsService {
       advisor.geographies,
     );
 
+    // Advisor description
     const advisorDescriptionRaw =
       (advisor.description && advisor.description.trim()) ||
       'No description provided';
@@ -286,6 +287,7 @@ export class ConnectionsService {
         : '—';
     const numberOfTransactionsText = this.escapeHtml(numberOfTransactionsRaw);
 
+    // Get advisor revenue range
     const revenueMin = this.formatCurrency(
       advisor.revenueRange?.min,
       advisor.currency,
@@ -304,6 +306,20 @@ export class ConnectionsService {
     }
     const advisorRevenueRangeText = this.escapeHtml(advisorRevenueRangeRaw);
 
+    // Seller revenue (single value only)
+    const sellerRevenueFormatted = this.formatCurrency(
+      seller.annualRevenue,
+      seller.currency,
+    );
+    const sellerRevenueRangeText = this.escapeHtml(
+      sellerRevenueFormatted || 'Not specified',
+    );
+
+    // Seller description
+    const sellerDescriptionRaw =
+      seller.description?.trim() || 'No description provided';
+    const sellerDescriptionText = this.escapeHtml(sellerDescriptionRaw);
+
     const advisorLogoUrl = advisor.logoUrl?.trim();
     const advisorLogoSrc = advisorLogoUrl
       ? this.escapeAttr(advisorLogoUrl)
@@ -312,10 +328,7 @@ export class ConnectionsService {
       ? `<div style="width:64px; height:64px; border-radius:16px; overflow:hidden; border:2px solid #ffffff; box-shadow:0 12px 28px rgba(79, 70, 229, 0.25);"><img src="${advisorLogoSrc}" alt="${advisorCompanyNameAttr}" style="width:100%; height:100%; object-fit:cover; display:block;" /></div>`
       : `<div style="width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg, #4f46e5, #7c3aed); color:#ffffff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:24px; box-shadow:0 12px 28px rgba(79, 70, 229, 0.2);">${advisorInitial}</div>`;
 
-    const sellerDescriptionRaw =
-      (seller.description && seller.description.trim()) ||
-      'No description provided';
-    const sellerDescriptionText = this.escapeHtml(sellerDescriptionRaw);
+    // ...existing code...
     const sellerIndustryRaw = seller.industry || 'Not specified';
     const sellerIndustryText = this.escapeHtml(sellerIndustryRaw);
     const sellerGeographyRaw = seller.geography || 'Not specified';
@@ -372,8 +385,10 @@ export class ConnectionsService {
       advisorEmailHref,
       advisorWebsiteText: advisorWebsiteDisplay,
       advisorWebsiteHref,
-      advisorRevenueRange: advisorRevenueRangeText,
-      advisorDescription: advisorDescriptionText,
+      advisorRevenueRange: advisorRevenueRangeText, // advisor's own revenue range
+      sellerRevenueRange: sellerRevenueRangeText, // seller's revenue range
+      advisorDescription: advisorDescriptionText, // advisor's description
+      sellerDescription: sellerDescriptionText, // seller's description
       advisorIndustries: advisorIndustriesPreview.previewHtml,
       advisorIndustriesTitle: advisorIndustriesPreview.titleAttr,
       advisorGeographies: advisorGeographiesPreview.previewHtml,
@@ -382,7 +397,6 @@ export class ConnectionsService {
       sellerIndustry: sellerIndustryText,
       sellerGeography: sellerGeographyText,
       sellerRevenue: sellerRevenueDisplay,
-      sellerDescription: sellerDescriptionText,
       sellerName: sellerNameText,
       sellerEmail: sellerEmailText,
       focusAreasCta: focusAreasCtaAdvisor,
