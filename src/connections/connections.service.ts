@@ -352,7 +352,7 @@ export class ConnectionsService {
       ? `<div style="width:64px; height:64px; border-radius:16px; overflow:hidden; border:2px solid #ffffff; box-shadow:0 12px 28px rgba(79, 70, 229, 0.25);"><img src="${advisorLogoSrc}" alt="${advisorCompanyNameAttr}" style="width:100%; height:100%; object-fit:cover; display:block;" /></div>`
       : `<div style="width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg, #4f46e5, #7c3aed); color:#ffffff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:24px; box-shadow:0 12px 28px rgba(79, 70, 229, 0.2);">${advisorInitial}</div>`;
 
-    // ...existing code...
+    // Seller details for messaging
     const sellerIndustryRaw = seller.industry || 'Not specified';
     const sellerIndustryText = this.escapeHtml(sellerIndustryRaw);
     const sellerGeographyRaw = seller.geography || 'Not specified';
@@ -362,35 +362,39 @@ export class ConnectionsService {
         ? seller.annualRevenue.toLocaleString()
         : 'Not provided';
     const sellerRevenueDisplay = this.escapeHtml(sellerRevenueDisplayRaw);
-    const sellerCompanyText = this.escapeHtml(seller.companyName);
-    const sellerNameText = this.escapeHtml(sellerUser.name);
-    const sellerEmailText = this.escapeHtml(sellerUser.email);
-
-    const sellerUserNameRaw =
-      typeof sellerUser?.name === 'string' ? sellerUser.name.trim() : '';
-    const sellerContactNameSource =
-      this.sanitizeSnapshotString(seller.contactName) ||
-      sellerUserNameRaw ||
-      'there';
-    const sellerFirstNameRaw =
-      sellerContactNameSource.split(/\s+/).filter(Boolean)[0] ||
-      sellerContactNameSource;
-    let sellerFirstNameText = this.escapeHtml(sellerFirstNameRaw);
-    if (!sellerFirstNameRaw || sellerContactNameSource === 'there') {
-      sellerFirstNameText = sellerNameText;
-    }
 
     const sellerCompanyNameRaw =
       this.sanitizeSnapshotString(seller.companyName) ||
-      'Seller Company';
+      'Company for sale';
+    const sellerCompanyText = this.escapeHtml(sellerCompanyNameRaw);
+
+    const sellerUserNameRaw =
+      typeof sellerUser?.name === 'string' ? sellerUser.name.trim() : '';
+    const sellerContactNameValue =
+      this.sanitizeSnapshotString(seller.contactName) || sellerUserNameRaw;
+    const sellerDisplayNameRaw =
+      sellerContactNameValue || sellerCompanyNameRaw;
+    const sellerNameText = this.escapeHtml(sellerDisplayNameRaw);
+
+    const sellerFirstNameSource =
+      sellerDisplayNameRaw.split(/\s+/).filter(Boolean)[0];
+    const sellerFirstNameText = sellerFirstNameSource
+      ? this.escapeHtml(sellerFirstNameSource)
+      : sellerNameText;
+
+    const sellerPrimaryEmailRaw =
+      this.sanitizeSnapshotString(seller.contactEmail) ||
+      this.sanitizeSnapshotString(sellerUser.email);
+    const sellerContactEmailValue = sellerPrimaryEmailRaw;
+    const sellerEmailText = this.escapeHtml(
+      sellerPrimaryEmailRaw || sellerUser.email || 'Not provided',
+    );
+
     const advisorCompanyNameForTitle =
       this.sanitizeSnapshotString(advisorCompanyNameRaw) ||
       'Advisor Company';
     const heroTitleRaw = `Advisor Chooser Introduction ${sellerCompanyNameRaw} <> ${advisorCompanyNameForTitle}`;
     const heroTitleText = this.escapeHtml(heroTitleRaw);
-
-    const focusAreasCtaAdvisor = '';
-    const focusAreasCtaSeller = '';
 
     const sellerAnnualRevenueValue =
       typeof seller.annualRevenue === 'number' &&
@@ -399,27 +403,123 @@ export class ConnectionsService {
         : undefined;
     const sellerCurrencyValue =
       this.sanitizeSnapshotString(seller.currency) || 'USD';
-    const sellerContactEmailValue =
-      this.sanitizeSnapshotString(seller.contactEmail) ||
-      this.sanitizeSnapshotString(sellerUser.email);
-    const sellerContactNameValue =
-      this.sanitizeSnapshotString(seller.contactName) || sellerUser.name;
+
     const sellerPhoneValue = this.sanitizeSnapshotString(seller.phone);
     const sellerWebsiteValue = this.sanitizeSnapshotString(seller.website);
 
-    const sellerContactNameText = this.escapeHtml(
-      sellerContactNameValue || sellerUser.name,
-    );
+    const sellerContactNameText = this.escapeHtml(sellerDisplayNameRaw);
     const sellerContactEmailText = this.escapeHtml(
-      sellerContactEmailValue || sellerUser.email || 'Not provided',
-    );
-    const sellerWebsiteText = this.escapeHtml(
-      sellerWebsiteValue || 'Not provided',
+      sellerPrimaryEmailRaw || sellerUser.email || 'Not provided',
     );
 
-    const contactSectionHtml = '';
-    const advisorDetailsSectionHtml = '';
+    const sellerPhoneDisplay = this.escapeHtml(
+      sellerPhoneValue || 'Not provided',
+    );
+    const sellerPhoneHref = sellerPhoneValue
+      ? this.escapeAttr(`tel:${sellerPhoneValue.replace(/[^+\d]/g, '')}`)
+      : '#';
+
+    const sellerEmailHref = sellerPrimaryEmailRaw
+      ? this.escapeAttr(`mailto:${sellerPrimaryEmailRaw}`)
+      : '#';
+
+    let sellerWebsiteHref = '#';
+    let sellerWebsiteDisplay = this.escapeHtml('Not provided');
+    if (sellerWebsiteValue) {
+      const normalizedWebsite = sellerWebsiteValue.startsWith('http')
+        ? sellerWebsiteValue
+        : `https://${sellerWebsiteValue}`;
+      sellerWebsiteHref = this.escapeAttr(normalizedWebsite);
+      sellerWebsiteDisplay = this.escapeHtml(
+        sellerWebsiteValue.replace(/^https?:\/\//, ''),
+      );
+    }
+    const sellerWebsiteText = sellerWebsiteDisplay;
+
+    const phoneContent = sellerPhoneValue
+      ? `<a href="${sellerPhoneHref}" style="color: #111827; text-decoration: none;">${sellerPhoneDisplay}</a>`
+      : sellerPhoneDisplay;
+    const emailContent = sellerPrimaryEmailRaw
+      ? `<a href="${sellerEmailHref}" style="color: #111827; text-decoration: none;">${sellerContactEmailText}</a>`
+      : sellerContactEmailText;
+    const websiteContent = sellerWebsiteValue
+      ? `<a href="${sellerWebsiteHref}" style="color: #4f46e5; text-decoration: none;">${sellerWebsiteDisplay}</a>`
+      : sellerWebsiteDisplay;
+
+    const contactSectionHtml = `
+      <div style="margin: 24px 0;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+          <tr>
+            <td style="width: 33.33%; padding: 8px;">
+              <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px; height: 100%;">
+                <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; font-weight: 600;">Phone</p>
+                <p style="margin: 8px 0 0; font-size: 13px; color: #111827; font-weight: 600;">${phoneContent}</p>
+              </div>
+            </td>
+            <td style="width: 33.33%; padding: 8px;">
+              <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px; height: 100%;">
+                <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; font-weight: 600;">Email</p>
+                <p style="margin: 8px 0 0; font-size: 13px; color: #111827; font-weight: 600; word-break: break-all;">${emailContent}</p>
+              </div>
+            </td>
+            <td style="width: 33.33%; padding: 8px;">
+              <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px; height: 100%;">
+                <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; font-weight: 600;">Website</p>
+                <p style="margin: 8px 0 0; font-size: 13px; font-weight: 600; word-break: break-all; color: #4f46e5;">${websiteContent}</p>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+    `.trim();
+
+    const overviewSectionHtml = `
+      <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+        <p style="margin: 0 0 10px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; font-weight: 700;">Company Overview</p>
+        <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #1f2937;">${sellerDescriptionText}</p>
+      </div>
+    `.trim();
+
+    const revenueSectionHtml = `
+      <div style="background-color: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 16px; padding: 18px; margin-bottom: 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+          <tr>
+            <td style="vertical-align: top;">
+              <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #047857; font-weight: 700;">Annual Revenue</p>
+              <p style="margin: 8px 0 0; font-size: 16px; color: #065f46; font-weight: 700;">${sellerRevenueRangeText}</p>
+            </td>
+          </tr>
+        </table>
+      </div>
+    `.trim();
+
+    const marketSectionHtml = `
+      <div style="background-color: #eef2ff; border: 1px solid #c7d2fe; border-radius: 16px; padding: 18px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+          <tr>
+            <td style="width: 50%; padding-right: 12px;">
+              <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #4338ca; font-weight: 700;">Industry</p>
+              <p style="margin: 6px 0 0; font-size: 13px; color: #1f2937;">${sellerIndustryText}</p>
+            </td>
+            <td style="width: 50%; padding-left: 12px;">
+              <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #4338ca; font-weight: 700;">Location</p>
+              <p style="margin: 6px 0 0; font-size: 13px; color: #1f2937;">${sellerGeographyText}</p>
+            </td>
+          </tr>
+        </table>
+      </div>
+    `.trim();
+
+    const advisorDetailsSectionHtml = `
+      ${overviewSectionHtml}
+      ${revenueSectionHtml}
+      ${marketSectionHtml}
+    `;
+
     const nextStepsSectionHtml = '';
+
+    const focusAreasCtaAdvisor = '';
+    const focusAreasCtaSeller = '';
     const snapshotSection = `
       <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; margin: 24px 0;">
         <p style="margin: 0 0 12px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6366f1; font-weight: 700;">Snapshot</p>
@@ -793,27 +893,27 @@ export class ConnectionsService {
         const advisorInitial = companyName.charAt(0).toUpperCase() || 'A';
         const logoSrc = advisorLogoUrl ? escapeAttr(advisorLogoUrl) : '';
         const logoHtml = advisorLogoUrl
-          ? `<div style="width:60px; height:60px; border-radius:16px; overflow:hidden; border:2px solid #ffffff; box-shadow:0 12px 28px rgba(79, 70, 229, 0.18);"><img src="${logoSrc}" alt="${companyNameAttr}" style="width:100%; height:100%; object-fit:cover; display:block;" /></div>`
-          : `<div style="width:60px; height:60px; border-radius:16px; background:linear-gradient(135deg, #4f46e5, #7c3aed); color:#ffffff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:22px; box-shadow:0 12px 28px rgba(79, 70, 229, 0.18);">${advisorInitial}</div>`;
+          ? `<div style="width:64px; height:64px; border-radius:18px; overflow:hidden; border:2px solid #ffffff; box-shadow:0 14px 34px rgba(79, 70, 229, 0.22);"><img src="${logoSrc}" alt="${companyNameAttr}" style="width:100%; height:100%; object-fit:cover; display:block;" /></div>`
+          : `<div style="width:64px; height:64px; border-radius:18px; background:linear-gradient(135deg, #4f46e5, #7c3aed); color:#ffffff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:24px; box-shadow:0 14px 34px rgba(79, 70, 229, 0.22);">${advisorInitial}</div>`;
 
         const contactName = advisorUser?.name?.trim() || companyName;
         const contactNameHtml = escapeHtml(contactName);
         const phoneRaw = advisor.phone?.trim() || '';
-        const phoneDisplay = phoneRaw || 'Not provided';
+        const phoneDisplay = phoneRaw.length > 0 ? escapeHtml(phoneRaw) : 'Not provided';
         const emailRaw = advisorUser?.email?.trim() || '';
-        const emailDisplay = emailRaw || 'Not provided';
+        const emailDisplay = emailRaw.length > 0 ? escapeHtml(emailRaw) : 'Not provided';
         const websiteRaw = advisor.website?.trim() || '';
-        const websiteLink =
+        const normalizedWebsite =
           websiteRaw.length > 0
             ? websiteRaw.startsWith('http')
               ? websiteRaw
               : `https://${websiteRaw}`
-            : '#';
+            : '';
         const websiteHref =
-          websiteRaw.length > 0 ? escapeAttr(websiteLink) : '#';
+          normalizedWebsite.length > 0 ? escapeAttr(normalizedWebsite) : '#';
         const websiteDisplay =
           websiteRaw.length > 0
-            ? escapeHtml(websiteRaw)
+            ? escapeHtml(websiteRaw.replace(/^https?:\/\//, ''))
             : 'Website not provided';
 
         const industriesPreview = formatListPreview(advisor.industries);
@@ -848,76 +948,80 @@ export class ConnectionsService {
         }
         const revenueRangeHtml = escapeHtml(revenueRange);
 
-        const mailtoHref = emailRaw ? escapeAttr(`mailto:${emailRaw}`) : '#';
-        const telHref = phoneRaw
-          ? escapeAttr(`tel:${phoneRaw.replace(/[^+\d]/g, '')}`)
-          : '#';
+        const metrics: string[] = [];
+        if (yearsExperience !== '—') {
+          metrics.push(
+            `<span style="display:flex; align-items:center; gap:6px;">🕒 <strong>${escapeHtml(yearsExperience)}</strong> years experience</span>`,
+          );
+        }
+        if (dealsCount !== '—') {
+          metrics.push(
+            `<span style="display:flex; align-items:center; gap:6px;">📈 <strong>${escapeHtml(dealsCount)}</strong> closed deals</span>`,
+          );
+        }
+        if (phoneRaw.length > 0) {
+          const telHref = escapeAttr(`tel:${phoneRaw.replace(/[^+\d]/g, '')}`);
+          metrics.push(
+            `<span style="display:flex; align-items:center; gap:6px;">📞 <a href="${telHref}" style="color:#1f2937; text-decoration:none;">${phoneDisplay}</a></span>`,
+          );
+        }
+        if (emailRaw.length > 0) {
+          const mailtoHref = escapeAttr(`mailto:${emailRaw}`);
+          metrics.push(
+            `<span style="display:flex; align-items:center; gap:6px;">✉️ <a href="${mailtoHref}" style="color:#1f2937; text-decoration:none;">${emailDisplay}</a></span>`,
+          );
+        }
+        if (normalizedWebsite.length > 0) {
+          metrics.push(
+            `<span style="display:flex; align-items:center; gap:6px;">🔗 <a href="${websiteHref}" style="color:#4f46e5; text-decoration:none;">${websiteDisplay}</a></span>`,
+          );
+        }
 
-        const focusAreasCta =
-          industriesPreview.moreCount > 0 || geographiesPreview.moreCount > 0
-            ? `<div style="margin: 10px 8px 0;">
-                <a href="${sellerDashboardHref}" style="display: inline-block; padding: 8px 16px; border-radius: 999px; background-color: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; text-decoration: none;">Show full focus areas</a>
-              </div>`
+        const metricsHtml =
+          metrics.length > 0
+            ? `<div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; font-size:12px; color:#4b5563;">${metrics.join(
+                '<span style="width:12px; display:block;"></span>',
+              )}</div>`
             : '';
 
         return `
-          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: separate; border-spacing: 0; margin-bottom: 24px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: separate; border-spacing: 0; margin-bottom: 28px;">
             <tr>
-              <td style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 20px; overflow: hidden; box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);">
+              <td style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 20px; overflow: hidden; box-shadow: 0 22px 44px rgba(15, 23, 42, 0.08);">
                 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
                   <tr>
-                    <td style="background: linear-gradient(135deg, #eef2ff 0%, #f0f9ff 100%); padding: 24px 28px;">
+                    <td style="background: linear-gradient(135deg, #eef2ff 0%, #f0f9ff 100%); padding: 28px 32px;">
                       <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
                         <tr>
-                          <td style="width: 68px; vertical-align: top;">
+                          <td style="width: 72px; vertical-align: top;">
                             ${logoHtml}
                           </td>
-                          <td style="padding-left: 18px;">
+                          <td style="padding-left: 20px;">
                             <p style="margin: 0; color: #6366f1; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;">Advisor Match</p>
-                            <h3 style="margin: 8px 0 6px; font-size: 20px; line-height: 1.3; font-weight: 700; color: #111827;">${companyNameHtml}</h3>
+                            <h3 style="margin: 10px 0 6px; font-size: 20px; line-height: 1.3; font-weight: 700; color: #111827;">${companyNameHtml}</h3>
                             <p style="margin: 0 0 6px; font-size: 13px; color: #4b5563;">Primary contact: <strong style="color: #111827;">${contactNameHtml}</strong></p>
-                            <p style="margin: 0; font-size: 12px; color: #6b7280;">${yearsExperience} years experience · ${dealsCount} closed deals</p>
+                            ${metricsHtml}
                           </td>
                         </tr>
                       </table>
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding: 22px 28px 16px;">
-                      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
-                        <tr>
-                          <td style="width: 33.33%; padding: 8px;">
-                            <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px; height: 100%;">
-                              <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; font-weight: 600;">Phone</p>
-                              <p style="margin: 6px 0 0; font-size: 13px; color: #111827; font-weight: 600;">${escapeHtml(phoneDisplay)}</p>
-                              <p style="margin: 6px 0 0; font-size: 11px;"><a href="${telHref}" style="color: #6366f1; text-decoration: none;">Call advisor</a></p>
-                            </div>
-                          </td>
-                          <td style="width: 33.33%; padding: 8px;">
-                            <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px; height: 100%;">
-                              <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; font-weight: 600;">Email</p>
-                              <p style="margin: 6px 0 0; font-size: 13px; color: #111827; font-weight: 600; word-break: break-all;">${escapeHtml(emailDisplay)}</p>
-                              <p style="margin: 6px 0 0; font-size: 11px;"><a href="${mailtoHref}" style="color: #6366f1; text-decoration: none;">Email advisor</a></p>
-                            </div>
-                          </td>
-                          <td style="width: 33.33%; padding: 8px;">
-                            <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px; height: 100%;">
-                              <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; font-weight: 600;">Website</p>
-                              <p style="margin: 6px 0 0; font-size: 13px; font-weight: 600; word-break: break-all;"><a href="${websiteHref}" style="color: #4f46e5; text-decoration: none;">${websiteDisplay}</a></p>
-                            </div>
-                          </td>
-                        </tr>
-                      </table>
+                    <td style="padding: 26px 32px 24px;">
+                      <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px; margin-bottom: 18px;">
+                        <p style="margin: 0 0 8px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; font-weight: 700;">About this advisor</p>
+                        <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #1f2937;">${descriptionText}</p>
+                      </div>
 
-                      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; margin-top: 6px;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; margin-bottom: 18px;">
                         <tr>
-                          <td style="width: 50%; padding: 8px;">
+                          <td style="width: 50%; padding-right: 12px;">
                             <div style="background-color: #eef2ff; border: 1px solid #c7d2fe; border-radius: 14px; padding: 14px; height: 100%;">
                               <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #4338ca; font-weight: 700;">Focus Industries</p>
                               <p style="margin: 6px 0 0; font-size: 13px; color: #1f2937; line-height: 1.6;" title="${industriesPreview.titleAttr}">${industriesPreview.previewHtml}</p>
                             </div>
                           </td>
-                          <td style="width: 50%; padding: 8px;">
+                          <td style="width: 50%; padding-left: 12px;">
                             <div style="background-color: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 14px; padding: 14px; height: 100%;">
                               <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #047857; font-weight: 700;">Geographic Coverage</p>
                               <p style="margin: 6px 0 0; font-size: 13px; color: #1f2937; line-height: 1.6;" title="${geographiesPreview.titleAttr}">${geographiesPreview.previewHtml}</p>
@@ -926,29 +1030,21 @@ export class ConnectionsService {
                         </tr>
                       </table>
 
-                      ${focusAreasCta}
-
-                      <div style="background-color: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 16px; padding: 18px; margin: 16px 0 14px;">
-                        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
-                          <tr>
-                            <td style="vertical-align: top;">
-                              <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #047857; font-weight: 700;">Typical Client Revenue</p>
-                              <p style="margin: 8px 0 0; font-size: 16px; color: #065f46; font-weight: 700;">${revenueRangeHtml}</p>
-                            </td>
-                            <td style="text-align: right; vertical-align: middle;">
-                              <span style="display: inline-block; padding: 6px 12px; border-radius: 999px; background-color: #d1fae5; color: #047857; font-size: 11px; font-weight: 700;">Strong alignment</span>
-                            </td>
-                          </tr>
-                        </table>
+                      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 16px; padding: 18px; margin-bottom: 18px;">
+                        <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #047857; font-weight: 700;">Typical Client Revenue</p>
+                        <p style="margin: 8px 0 0; font-size: 15px; color: #065f46; font-weight: 700;">${revenueRangeHtml}</p>
                       </div>
 
                       <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px;">
-                        <p style="margin: 0 0 8px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; font-weight: 700;">About the advisor</p>
-                        <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #1f2937;">${descriptionText}</p>
+                        <p style="margin: 0 0 10px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; font-weight: 700;">Contact Details</p>
+                        <p style="margin: 0 0 6px; font-size: 13px; color: #1f2937;"><strong>${contactNameHtml}</strong></p>
+                        <p style="margin: 0 0 6px; font-size: 13px; color: #1f2937;">${phoneRaw.length > 0 ? `<a href="${escapeAttr(`tel:${phoneRaw.replace(/[^+\d]/g, '')}`)}" style="color:#1f2937; text-decoration:none;">${phoneDisplay}</a>` : 'Phone not provided'}</p>
+                        <p style="margin: 0 0 6px; font-size: 13px; color: #1f2937;">${emailRaw.length > 0 ? `<a href="${escapeAttr(`mailto:${emailRaw}`)}" style="color:#1f2937; text-decoration:none;">${emailDisplay}</a>` : 'Email not provided'}</p>
+                        <p style="margin: 0; font-size: 13px; color: #1f2937;">${websiteRaw.length > 0 ? `<a href="${websiteHref}" style="color:#4f46e5; text-decoration:none;">${websiteDisplay}</a>` : 'Website not provided'}</p>
                       </div>
 
-                      <div style="text-align: center; padding: 18px 0 4px;">
-                        <a href="${mailtoHref}" style="display: inline-block; padding: 12px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none;">Email ${companyNameHtml}</a>
+                      <div style="text-align: center; padding: 20px 0 4px;">
+                        <a href="${sellerDashboardHref}" style="display: inline-block; padding: 12px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none;">View in Seller Dashboard</a>
                       </div>
                     </td>
                   </tr>
@@ -961,7 +1057,15 @@ export class ConnectionsService {
       .join('');
 
     const pluralLabel = matches.length === 1 ? '' : 's';
-    const sellerNameHtml = escapeHtml(sellerUser.name);
+    const sellerContactNameRaw = seller.contactName?.trim();
+    const sellerUserNameTrimmed = sellerUser?.name?.trim();
+    const sellerDisplayNameForEmail =
+      (sellerContactNameRaw && sellerContactNameRaw.length > 0
+        ? sellerContactNameRaw
+        : sellerUserNameTrimmed && sellerUserNameTrimmed.length > 0
+          ? sellerUserNameTrimmed
+          : 'there') || 'there';
+    const sellerNameHtml = escapeHtml(sellerDisplayNameForEmail);
     const sellerDashboardLink = escapeAttr(SellerdashboardUrl);
     const advisorDashboardLink = escapeAttr(AdvisordashboardUrl);
     const listEmailHtml = directListTemplate
