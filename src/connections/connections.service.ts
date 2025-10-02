@@ -157,7 +157,7 @@ export class ConnectionsService {
     if (contextType === 'seller-copy') {
       return {
         introGreeting: `Hi ${data.sellerNameText},`,
-        introMessage: `Here's is the warm introduction we just shared with <strong>${data.advisorCompanyNameText}</strong>. Reply-all or reach out directly using the advisor's details below to keep the conversation moving.`,
+        introMessage: `We matched you with a potential client. The seller has opted to reach out to you directly, so expect to hear from someone that will mention finding you on Advisor Chooser.<br /><br />To see all you matches and manage your profile, head to your Advisor Chooser dashboard.<br /><br />Here's is the warm introduction we just shared with <strong>${data.advisorCompanyNameText}</strong>. Reply-all or reach out directly using the advisor's details below to keep the conversation moving.`,
         primaryCtaLabel: this.escapeHtml('Open Seller Dashboard'),
         primaryCtaUrl: data.sellerdashboardHref,
         footerNote: `You're receiving this because you asked us to introduce you to ${data.advisorCompanyNameText}.`,
