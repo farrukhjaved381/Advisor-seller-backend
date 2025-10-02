@@ -139,31 +139,46 @@ export class ConnectionsService {
       sellerGeographyText: string;
       sellerNameText: string;
       sellerEmailText: string;
+      sellerFirstNameText: string;
       sellerdashboardHref: string;
       advisordashboardHref: string;
       focusAreasCtaSeller: string;
+      heroTitleText: string;
     },
   ): Record<string, string> {
     if (contextType === 'advisor-introduction') {
+      const primaryCtaSection = `
+        <div style="text-align: center; margin-bottom: 18px;">
+          <a href="${data.advisordashboardHref}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">${this.escapeHtml('Open Advisor Dashboard')}</a>
+        </div>
+      `.trim();
+
       return {
+        heroTitle: data.heroTitleText,
+        heroSubtitle: '',
         introGreeting: `Hi ${data.advisorDisplayNameText},`,
-        introMessage: `We're excited to introduce you to <strong>${data.sellerCompanyText}</strong>, operating in ${data.sellerIndustryText} across ${data.sellerGeographyText}. ${data.sellerNameText} is eager to speak with you about a potential engagement and asked us to connect you directly.`,
-        primaryCtaLabel: this.escapeHtml('Open Advisor Dashboard'),
-        primaryCtaUrl: data.advisordashboardHref,
+        introMessage: `We are very excited to introduce you to ${data.sellerNameText} from ${data.sellerCompanyText}.<br /><br />Please reach out to ${data.sellerFirstNameText} and set up a time to meet.`,
+        primaryCtaSection,
         footerNote: `You are receiving this introduction because ${data.sellerCompanyText} selected you on the Advisor Chooser Platform. Coordinate directly with the seller using the details above.`,
       };
     }
 
     if (contextType === 'seller-copy') {
       return {
+        heroTitle: data.heroTitleText,
+        heroSubtitle: '',
         introGreeting: `Hi ${data.sellerNameText},`,
-        introMessage: `We matched you with a potential client. The seller has opted to reach out to you directly, so expect to hear from someone that will mention finding you on Advisor Chooser.<br /><br />To see all you matches and manage your profile, head to your Advisor Chooser dashboard.<br /><br />Here's is the warm introduction we just shared with <strong>${data.advisorCompanyNameText}</strong>. Reply-all or reach out directly using the advisor's details below to keep the conversation moving.`,
-        primaryCtaLabel: this.escapeHtml('Open Seller Dashboard'),
-        primaryCtaUrl: data.sellerdashboardHref,
+        introMessage: `We are very excited to introduce you to ${data.sellerNameText} from ${data.sellerCompanyText}.<br /><br />Please reach out to ${data.sellerFirstNameText} and set up a time to meet.`,
+        primaryCtaSection: '',
         footerNote: `You're receiving this because you asked us to introduce you to ${data.advisorCompanyNameText}.`,
-        focusAreasCta: data.focusAreasCtaSeller ?? '',
       };
     }
+
+    const directListCtaSection = `
+      <div style="text-align: center; margin-bottom: 18px;">
+        <a href="${data.advisordashboardHref}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">${this.escapeHtml('Open Advisor Dashboard')}</a>
+      </div>
+    `.trim();
 
     return {
       heroTitle: this.escapeHtml(
@@ -177,8 +192,7 @@ export class ConnectionsService {
       advisorDetailsSection: '',
       sellerDetailsSection: '',
       nextStepsSection: '',
-      primaryCtaLabel: this.escapeHtml('Open Advisor Dashboard'),
-      primaryCtaUrl: data.advisordashboardHref,
+      primaryCtaSection: directListCtaSection,
       footerNote: '',
     };
   }
@@ -200,9 +214,11 @@ export class ConnectionsService {
       sellerGeographyText: string;
       sellerNameText: string;
       sellerEmailText: string;
+      sellerFirstNameText: string;
       sellerdashboardHref: string;
       advisordashboardHref: string;
       focusAreasCtaSeller: string;
+      heroTitleText: string;
     };
     snapshot: {
       sellerAnnualRevenue?: number;
@@ -350,21 +366,31 @@ export class ConnectionsService {
     const sellerNameText = this.escapeHtml(sellerUser.name);
     const sellerEmailText = this.escapeHtml(sellerUser.email);
 
-    const focusAreasCtaAdvisor =
-      advisorIndustriesPreview.moreCount > 0 ||
-        advisorGeographiesPreview.moreCount > 0
-        ? `<div style="margin: 12px 10px 0;">
-              <a href="${advisordashboardHref}" style="display: inline-block; padding: 8px 18px; border-radius: 999px; background-color: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; text-decoration: none;">Show full focus areas</a>
-            </div>`
-        : '';
+    const sellerUserNameRaw =
+      typeof sellerUser?.name === 'string' ? sellerUser.name.trim() : '';
+    const sellerContactNameSource =
+      this.sanitizeSnapshotString(seller.contactName) ||
+      sellerUserNameRaw ||
+      'there';
+    const sellerFirstNameRaw =
+      sellerContactNameSource.split(/\s+/).filter(Boolean)[0] ||
+      sellerContactNameSource;
+    let sellerFirstNameText = this.escapeHtml(sellerFirstNameRaw);
+    if (!sellerFirstNameRaw || sellerContactNameSource === 'there') {
+      sellerFirstNameText = sellerNameText;
+    }
 
-    const focusAreasCtaSeller =
-      advisorIndustriesPreview.moreCount > 0 ||
-        advisorGeographiesPreview.moreCount > 0
-        ? `<div style="margin: 12px 10px 0;">
-              <a href="${sellerdashboardHref}" style="display: inline-block; padding: 8px 18px; border-radius: 999px; background-color: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; text-decoration: none;">Open seller dashboard</a>
-            </div>`
-        : '';
+    const sellerCompanyNameRaw =
+      this.sanitizeSnapshotString(seller.companyName) ||
+      'Seller Company';
+    const advisorCompanyNameForTitle =
+      this.sanitizeSnapshotString(advisorCompanyNameRaw) ||
+      'Advisor Company';
+    const heroTitleRaw = `Advisor Chooser Introduction ${sellerCompanyNameRaw} <> ${advisorCompanyNameForTitle}`;
+    const heroTitleText = this.escapeHtml(heroTitleRaw);
+
+    const focusAreasCtaAdvisor = '';
+    const focusAreasCtaSeller = '';
 
     const sellerAnnualRevenueValue =
       typeof seller.annualRevenue === 'number' &&
@@ -380,6 +406,55 @@ export class ConnectionsService {
       this.sanitizeSnapshotString(seller.contactName) || sellerUser.name;
     const sellerPhoneValue = this.sanitizeSnapshotString(seller.phone);
     const sellerWebsiteValue = this.sanitizeSnapshotString(seller.website);
+
+    const sellerContactNameText = this.escapeHtml(
+      sellerContactNameValue || sellerUser.name,
+    );
+    const sellerContactEmailText = this.escapeHtml(
+      sellerContactEmailValue || sellerUser.email || 'Not provided',
+    );
+    const sellerWebsiteText = this.escapeHtml(
+      sellerWebsiteValue || 'Not provided',
+    );
+
+    const contactSectionHtml = '';
+    const advisorDetailsSectionHtml = '';
+    const nextStepsSectionHtml = '';
+    const snapshotSection = `
+      <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; margin: 24px 0;">
+        <p style="margin: 0 0 12px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6366f1; font-weight: 700;">Snapshot</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+          <tr>
+            <td style="width: 40%; padding: 6px 0; font-size: 13px; font-weight: 600; color: #4b5563;">Company</td>
+            <td style="padding: 6px 0; font-size: 13px; color: #1f2937;">${sellerCompanyText}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; font-size: 13px; font-weight: 600; color: #4b5563;">Contact</td>
+            <td style="padding: 6px 0; font-size: 13px; color: #1f2937;">${sellerContactNameText}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; font-size: 13px; font-weight: 600; color: #4b5563;">Email</td>
+            <td style="padding: 6px 0; font-size: 13px; color: #1f2937;">${sellerContactEmailText}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; font-size: 13px; font-weight: 600; color: #4b5563;">Annual Revenue</td>
+            <td style="padding: 6px 0; font-size: 13px; color: #1f2937;">${sellerRevenueRangeText}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; font-size: 13px; font-weight: 600; color: #4b5563;">Industry</td>
+            <td style="padding: 6px 0; font-size: 13px; color: #1f2937;">${sellerIndustryText}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; font-size: 13px; font-weight: 600; color: #4b5563;">Location</td>
+            <td style="padding: 6px 0; font-size: 13px; color: #1f2937;">${sellerGeographyText}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; font-size: 13px; font-weight: 600; color: #4b5563;">Website</td>
+            <td style="padding: 6px 0; font-size: 13px; color: #1f2937;">${sellerWebsiteText}</td>
+          </tr>
+        </table>
+      </div>
+    `.trim();
 
     const replacements: Record<string, string> = {
       advisorName: advisorDisplayNameText,
@@ -408,6 +483,10 @@ export class ConnectionsService {
       sellerName: sellerNameText,
       sellerEmail: sellerEmailText,
       focusAreasCta: focusAreasCtaAdvisor,
+      contactSection: contactSectionHtml,
+      advisorDetailsSection: advisorDetailsSectionHtml,
+      sellerDetailsSection: snapshotSection,
+      nextStepsSection: nextStepsSectionHtml,
     };
 
     return {
@@ -420,9 +499,11 @@ export class ConnectionsService {
         sellerGeographyText,
         sellerNameText,
         sellerEmailText,
+        sellerFirstNameText,
         sellerdashboardHref,
         advisordashboardHref,
         focusAreasCtaSeller,
+        heroTitleText,
       },
       snapshot: {
         sellerAnnualRevenue: sellerAnnualRevenueValue,
@@ -531,7 +612,7 @@ export class ConnectionsService {
       try {
         await this.emailService.sendEmail({
           to: advisorUser?.email,
-          subject: `New Client Introduction - ${emailData.raw.sellerCompanyName}`,
+          subject: `Advisor Chooser Introduction ${emailData.raw.sellerCompanyName} <> ${emailData.raw.advisorCompanyName}`,
           html: advisorHtml,
         });
 
@@ -553,7 +634,7 @@ export class ConnectionsService {
         try {
           await this.emailService.sendEmail({
             to: sellerUser.email,
-            subject: `Introduction sent to ${emailData.raw.advisorCompanyName}`,
+            subject: `Advisor Chooser Introduction ${emailData.raw.sellerCompanyName} <> ${emailData.raw.advisorCompanyName}`,
             html: sellerCopyHtml,
           });
         } catch (sellerError) {
