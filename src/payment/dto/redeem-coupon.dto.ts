@@ -5,7 +5,7 @@ export class RedeemCouponDto {
   @IsString()
   @ApiProperty({
     description: 'Coupon code to redeem',
-    example: 'FREETRIAL2024',
+    example: 'FREETRIAL2025',
   })
   code: string;
 }

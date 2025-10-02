@@ -191,7 +191,7 @@ npm run test:e2e
 - **Automatic Activation**: Profile activated upon successful payment
 
 ### Coupon Types
-- **Free Trial**: `FREETRIAL2024` - Complete free access
+- **Free Trial**: `FREETRIAL2025` - Complete free access
 - **Percentage Discount**: `DISCOUNT50` - 50% off membership fee
 - **Fixed Discount**: `SAVE1000` - $1,000 off membership fee
 

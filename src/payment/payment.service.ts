@@ -1234,7 +1234,7 @@ export class PaymentService {
   async createSampleCoupons(): Promise<void> {
     const sampleCoupons = [
       {
-        code: 'FREETRIAL2024',
+        code: 'FREETRIAL2025',
         type: 'free_trial' as const,
         value: 100,
         usageLimit: 50,

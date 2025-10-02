@@ -21,7 +21,7 @@ describe('PaymentService', () => {
 
   const mockCoupon = {
     _id: 'coupon123',
-    code: 'FREETRIAL2024',
+    code: 'FREETRIAL2025',
     type: 'free_trial',
     value: 100,
     isActive: true,
@@ -153,11 +153,11 @@ describe('PaymentService', () => {
         isActive: true,
       });
 
-      const result = await service.redeemCoupon('user123', 'FREETRIAL2024');
+      const result = await service.redeemCoupon('user123', 'FREETRIAL2025');
 
       expect(result.success).toBe(true);
       expect(mockCouponModel.findOneAndUpdate).toHaveBeenCalledWith(
-        { code: 'FREETRIAL2024' },
+        { code: 'FREETRIAL2025' },
         { $inc: { usedCount: 1 } },
       );
     });

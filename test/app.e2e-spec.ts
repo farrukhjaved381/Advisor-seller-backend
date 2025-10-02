@@ -202,7 +202,7 @@ describe('Seller-Advisor Platform E2E', () => {
           .post('/payment/redeem-coupon')
           .set('Authorization', `Bearer ${advisorToken}`)
           .send({
-            code: 'FREETRIAL2024',
+            code: 'FREETRIAL2025',
           })
           .expect(200);
 
@@ -393,7 +393,7 @@ describe('Seller-Advisor Platform E2E', () => {
       await request(app.getHttpServer())
         .post('/payment/redeem-coupon')
         .set('Authorization', `Bearer ${advisorLoginResponse.body.accessToken}`)
-        .send({ code: 'FREETRIAL2024' })
+        .send({ code: 'FREETRIAL2025' })
         .expect(200);
 
       // 3. Seller registers and creates profile

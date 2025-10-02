@@ -19,41 +19,6 @@ import {
   ConnectionType,
 } from './schemas/connection.schema';
 
-type IntroductionContextType =
-  | 'advisor-introduction'
-  | 'seller-copy'
-  | 'direct-list';
-
-interface IntroductionEmailContextData {
-  advisorDisplayNameText: string;
-  advisorCompanyNameText: string;
-  sellerCompanyText: string;
-  sellerIndustryText: string;
-  sellerGeographyText: string;
-  sellerNameText: string;
-  sellerEmailText: string;
-  sellerdashboardHref: string;
-  advisordashboardHref: string;
-  focusAreasCtaSeller: string;
-}
-
-interface IntroductionEmailData {
-  replacements: Record<string, string>;
-  contextData: IntroductionEmailContextData;
-  snapshot: {
-    sellerAnnualRevenue?: number;
-    sellerCurrency?: string;
-    sellerContactEmail?: string;
-    sellerContactName?: string;
-    sellerPhone?: string;
-    sellerWebsite?: string;
-  };
-  raw: {
-    advisorCompanyName: string;
-    sellerCompanyName: string;
-  };
-}
-
 @Injectable()
 export class ConnectionsService {
   constructor(
@@ -64,7 +29,7 @@ export class ConnectionsService {
     private connectionModel: Model<ConnectionDocument>,
     private matchingService: MatchingService,
     private emailService: EmailService,
-  ) {}
+  ) { }
 
   private escapeHtml(value: string | number | null | undefined): string {
     const stringValue =
@@ -165,312 +130,56 @@ export class ConnectionsService {
   }
 
   private buildIntroductionContext(
-    contextType: IntroductionContextType,
-    emailData: IntroductionEmailData,
+    contextType: 'advisor-introduction' | 'seller-copy' | 'direct-list',
+    data: {
+      advisorDisplayNameText: string;
+      advisorCompanyNameText: string;
+      sellerCompanyText: string;
+      sellerIndustryText: string;
+      sellerGeographyText: string;
+      sellerNameText: string;
+      sellerEmailText: string;
+      sellerdashboardHref: string;
+      advisordashboardHref: string;
+      focusAreasCtaSeller: string;
+    },
   ): Record<string, string> {
-    const { replacements, contextData } = emailData;
-
-    const buildLink = (href: string, label: string): string => {
-      if (!href || href === '#') {
-        return label;
-      }
-      return `<a href="${href}" style="color:#4f46e5; text-decoration:none;">${label}</a>`;
-    };
-
     if (contextType === 'advisor-introduction') {
-      const heroTitle = `${contextData.sellerCompanyText} wants to connect`;
-      const heroSubtitle =
-        'We matched you with this seller because your experience aligns with what they need.';
-      const contactSection = this.buildContactSection({
-        phoneValue: replacements.sellerPhone,
-        phoneHref: replacements.sellerTelHref,
-        phoneCtaLabel: `Call ${contextData.sellerCompanyText}`,
-        emailValue: contextData.sellerEmailText,
-        emailHref: replacements.sellerEmailHref,
-        emailCtaLabel: `Email ${contextData.sellerCompanyText}`,
-        websiteValue: replacements.sellerWebsiteText,
-        websiteHref: replacements.sellerWebsiteHref,
-      });
-      const sellerDetailsSection = this.buildSellerDetailsSection({
-        companyName: contextData.sellerCompanyText,
-        industry: contextData.sellerIndustryText,
-        geography: contextData.sellerGeographyText,
-        description: replacements.sellerDescription,
-        revenueDisplay: replacements.sellerRevenue,
-        contactName: contextData.sellerNameText,
-        contactEmail: contextData.sellerEmailText,
-      });
-      const sellerEmailLink = buildLink(
-        replacements.sellerEmailHref,
-        contextData.sellerEmailText,
-      );
-      const advisorDashboardLink = buildLink(
-        contextData.advisordashboardHref,
-        'advisor dashboard',
-      );
-      const nextStepsSection = this.buildNextStepsSection(
-        'Suggested next steps',
-        [
-          `Reach out to ${contextData.sellerNameText} at ${sellerEmailLink} to schedule your discovery call.`,
-          `Review the ${contextData.sellerCompanyText} snapshot below before your conversation.`,
-          `Log updates from the relationship in your ${advisorDashboardLink}.`,
-        ],
-      );
-
       return {
-        introGreeting: `Hi ${contextData.advisorDisplayNameText},`,
-        introMessage: `We've introduced you to <strong>${contextData.sellerCompanyText}</strong>. ${contextData.sellerNameText} will reach out soon, and you can use the contact details below to connect directly.`,
+        introGreeting: `Hi ${data.advisorDisplayNameText},`,
+        introMessage: `We're excited to introduce you to <strong>${data.sellerCompanyText}</strong>, operating in ${data.sellerIndustryText} across ${data.sellerGeographyText}. ${data.sellerNameText} is eager to speak with you about a potential engagement and asked us to connect you directly.`,
         primaryCtaLabel: this.escapeHtml('Open Advisor Dashboard'),
-        primaryCtaUrl: contextData.advisordashboardHref,
-        footerNote: `You're receiving this introduction because ${contextData.sellerCompanyText} selected you on Advisor Chooser.`,
-        heroTitle,
-        heroSubtitle,
-        contactSection,
-        advisorDetailsSection: '',
-        sellerDetailsSection,
-        nextStepsSection,
+        primaryCtaUrl: data.advisordashboardHref,
+        footerNote: `You are receiving this introduction because ${data.sellerCompanyText} selected you on the Advisor Chooser Platform. Coordinate directly with the seller using the details above.`,
       };
     }
 
     if (contextType === 'seller-copy') {
-      const heroTitle = `Introduction sent to ${contextData.advisorCompanyNameText}`;
-      const heroSubtitle =
-        'We just shared your opportunity and highlighted why this advisor is a strong fit.';
-      const contactSection = this.buildContactSection({
-        phoneValue: replacements.advisorPhone,
-        phoneHref: replacements.advisorTelHref,
-        phoneCtaLabel: `Call ${contextData.advisorCompanyNameText}`,
-        emailValue: replacements.advisorEmail,
-        emailHref: replacements.advisorEmailHref,
-        emailCtaLabel: `Email ${contextData.advisorCompanyNameText}`,
-        websiteValue: replacements.advisorWebsiteText,
-        websiteHref: replacements.advisorWebsiteHref,
-      });
-      const advisorDetailsSection = this.buildAdvisorDetailsSection({
-        industriesHtml: replacements.advisorIndustries,
-        industriesTitle: replacements.advisorIndustriesTitle,
-        geographiesHtml: replacements.advisorGeographies,
-        geographiesTitle: replacements.advisorGeographiesTitle,
-        focusAreasCta: contextData.focusAreasCtaSeller,
-        revenueRangeText: replacements.advisorRevenueRange,
-        descriptionText: replacements.advisorDescription,
-      });
-      const advisorEmailLink = buildLink(
-        replacements.advisorEmailHref,
-        replacements.advisorEmail,
-      );
-      const sellerDashboardLink = buildLink(
-        contextData.sellerdashboardHref,
-        'seller dashboard',
-      );
-      const nextStepsSection = this.buildNextStepsSection('Keep momentum', [
-        `Follow up with ${replacements.advisorName} at ${advisorEmailLink} to lock in a meeting.`,
-        `Share any materials ${contextData.advisorCompanyNameText} needs to evaluate the opportunity.`,
-        `Track progress and notes in your ${sellerDashboardLink}.`,
-      ]);
-
       return {
-        introGreeting: `Hi ${contextData.sellerNameText},`,
-        introMessage: `Here's the warm introduction we just shared with <strong>${contextData.advisorCompanyNameText}</strong>. Reply-all or reach out directly using the advisor's details below to keep the conversation moving.`,
+        introGreeting: `Hi ${data.sellerNameText},`,
+        introMessage: `Here's is the warm introduction we just shared with <strong>${data.advisorCompanyNameText}</strong>. Reply-all or reach out directly using the advisor's details below to keep the conversation moving.`,
         primaryCtaLabel: this.escapeHtml('Open Seller Dashboard'),
-        primaryCtaUrl: contextData.sellerdashboardHref,
-        footerNote: `You're receiving this because you asked us to introduce you to ${contextData.advisorCompanyNameText}.`,
-        heroTitle,
-        heroSubtitle,
-        contactSection,
-        advisorDetailsSection,
-        sellerDetailsSection: '',
-        nextStepsSection,
+        primaryCtaUrl: data.sellerdashboardHref,
+        footerNote: `You're receiving this because you asked us to introduce you to ${data.advisorCompanyNameText}.`,
+        focusAreasCta: data.focusAreasCtaSeller ?? '',
       };
     }
 
-    const heroTitle = `Direct match: ${contextData.sellerCompanyText}`;
-    const heroSubtitle =
-      'They opted to reach out directly after reviewing your profile.';
-    const contactSection = this.buildContactSection({
-      phoneValue: replacements.sellerPhone,
-      phoneHref: replacements.sellerTelHref,
-      phoneCtaLabel: `Call ${contextData.sellerCompanyText}`,
-      emailValue: contextData.sellerEmailText,
-      emailHref: replacements.sellerEmailHref,
-      emailCtaLabel: `Email ${contextData.sellerCompanyText}`,
-      websiteValue: replacements.sellerWebsiteText,
-      websiteHref: replacements.sellerWebsiteHref,
-    });
-    const sellerDetailsSection = this.buildSellerDetailsSection({
-      companyName: contextData.sellerCompanyText,
-      industry: contextData.sellerIndustryText,
-      geography: contextData.sellerGeographyText,
-      description: replacements.sellerDescription,
-      revenueDisplay: replacements.sellerRevenue,
-      contactName: contextData.sellerNameText,
-      contactEmail: contextData.sellerEmailText,
-    });
-    const sellerEmailLink = buildLink(
-      replacements.sellerEmailHref,
-      contextData.sellerEmailText,
-    );
-    const advisorDashboardLink = buildLink(
-      contextData.advisordashboardHref,
-      'advisor dashboard',
-    );
-    const nextStepsSection = this.buildNextStepsSection('What happens next', [
-      `Expect an introduction email from ${contextData.sellerNameText} at ${sellerEmailLink}.`,
-      `If you haven't heard within a few days, feel free to reach out using the contact details above.`,
-      `Log the outcome in your ${advisorDashboardLink}.`,
-    ]);
-
     return {
-      introGreeting: `Hi ${contextData.advisorDisplayNameText},`,
-      introMessage: `We matched you with <strong>${contextData.sellerCompanyText}</strong>. They opted to reach out directly, so expect to hear from ${contextData.sellerNameText} soon. You can also reach them at ${contextData.sellerEmailText}.`,
-      primaryCtaLabel: this.escapeHtml('Open Advisor Dashboard'),
-      primaryCtaUrl: contextData.advisordashboardHref,
-      footerNote: `You're receiving this notification because ${contextData.sellerCompanyText} selected you on Advisor Chooser and chose to handle outreach directly.`,
-      heroTitle,
-      heroSubtitle,
-      contactSection,
+      heroTitle: this.escapeHtml(
+        'Advisor Chooser Match:The seller has opted to reach out directly.',
+      ),
+      heroSubtitle: '',
+      introGreeting: `Hi ${data.advisorDisplayNameText},`,
+      introMessage: `We matched you with <strong>${data.sellerCompanyText}</strong>. They opted to reach out directly, so expect to hear from ${data.sellerNameText} soon. You can also reach them at ${data.sellerEmailText}.`,
+      contactSection: '',
       advisorDetailsSection: '',
-      sellerDetailsSection,
-      nextStepsSection,
+      sellerDetailsSection: '',
+      nextStepsSection: '',
+      primaryCtaLabel: this.escapeHtml('Open Advisor Dashboard'),
+      primaryCtaUrl: data.advisordashboardHref,
+      footerNote: '',
     };
-  }
-
-  private buildContactSection(params: {
-    phoneValue: string;
-    phoneHref: string;
-    phoneCtaLabel: string;
-    emailValue: string;
-    emailHref: string;
-    emailCtaLabel: string;
-    websiteValue: string;
-    websiteHref: string;
-  }): string {
-    return `
-                  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; margin-bottom: 24px;">
-                    <tr>
-                      <td style="width: 33.33%; padding: 10px;">
-                        <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; height: 100%;">
-                          <p style="margin: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; font-weight: 600;">Phone</p>
-                          <p style="margin: 6px 0 0; font-size: 14px; color: #111827; font-weight: 600;">${params.phoneValue}</p>
-                          <p style="margin: 6px 0 0; font-size: 12px;">
-                            <a href="${params.phoneHref}" style="color: #6366f1; text-decoration: none;">${params.phoneCtaLabel}</a>
-                          </p>
-                        </div>
-                      </td>
-                      <td style="width: 33.33%; padding: 10px;">
-                        <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; height: 100%;">
-                          <p style="margin: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; font-weight: 600;">Email</p>
-                          <p style="margin: 6px 0 0; font-size: 14px; color: #111827; font-weight: 600; word-break: break-all;">${params.emailValue}</p>
-                          <p style="margin: 6px 0 0; font-size: 12px;">
-                            <a href="${params.emailHref}" style="color: #6366f1; text-decoration: none;">${params.emailCtaLabel}</a>
-                          </p>
-                        </div>
-                      </td>
-                      <td style="width: 33.33%; padding: 10px;">
-                        <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; height: 100%;">
-                          <p style="margin: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; font-weight: 600;">Website</p>
-                          <p style="margin: 6px 0 0; font-size: 14px; font-weight: 600; word-break: break-all;">
-                            <a href="${params.websiteHref}" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: none;">${params.websiteValue}</a>
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  </table>
-    `;
-  }
-
-  private buildAdvisorDetailsSection(params: {
-    industriesHtml: string;
-    industriesTitle: string;
-    geographiesHtml: string;
-    geographiesTitle: string;
-    focusAreasCta?: string;
-    revenueRangeText: string;
-    descriptionText: string;
-  }): string {
-    const focusAreasCta = params.focusAreasCta ?? '';
-    return `
-                  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; margin-bottom: 12px;">
-                    <tr>
-                      <td style="width: 50%; padding: 10px;">
-                        <div style="background-color: #eef2ff; border: 1px solid #c7d2fe; border-radius: 14px; padding: 14px; height: 100%;">
-                          <p style="margin: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #4338ca; font-weight: 700;">Focus Industries</p>
-                          <p style="margin: 6px 0 0; font-size: 14px; color: #1f2937; line-height: 1.5;" title="${params.industriesTitle}">${params.industriesHtml}</p>
-                        </div>
-                      </td>
-                      <td style="width: 50%; padding: 10px;">
-                        <div style="background-color: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 14px; padding: 14px; height: 100%;">
-                          <p style="margin: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #047857; font-weight: 700;">Geographic Coverage</p>
-                          <p style="margin: 6px 0 0; font-size: 14px; color: #1f2937; line-height: 1.5;" title="${params.geographiesTitle}">${params.geographiesHtml}</p>
-                        </div>
-                      </td>
-                    </tr>
-                  </table>
-
-                  ${focusAreasCta}
-
-                  <div style="background-color: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 16px; padding: 20px; margin: 20px 0;">
-                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
-                      <tr>
-                        <td style="vertical-align: top;">
-                          <p style="margin: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #047857; font-weight: 700;">Typical Client Revenue</p>
-                          <p style="margin: 8px 0 0; font-size: 18px; color: #065f46; font-weight: 700;">${params.revenueRangeText}</p>
-                        </td>
-                        <td style="text-align: right; vertical-align: middle;">
-                          <span style="display: inline-block; padding: 8px 14px; border-radius: 999px; background-color: #d1fae5; color: #047857; font-size: 12px; font-weight: 700;">Strong Alignment</span>
-                        </td>
-                      </tr>
-                    </table>
-                  </div>
-
-                  <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; margin-bottom: 24px;">
-                    <p style="margin: 0 0 10px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6366f1; font-weight: 700;">At a Glance</p>
-                    <h2 style="margin: 0 0 12px; font-size: 20px; color: #111827;">About this advisor</h2>
-                    <p style="margin: 0; font-size: 14px; line-height: 1.7; color: #1f2937;">${params.descriptionText}</p>
-                  </div>
-    `;
-  }
-
-  private buildSellerDetailsSection(params: {
-    companyName: string;
-    industry: string;
-    geography: string;
-    description: string;
-    revenueDisplay: string;
-    contactName: string;
-    contactEmail: string;
-  }): string {
-    return `
-                  <div style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 22px; margin-bottom: 24px; box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.05);">
-                    <p style="margin: 0 0 12px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6366f1; font-weight: 700;">Seller Snapshot</p>
-                    <h3 style="margin: 0; font-size: 18px; color: #111827;">${params.companyName}</h3>
-                    <p style="margin: 6px 0 12px; font-size: 14px; color: #4b5563;">Industry: ${params.industry} · Location: ${params.geography}</p>
-                    <p style="margin: 0 0 12px; font-size: 14px; color: #1f2937; line-height: 1.6;">${params.description}</p>
-                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; margin-top: 8px;">
-                      <tr>
-                        <td style="width: 50%; padding: 8px 0; font-size: 13px; color: #4b5563;">Estimated annual revenue</td>
-                        <td style="width: 50%; padding: 8px 0; font-size: 13px; color: #111827; font-weight: 600; text-align: right;">$${params.revenueDisplay}</td>
-                      </tr>
-                      <tr>
-                        <td style="width: 50%; padding: 8px 0; font-size: 13px; color: #4b5563;">Primary contact</td>
-                        <td style="width: 50%; padding: 8px 0; font-size: 13px; color: #111827; font-weight: 600; text-align: right;">${params.contactName} · ${params.contactEmail}</td>
-                      </tr>
-                    </table>
-                  </div>
-    `;
-  }
-
-  private buildNextStepsSection(title: string, steps: string[]): string {
-    const stepsHtml = steps.map((step) => `<li>${step}</li>`).join('');
-
-    return `
-                  <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 18px; padding: 22px; margin-bottom: 24px;">
-                    <h4 style="margin: 0 0 12px; font-size: 16px; color: #111827;">${title}</h4>
-                    <ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #4b5563; line-height: 1.7;">
-                      ${stepsHtml}
-                    </ol>
-                  </div>
-    `;
   }
 
   private buildIntroductionEmailData(params: {
@@ -480,7 +189,33 @@ export class ConnectionsService {
     sellerUser: User;
     sellerDashboardUrl: string;
     advisorDashboardUrl: string;
-  }): IntroductionEmailData {
+  }): {
+    replacements: Record<string, string>;
+    contextData: {
+      advisorDisplayNameText: string;
+      advisorCompanyNameText: string;
+      sellerCompanyText: string;
+      sellerIndustryText: string;
+      sellerGeographyText: string;
+      sellerNameText: string;
+      sellerEmailText: string;
+      sellerdashboardHref: string;
+      advisordashboardHref: string;
+      focusAreasCtaSeller: string;
+    };
+    snapshot: {
+      sellerAnnualRevenue?: number;
+      sellerCurrency?: string;
+      sellerContactEmail?: string;
+      sellerContactName?: string;
+      sellerPhone?: string;
+      sellerWebsite?: string;
+    };
+    raw: {
+      advisorCompanyName: string;
+      sellerCompanyName: string;
+    };
+  } {
     const {
       advisor,
       advisorUser,
@@ -542,10 +277,10 @@ export class ConnectionsService {
     const advisorWebsiteHref =
       advisorWebsiteRaw.length > 0
         ? this.escapeAttr(
-            advisorWebsiteRaw.startsWith('http')
-              ? advisorWebsiteRaw
-              : `https://${advisorWebsiteRaw}`,
-          )
+          advisorWebsiteRaw.startsWith('http')
+            ? advisorWebsiteRaw
+            : `https://${advisorWebsiteRaw}`,
+        )
         : '#';
 
     const yearsExperienceRaw =
@@ -579,19 +314,18 @@ export class ConnectionsService {
     }
     const advisorRevenueRangeText = this.escapeHtml(advisorRevenueRangeRaw);
 
-    // Seller revenue (single value only)
-    const sellerRevenueFormatted = this.formatCurrency(
-      seller.annualRevenue,
-      seller.currency,
-    );
-    const sellerRevenueRangeText = this.escapeHtml(
-      sellerRevenueFormatted || 'Not specified',
-    );
-
-    // Seller description
+    // Seller revenue (single value) and description
     const sellerDescriptionRaw =
-      seller.description?.trim() || 'No description provided';
+      (seller.description && seller.description.trim()) ||
+      'No description provided';
     const sellerDescriptionText = this.escapeHtml(sellerDescriptionRaw);
+
+    const sellerRevenueFormatted =
+      typeof seller.annualRevenue === 'number'
+        ? this.formatCurrency(seller.annualRevenue, seller.currency)
+        : null;
+    const sellerRevenueRangeRaw = sellerRevenueFormatted || 'Not specified';
+    const sellerRevenueRangeText = this.escapeHtml(sellerRevenueRangeRaw);
 
     const advisorLogoUrl = advisor.logoUrl?.trim();
     const advisorLogoSrc = advisorLogoUrl
@@ -612,54 +346,12 @@ export class ConnectionsService {
         : 'Not provided';
     const sellerRevenueDisplay = this.escapeHtml(sellerRevenueDisplayRaw);
     const sellerCompanyText = this.escapeHtml(seller.companyName);
-
-    const sellerContactNameValue =
-      this.sanitizeSnapshotString(seller.contactName) || sellerUser.name;
-    const sellerContactEmailValue =
-      this.sanitizeSnapshotString(seller.contactEmail) ||
-      this.sanitizeSnapshotString(sellerUser.email);
-    const sellerPhoneValue = this.sanitizeSnapshotString(seller.phone);
-    const sellerWebsiteValue = this.sanitizeSnapshotString(seller.website);
-
-    const sellerContactEmailRaw = sellerContactEmailValue || '';
-    const sellerContactEmailText = this.escapeHtml(
-      sellerContactEmailRaw.length > 0 ? sellerContactEmailRaw : 'Not provided',
-    );
-    const sellerEmailHref =
-      sellerContactEmailRaw.length > 0
-        ? this.escapeAttr(`mailto:${sellerContactEmailRaw}`)
-        : '#';
-
-    const sellerContactNameText = this.escapeHtml(sellerContactNameValue);
-    const sellerPhoneRaw = sellerPhoneValue || '';
-    const sellerPhoneText = this.escapeHtml(
-      sellerPhoneRaw.length > 0 ? sellerPhoneRaw : 'Not provided',
-    );
-    const sellerTelHref =
-      sellerPhoneRaw.length > 0
-        ? this.escapeAttr(`tel:${sellerPhoneRaw.replace(/[^+\d]/g, '')}`)
-        : '#';
-
-    const sellerWebsiteRaw = sellerWebsiteValue || '';
-    const sellerWebsiteText =
-      sellerWebsiteRaw.length > 0
-        ? this.escapeHtml(sellerWebsiteRaw)
-        : 'Website not provided';
-    const sellerWebsiteHref =
-      sellerWebsiteRaw.length > 0
-        ? this.escapeAttr(
-            sellerWebsiteRaw.startsWith('http')
-              ? sellerWebsiteRaw
-              : `https://${sellerWebsiteRaw}`,
-          )
-        : '#';
-
-    const sellerNameText = sellerContactNameText;
-    const sellerEmailText = sellerContactEmailText;
+    const sellerNameText = this.escapeHtml(sellerUser.name);
+    const sellerEmailText = this.escapeHtml(sellerUser.email);
 
     const focusAreasCtaAdvisor =
       advisorIndustriesPreview.moreCount > 0 ||
-      advisorGeographiesPreview.moreCount > 0
+        advisorGeographiesPreview.moreCount > 0
         ? `<div style="margin: 12px 10px 0;">
               <a href="${advisordashboardHref}" style="display: inline-block; padding: 8px 18px; border-radius: 999px; background-color: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; text-decoration: none;">Show full focus areas</a>
             </div>`
@@ -667,7 +359,7 @@ export class ConnectionsService {
 
     const focusAreasCtaSeller =
       advisorIndustriesPreview.moreCount > 0 ||
-      advisorGeographiesPreview.moreCount > 0
+        advisorGeographiesPreview.moreCount > 0
         ? `<div style="margin: 12px 10px 0;">
               <a href="${sellerdashboardHref}" style="display: inline-block; padding: 8px 18px; border-radius: 999px; background-color: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; text-decoration: none;">Open seller dashboard</a>
             </div>`
@@ -675,11 +367,18 @@ export class ConnectionsService {
 
     const sellerAnnualRevenueValue =
       typeof seller.annualRevenue === 'number' &&
-      Number.isFinite(seller.annualRevenue)
+        Number.isFinite(seller.annualRevenue)
         ? seller.annualRevenue
         : undefined;
     const sellerCurrencyValue =
       this.sanitizeSnapshotString(seller.currency) || 'USD';
+    const sellerContactEmailValue =
+      this.sanitizeSnapshotString(seller.contactEmail) ||
+      this.sanitizeSnapshotString(sellerUser.email);
+    const sellerContactNameValue =
+      this.sanitizeSnapshotString(seller.contactName) || sellerUser.name;
+    const sellerPhoneValue = this.sanitizeSnapshotString(seller.phone);
+    const sellerWebsiteValue = this.sanitizeSnapshotString(seller.website);
 
     const replacements: Record<string, string> = {
       advisorName: advisorDisplayNameText,
@@ -707,12 +406,6 @@ export class ConnectionsService {
       sellerRevenue: sellerRevenueDisplay,
       sellerName: sellerNameText,
       sellerEmail: sellerEmailText,
-      sellerContactName: sellerContactNameText,
-      sellerPhone: sellerPhoneText,
-      sellerTelHref,
-      sellerEmailHref,
-      sellerWebsiteText,
-      sellerWebsiteHref,
       focusAreasCta: focusAreasCtaAdvisor,
     };
 
@@ -823,12 +516,15 @@ export class ConnectionsService {
 
       const advisorHtml = this.applyTemplate(template, {
         ...emailData.replacements,
-        ...this.buildIntroductionContext('advisor-introduction', emailData),
+        ...this.buildIntroductionContext(
+          'advisor-introduction',
+          emailData.contextData,
+        ),
       });
 
       const sellerCopyHtml = this.applyTemplate(template, {
         ...emailData.replacements,
-        ...this.buildIntroductionContext('seller-copy', emailData),
+        ...this.buildIntroductionContext('seller-copy', emailData.contextData),
       });
 
       try {
@@ -1218,13 +914,13 @@ export class ConnectionsService {
 
       const advisorHtml = this.applyTemplate(introductionTemplate, {
         ...emailData.replacements,
-        ...this.buildIntroductionContext('direct-list', emailData),
+        ...this.buildIntroductionContext('direct-list', emailData.contextData),
       });
 
       try {
         await this.emailService.sendEmail({
           to: advisorUser?.email,
-          subject: `Advisor Chooser Match: ${emailData.raw.sellerCompanyName} will reach out directly`,
+          subject: 'Advisor Chooser Match:The seller has opted to reach out directly.',
           html: advisorHtml,
         });
 

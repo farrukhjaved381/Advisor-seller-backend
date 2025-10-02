@@ -7,7 +7,7 @@ export class CreatePaymentIntentDto {
   @ApiProperty({
     description: 'Coupon code for discount',
     required: false,
-    example: 'FREETRIAL2024',
+    example: 'FREETRIAL2025',
   })
   couponCode?: string;
 }
