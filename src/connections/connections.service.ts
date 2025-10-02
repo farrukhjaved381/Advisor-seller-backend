@@ -171,7 +171,8 @@ export class ConnectionsService {
       ),
       heroSubtitle: '',
       introGreeting: `Hi ${data.advisorDisplayNameText},`,
-      introMessage: `We matched you with <strong>${data.sellerCompanyText}</strong>. They opted to reach out directly, so expect to hear from ${data.sellerNameText} soon. You can also reach them at ${data.sellerEmailText}.`,
+      introMessage:
+        'We matched you with a potential client The seller has opted to reach out to you directly, so expect to hear from someone that will mention finding you on Advisor Chooser.<br /><br />To see all you matches and manage your profile, head to your Advisor Chooser dashboard.',
       contactSection: '',
       advisorDetailsSection: '',
       sellerDetailsSection: '',
