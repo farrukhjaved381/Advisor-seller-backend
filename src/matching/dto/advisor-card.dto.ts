@@ -73,4 +73,8 @@ export class AdvisorCardDto {
     ],
   })
   testimonials: { clientName: string; testimonial: string; pdfUrl?: string }[];
+
+  @ApiProperty({ example: true, required: false })
+  @IsOptional()
+  workedWithCimamplify?: boolean;
 }

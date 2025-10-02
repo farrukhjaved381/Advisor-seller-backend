@@ -82,31 +82,44 @@ export class MatchingService {
 
     const matches = await query;
 
-    return matches.map((advisor) => ({
-      id: advisor._id.toString(),
-      companyName: advisor.companyName,
-      industries: advisor.industries,
-      geographies: advisor.geographies,
-      matchedIndustries: advisor.industries.filter((industry) =>
-        industryRegex.test(industry),
-      ),
-      matchedGeographies: geographyRegexes.length
-        ? advisor.geographies.filter((geo) =>
-            geographyRegexes.some((regex) => regex.test(geo)),
-          )
-        : advisor.geographies,
-      yearsExperience: advisor.yearsExperience,
-      numberOfTransactions: advisor.numberOfTransactions,
-      revenueRange: advisor.revenueRange,
-      advisorName: (advisor.userId as any).name,
-      advisorEmail: (advisor.userId as any).email,
-      phone: advisor.phone,
-      website: advisor.website,
-      currency: advisor.currency,
-      description: advisor.description,
-      logoUrl: advisor.logoUrl,
-      testimonials: advisor.testimonials || [],
-    }));
+    return matches.map((advisor) => {
+      const advisorUser = advisor.userId as any;
+      const advisorName =
+        typeof advisorUser?.name === 'string' && advisorUser.name.trim().length > 0
+          ? advisorUser.name.trim()
+          : advisor.companyName || 'Advisor';
+      const advisorEmail =
+        typeof advisorUser?.email === 'string' && advisorUser.email.trim().length > 0
+          ? advisorUser.email.trim()
+          : 'Not provided';
+
+      return {
+        id: advisor._id.toString(),
+        companyName: advisor.companyName,
+        industries: advisor.industries,
+        geographies: advisor.geographies,
+        matchedIndustries: advisor.industries.filter((industry) =>
+          industryRegex.test(industry),
+        ),
+        matchedGeographies: geographyRegexes.length
+          ? advisor.geographies.filter((geo) =>
+              geographyRegexes.some((regex) => regex.test(geo)),
+            )
+          : advisor.geographies,
+        yearsExperience: advisor.yearsExperience,
+        numberOfTransactions: advisor.numberOfTransactions,
+        revenueRange: advisor.revenueRange,
+        advisorName,
+        advisorEmail,
+        phone: advisor.phone,
+        website: advisor.website,
+        currency: advisor.currency,
+        description: advisor.description,
+        logoUrl: advisor.logoUrl,
+        testimonials: advisor.testimonials || [],
+        workedWithCimamplify: advisor.workedWithCimamplify,
+      } as AdvisorCardDto;
+    });
   }
 
   async getMatchStats(sellerId: string): Promise<{
