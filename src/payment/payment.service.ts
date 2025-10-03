@@ -16,6 +16,7 @@ import {
 } from './schemas/payment-history.schema';
 import { User } from '../users/schemas/user.schema';
 import { CreateCouponDto } from './dto/create-coupon.dto';
+import { ExtendCouponUsageDto } from './dto/extend-coupon-usage.dto';
 import { EmailService } from '../auth/email.service';
 
 type StripeInvoiceExpanded = Stripe.Invoice & {
@@ -93,8 +94,12 @@ export class PaymentService {
   }
 
   private normalizeSubscriptionStatus(
-    status: Stripe.Subscription.Status | string,
+    status?: Stripe.Subscription.Status | null,
   ) {
+    if (!status) {
+      return 'none';
+    }
+
     switch (status) {
       case 'active':
       case 'trialing':
@@ -1249,7 +1254,9 @@ export class PaymentService {
       throw new BadRequestException('Discount percentage is required');
     }
     if (percentage < 1 || percentage > 100) {
-      throw new BadRequestException('Discount percentage must be between 1 and 100');
+      throw new BadRequestException(
+        'Discount percentage must be between 1 and 100',
+      );
     }
 
     const coupon = new this.couponModel({
@@ -1271,6 +1278,76 @@ export class PaymentService {
       .sort({ createdAt: -1 })
       .select('-__v')
       .lean();
+  }
+
+  async extendCouponUsage(code: string, dto: ExtendCouponUsageDto) {
+    const normalizedCode = code.trim().toUpperCase();
+    const coupon = await this.couponModel.findOne({ code: normalizedCode });
+    if (!coupon) {
+      throw new NotFoundException('Coupon not found');
+    }
+
+    const hasUsageUpdate = dto.additionalUses || dto.newTotalLimit;
+    const hasExpirationUpdate =
+      dto.newExpirationDate !== undefined || dto.clearExpiration;
+    if (!hasUsageUpdate && !hasExpirationUpdate) {
+      throw new BadRequestException(
+        'Please provide additionalUses, newTotalLimit, newExpirationDate, or clearExpiration to update the coupon.',
+      );
+    }
+
+    if (dto.newTotalLimit !== undefined) {
+      if (dto.newTotalLimit <= coupon.usedCount) {
+        throw new BadRequestException(
+          `New total limit must be greater than the number of times already used (${coupon.usedCount}).`,
+        );
+      }
+      coupon.usageLimit = dto.newTotalLimit;
+    } else if (dto.additionalUses !== undefined) {
+      const currentLimit = coupon.usageLimit ?? coupon.usedCount;
+      coupon.usageLimit = currentLimit + dto.additionalUses;
+    }
+
+    if (dto.newExpirationDate) {
+      coupon.expiresAt = new Date(dto.newExpirationDate);
+    }
+
+    if (dto.clearExpiration) {
+      coupon.expiresAt = undefined;
+    }
+
+    await coupon.save();
+    return coupon.toObject();
+  }
+
+  async deleteCoupon(code: string) {
+    const normalizedCode = code.trim().toUpperCase();
+    const coupon = await this.couponModel.findOneAndDelete({
+      code: normalizedCode,
+    });
+    if (!coupon) {
+      throw new NotFoundException('Coupon not found');
+    }
+
+    if (coupon.type !== 'free_trial') {
+      const couponId = `advisor_${normalizedCode.toLowerCase()}`;
+      try {
+        await this.stripe.coupons.del(couponId);
+      } catch (error: any) {
+        if (error?.statusCode !== 404) {
+          this.logger.warn(
+            `[PaymentService] Unable to delete Stripe coupon ${couponId}: ${
+              error?.message || error
+            }`,
+          );
+        }
+      }
+    }
+
+    return {
+      message: 'Coupon deleted successfully',
+      code: coupon.code,
+    };
   }
 
   async handleWebhook(
@@ -1447,7 +1524,9 @@ export class PaymentService {
               userRecord = await this.usersService.findById(userId);
             } catch (error) {
               const reason = (error as Error)?.message || String(error);
-              this.logger.warn(`[PaymentService] Unable to load user record for payment failure email: ${reason}`);
+              this.logger.warn(
+                `[PaymentService] Unable to load user record for payment failure email: ${reason}`,
+              );
             }
           }
 
@@ -1473,7 +1552,9 @@ export class PaymentService {
               });
             } catch (error) {
               const reason = (error as Error)?.message || String(error);
-              this.logger.warn(`[PaymentService] Unable to send payment failure email: ${reason}`);
+              this.logger.warn(
+                `[PaymentService] Unable to send payment failure email: ${reason}`,
+              );
             }
           }
         }
@@ -1485,8 +1566,6 @@ export class PaymentService {
 
     return { received: true };
   }
-
-
 
   async getHistory(userId: string) {
     const items = await this.paymentHistoryModel

@@ -7,6 +7,9 @@ import {
   Headers,
   Req,
   Get,
+  Patch,
+  Param,
+  Delete,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,6 +17,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiParam,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PaymentService } from './payment.service';
@@ -24,6 +28,7 @@ import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { FinalizeSubscriptionDto } from './dto/finalize-subscription.dto';
 import { UpdatePaymentMethodDto } from './dto/update-payment-method.dto';
 import { CreateCouponDto } from './dto/create-coupon.dto';
+import { ExtendCouponUsageDto } from './dto/extend-coupon-usage.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -129,7 +134,11 @@ export class PaymentController {
   }
 
   @Post('setup-coupons')
-  @ApiOperation({ summary: 'Create a new coupon for advisor subscriptions' })
+  @ApiOperation({
+    summary: 'Create a new coupon',
+    description:
+      'Fill in this form to create a coupon you can share in emails or chats. The percentage decides how much of the $5,000 advisor membership fee will be waived.',
+  })
   @ApiResponse({ status: 201, description: 'Coupon created successfully' })
   @ApiBody({ type: CreateCouponDto })
   async createCoupon(@Body() createCouponDto: CreateCouponDto) {
@@ -138,10 +147,54 @@ export class PaymentController {
   }
 
   @Get('coupons')
-  @ApiOperation({ summary: 'List available coupons with usage limits' })
+  @ApiOperation({
+    summary: 'View all coupons',
+    description:
+      'Shows every coupon you have created along with the percentage discount, how many times it has been used, and when it expires.',
+  })
   @ApiResponse({ status: 200, description: 'List of coupons retrieved' })
   async listCoupons() {
     return this.paymentService.listCoupons();
+  }
+
+  @Patch('coupons/:code/usage')
+  @ApiOperation({
+    summary: 'Add more uses or change expiration for a coupon',
+    description:
+      'Use this when a coupon is running out or you want to keep it available longer. You can add more uses, set a brand-new total limit, or refresh the expiration date.',
+  })
+  @ApiParam({
+    name: 'code',
+    description:
+      'Coupon code exactly as shown in the coupon list (not case sensitive).',
+    example: 'GROWTH75',
+  })
+  @ApiBody({ type: ExtendCouponUsageDto })
+  @ApiResponse({ status: 200, description: 'Coupon updated successfully' })
+  async extendCouponUsage(
+    @Param('code') code: string,
+    @Body() extendDto: ExtendCouponUsageDto,
+  ) {
+    const coupon = await this.paymentService.extendCouponUsage(code, extendDto);
+
+    return { message: 'Coupon updated successfully', coupon };
+  }
+
+  @Delete('coupons/:code')
+  @ApiOperation({
+    summary: 'Delete a coupon',
+    description:
+      'Removes a coupon completely so it can no longer be used. This also removes it from Stripe if it was connected there.',
+  })
+  @ApiParam({
+    name: 'code',
+    description:
+      'Coupon code exactly as shown in the coupon list (not case sensitive).',
+    example: 'GROWTH75',
+  })
+  @ApiResponse({ status: 200, description: 'Coupon deleted successfully' })
+  async deleteCoupon(@Param('code') code: string) {
+    return this.paymentService.deleteCoupon(code);
   }
 
   @Post('webhook')
