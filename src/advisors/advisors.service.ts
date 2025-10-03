@@ -432,17 +432,7 @@ export class AdvisorsService {
       advisorProfileId: advisorProfile._id.toString(),
     });
 
-    const leads = (allLeads || []).filter(
-      (lead) =>
-        (lead.type || ConnectionType.INTRODUCTION) ===
-        ConnectionType.INTRODUCTION,
-    );
-    if (leads.length !== allLeads.length) {
-      console.log('[AdvisorsService] Filtered leads to introduction only', {
-        total: allLeads.length,
-        introductionCount: leads.length,
-      });
-    }
+    const leads = allLeads || [];
 
     // Map seller userIds to seller profiles
     const sellerUserIds = Array.from(
@@ -479,10 +469,11 @@ export class AdvisorsService {
         ? sellerMap.get(sellerUserId) || null
         : null;
 
+      const isDirectListLead =
+        (l.type || ConnectionType.INTRODUCTION) === ConnectionType.DIRECT_LIST;
+
       const snapshotSource = l as any;
       const snapshot: Record<string, any> = {};
-      if (snapshotSource.sellerCompanyName)
-        snapshot.companyName = snapshotSource.sellerCompanyName;
       if (snapshotSource.sellerIndustry)
         snapshot.industry = snapshotSource.sellerIndustry;
       if (snapshotSource.sellerGeography)
@@ -491,29 +482,56 @@ export class AdvisorsService {
         snapshot.annualRevenue = snapshotSource.sellerAnnualRevenue;
       if (snapshotSource.sellerCurrency)
         snapshot.currency = snapshotSource.sellerCurrency;
-      if (snapshotSource.sellerContactEmail)
-        snapshot.contactEmail = snapshotSource.sellerContactEmail;
-      if (snapshotSource.sellerContactName)
-        snapshot.contactName = snapshotSource.sellerContactName;
-      if (snapshotSource.sellerPhone)
-        snapshot.phone = snapshotSource.sellerPhone;
-      if (snapshotSource.sellerWebsite)
-        snapshot.website = snapshotSource.sellerWebsite;
 
-      const mergedSeller = sellerProfile
-        ? {
-            ...(Object.keys(snapshot).length > 0 ? snapshot : {}),
-            ...sellerProfile,
-          }
-        : Object.keys(snapshot).length > 0
-          ? snapshot
-          : null;
+      if (!isDirectListLead) {
+        if (snapshotSource.sellerCompanyName)
+          snapshot.companyName = snapshotSource.sellerCompanyName;
+        if (snapshotSource.sellerContactEmail)
+          snapshot.contactEmail = snapshotSource.sellerContactEmail;
+        if (snapshotSource.sellerContactName)
+          snapshot.contactName = snapshotSource.sellerContactName;
+        if (snapshotSource.sellerPhone)
+          snapshot.phone = snapshotSource.sellerPhone;
+        if (snapshotSource.sellerWebsite)
+          snapshot.website = snapshotSource.sellerWebsite;
+      }
+
+      let mergedSeller: Record<string, any> | null = null;
+      if (!isDirectListLead) {
+        mergedSeller = sellerProfile
+          ? {
+              ...sellerProfile,
+              ...(Object.keys(snapshot).length > 0 ? snapshot : {}),
+            }
+          : Object.keys(snapshot).length > 0
+            ? snapshot
+            : null;
+      } else {
+        const anonymizedName = 'Seller will reach out directly';
+        mergedSeller = {
+          industry:
+            snapshot.industry ?? sellerProfile?.industry ?? 'Not specified',
+          geography:
+            snapshot.geography ?? sellerProfile?.geography ?? 'Not specified',
+          annualRevenue:
+            snapshot.annualRevenue ?? sellerProfile?.annualRevenue ?? null,
+          currency: snapshot.currency ?? sellerProfile?.currency ?? 'USD',
+          description: sellerProfile?.description ?? null,
+          companyName: anonymizedName,
+          contactName: null,
+          contactEmail: null,
+          phone: null,
+          website: null,
+          isAnonymous: true,
+        };
+      }
 
       return {
         ...l,
         sellerId: l.sellerId,
         seller: mergedSeller,
         sellerUserId,
+        contactHidden: isDirectListLead,
       };
     });
     console.log('[AdvisorsService] Mapped leads with seller', {
