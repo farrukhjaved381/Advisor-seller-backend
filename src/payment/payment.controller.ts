@@ -145,59 +145,7 @@ export class PaymentController {
       'Fill in this form to create a coupon you can share in emails or chats. The percentage decides how much of the $5,000 advisor membership fee will be waived.',
   })
   @ApiResponse({ status: 201, description: 'Coupon created successfully' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['code', 'discountPercentage'],
-      properties: {
-        code: {
-          type: 'string',
-          example: 'GROWTH75',
-          description:
-            'Short code you will send to advisors. Letters or numbers only, no spaces.',
-        },
-        discountPercentage: {
-          type: 'number',
-          example: 75,
-          minimum: 1,
-          maximum: 100,
-          description:
-            'How much of the $5,000 advisor fee to waive. 100 makes it a completely free coupon.',
-        },
-        usageLimit: {
-          type: 'integer',
-          nullable: true,
-          example: 5,
-          description:
-            'How many people can use this code before it stops working. Leave empty for unlimited.',
-        },
-        expiresDate: {
-          type: 'string',
-          format: 'date',
-          nullable: true,
-          example: '2025-12-31',
-          description:
-            'Pick the calendar date you want this coupon to stop working.',
-        },
-        expiresTime: {
-          type: 'string',
-          format: 'time',
-          nullable: true,
-          example: '17:00',
-          description:
-            'Pick the time on that day when the coupon should expire. Leave empty to expire at the end of the day.',
-        },
-        expiresAt: {
-          type: 'string',
-          format: 'date-time',
-          nullable: true,
-          example: '2025-12-31T23:59:59.000Z',
-          description:
-            'Advanced: manually type a custom ISO date/time if you prefer not to use the calendar inputs.',
-        },
-      },
-    },
-  })
+  @ApiBody({ type: CreateCouponDto })
   async createCoupon(@Body() createCouponDto: CreateCouponDto) {
     const coupon = await this.paymentService.createCoupon(createCouponDto);
     return { message: 'Coupon created successfully', coupon };
@@ -228,52 +176,7 @@ export class PaymentController {
       'Coupon code exactly as shown in the coupon list (not case sensitive).',
     example: 'GROWTH75',
   })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        additionalUses: {
-          type: 'integer',
-          example: 10,
-          description:
-            'Add this many extra uses on top of the current limit (for example, typing 10 allows 10 more people).',
-        },
-        newTotalLimit: {
-          type: 'integer',
-          example: 40,
-          description:
-            'Set a brand-new total usage limit. Use this if you prefer to define the exact total number of uses.',
-        },
-        newExpirationDate: {
-          type: 'string',
-          format: 'date',
-          example: '2026-01-31',
-          description:
-            'Pick the calendar date for the new expiration. Leave blank to keep the current date.',
-        },
-        newExpirationTime: {
-          type: 'string',
-          format: 'time',
-          example: '17:00',
-          description:
-            'Pick the time on that day when the coupon should expire. Leave blank to keep the end-of-day default.',
-        },
-        newExpirationDateTime: {
-          type: 'string',
-          format: 'date-time',
-          example: '2026-01-31T23:59:59.000Z',
-          description:
-            'Advanced: manually type the full ISO date/time if you do not want to use the calendar inputs.',
-        },
-        clearExpiration: {
-          type: 'boolean',
-          example: false,
-          description:
-            'Turn on to remove the expiration date altogether so the coupon stays active until the usage limit is reached.',
-        },
-      },
-    },
-  })
+  @ApiBody({ type: ExtendCouponUsageDto })
   @ApiResponse({ status: 200, description: 'Coupon updated successfully' })
   async extendCouponUsage(
     @Param('code') code: string,

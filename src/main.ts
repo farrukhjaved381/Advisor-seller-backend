@@ -75,6 +75,7 @@ async function createApp(): Promise<INestApplication> {
     'http://127.0.0.1:5174',
     'https://frontend-five-pied-17.vercel.app',
     'https://cimamplify-ui.vercel.app',
+    'https://advisor-seller-backend.vercel.app',
   ].filter(Boolean);
 
   nestApp.enableCors({
