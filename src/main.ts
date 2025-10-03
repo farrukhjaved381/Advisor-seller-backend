@@ -69,23 +69,67 @@ async function createApp(): Promise<INestApplication> {
 
   nestApp.use(cookieParser());
 
-  const whitelist = [
+  const appUrl = process.env.API_PUBLIC_URL
+    ? process.env.API_PUBLIC_URL
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : undefined;
+
+  const rawWhitelist = [
     process.env.FRONTEND_URL,
+    appUrl,
     'http://localhost:5174',
     'http://127.0.0.1:5174',
+    'http://localhost:3000',
     'https://frontend-five-pied-17.vercel.app',
     'https://cimamplify-ui.vercel.app',
     'https://advisor-seller-backend.vercel.app',
-  ].filter(Boolean);
+  ];
+
+  const normalizeOrigin = (value?: string | null) => {
+    if (!value) {
+      return undefined;
+    }
+    try {
+      return new URL(value).origin.replace(/\/$/, '');
+    } catch {
+      return value.replace(/\/$/, '');
+    }
+  };
+
+  const allowedOrigins = new Set(
+    rawWhitelist
+      .map(normalizeOrigin)
+      .filter((origin): origin is string => Boolean(origin)),
+  );
+
+  const isAllowedPreviewOrigin = (value: string) => {
+    try {
+      const hostname = new URL(value).hostname;
+      return /^(?:[a-z0-9-]+\.)?vercel\.app$/.test(hostname);
+    } catch {
+      return /^https:\/\/[a-z0-9-]+-vercel\.app$/.test(value);
+    }
+  };
 
   nestApp.enableCors({
     origin: (origin, callback) => {
-      // Allow server-to-server or tools with no origin
-      if (!origin) return callback(null, true);
-      if (whitelist.includes(origin)) return callback(null, true);
-      // Support Vercel preview URLs if needed
-      if (/^https:\/\/[a-z0-9-]+-vercel\.app$/.test(origin))
+      if (!origin) {
         return callback(null, true);
+      }
+      const normalizedOrigin = normalizeOrigin(origin);
+      if (
+        normalizedOrigin &&
+        (allowedOrigins.has(normalizedOrigin) ||
+          isAllowedPreviewOrigin(normalizedOrigin))
+      ) {
+        return callback(null, true);
+      }
+
+      if (process.env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
+
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,

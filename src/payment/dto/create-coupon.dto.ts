@@ -1,4 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  ApiHideProperty,
+  ApiProperty,
+  ApiPropertyOptional,
+} from '@nestjs/swagger';
 import {
   IsString,
   IsOptional,
@@ -70,11 +74,7 @@ export class CreateCouponDto {
   @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
   expiresTime?: string;
 
-  @ApiPropertyOptional({
-    description:
-      'Advanced: provide a custom ISO 8601 date & time if you prefer typing it manually.',
-    example: '2025-12-31T23:59:59.000Z',
-  })
+  @ApiHideProperty()
   @IsOptional()
   @IsISO8601()
   expiresAt?: string;
