@@ -20,9 +20,10 @@ import { PaymentService } from './payment.service';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 import { RedeemCouponDto } from './dto/redeem-coupon.dto';
-import { UpdatePaymentMethodDto } from './dto/update-payment-method.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { FinalizeSubscriptionDto } from './dto/finalize-subscription.dto';
+import { UpdatePaymentMethodDto } from './dto/update-payment-method.dto';
+import { CreateCouponDto } from './dto/create-coupon.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -35,8 +36,7 @@ export class PaymentController {
   constructor(private paymentService: PaymentService) {}
 
   @Post('create-intent')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADVISOR)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Throttle({ default: { limit: 10, ttl: 3600 } })
   @ApiOperation({ summary: 'Create payment intent for advisor membership' })
@@ -66,29 +66,8 @@ export class PaymentController {
     );
   }
 
-  @Post('create-subscription')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADVISOR)
-  @ApiBearerAuth()
-  @Throttle({ default: { limit: 10, ttl: 3600 } })
-  @ApiOperation({
-    summary: 'Create Stripe subscription for advisor membership',
-  })
-  @ApiBody({ type: CreateSubscriptionDto })
-  async createSubscription(
-    @Request() req,
-    @Body() createSubscriptionDto: CreateSubscriptionDto,
-  ) {
-    return this.paymentService.createSubscription(
-      req.user._id,
-      createSubscriptionDto.paymentMethodId,
-      createSubscriptionDto.couponCode,
-    );
-  }
-
   @Post('confirm')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADVISOR)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Throttle({ default: { limit: 5, ttl: 3600 } })
   @ApiOperation({ summary: 'Confirm payment and activate advisor profile' })
@@ -118,27 +97,8 @@ export class PaymentController {
     );
   }
 
-  @Post('finalize-subscription')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADVISOR)
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Finalize a subscription after additional authentication',
-  })
-  @ApiBody({ type: FinalizeSubscriptionDto })
-  async finalizeSubscription(
-    @Request() req,
-    @Body() finalizeSubscriptionDto: FinalizeSubscriptionDto,
-  ) {
-    return this.paymentService.finalizeSubscription(
-      req.user._id,
-      finalizeSubscriptionDto.subscriptionId,
-    );
-  }
-
   @Post('redeem-coupon')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADVISOR)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Throttle({ default: { limit: 3, ttl: 3600 } })
   @ApiOperation({ summary: 'Redeem coupon for free trial activation' })
@@ -168,54 +128,20 @@ export class PaymentController {
     return this.paymentService.redeemCoupon(req.user._id, redeemCouponDto.code);
   }
 
-  @Post('setup-intent')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADVISOR)
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Create a setup intent to store/update default payment method',
-  })
-  async createSetupIntent(@Request() req) {
-    return this.paymentService.createSetupIntent(req.user._id);
+  @Post('setup-coupons')
+  @ApiOperation({ summary: 'Create a new coupon for advisor subscriptions' })
+  @ApiResponse({ status: 201, description: 'Coupon created successfully' })
+  @ApiBody({ type: CreateCouponDto })
+  async createCoupon(@Body() createCouponDto: CreateCouponDto) {
+    const coupon = await this.paymentService.createCoupon(createCouponDto);
+    return { message: 'Coupon created successfully', coupon };
   }
 
-  @Post('update-payment-method')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADVISOR)
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Attach and set a new default payment method for automatic renewals',
-  })
-  @ApiBody({ type: UpdatePaymentMethodDto })
-  async updatePaymentMethod(
-    @Request() req,
-    @Body() updatePaymentMethodDto: UpdatePaymentMethodDto,
-  ) {
-    return this.paymentService.updatePaymentMethod(
-      req.user._id,
-      updatePaymentMethodDto.paymentMethodId,
-    );
-  }
-
-  @Get('setup-coupons')
-  @ApiOperation({ summary: 'Setup test coupons (development only)' })
-  @ApiResponse({ status: 200, description: 'Coupons created successfully' })
-  async setupCoupons() {
-    await this.paymentService.createSampleCoupons();
-    return { message: 'Test coupons created successfully' };
-  }
-
-  @Post('activate-free-trial')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADVISOR)
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Activate free trial without coupon (testing only)',
-  })
-  @ApiResponse({ status: 200, description: 'Free trial activated' })
-  async activateFreeTrial(@Request() req) {
-    return this.paymentService.activateFreeTrial(req.user._id);
+  @Get('coupons')
+  @ApiOperation({ summary: 'List available coupons with usage limits' })
+  @ApiResponse({ status: 200, description: 'List of coupons retrieved' })
+  async listCoupons() {
+    return this.paymentService.listCoupons();
   }
 
   @Post('webhook')

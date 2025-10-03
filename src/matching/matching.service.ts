@@ -85,11 +85,13 @@ export class MatchingService {
     return matches.map((advisor) => {
       const advisorUser = advisor.userId as any;
       const advisorName =
-        typeof advisorUser?.name === 'string' && advisorUser.name.trim().length > 0
+        typeof advisorUser?.name === 'string' &&
+        advisorUser.name.trim().length > 0
           ? advisorUser.name.trim()
           : advisor.companyName || 'Advisor';
       const advisorEmail =
-        typeof advisorUser?.email === 'string' && advisorUser.email.trim().length > 0
+        typeof advisorUser?.email === 'string' &&
+        advisorUser.email.trim().length > 0
           ? advisorUser.email.trim()
           : 'Not provided';
 

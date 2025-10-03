@@ -31,6 +31,7 @@ export interface AuthResponse {
     isEmailVerified: boolean;
     isPaymentVerified: boolean;
     isProfileComplete?: boolean;
+    isSubscriptionActive?: boolean;
     subscription?: any;
     billing?: any;
   };
@@ -399,6 +400,18 @@ export class AuthService {
       isProfileComplete = hasProfile;
     }
 
+    const subscription = latestUser.subscription || { status: 'none' };
+    const subscriptionStatus = String(subscription.status || '').toLowerCase();
+    let isSubscriptionActive = false;
+    if (['active', 'trialing'].includes(subscriptionStatus)) {
+      const end = subscription.currentPeriodEnd
+        ? new Date(subscription.currentPeriodEnd)
+        : null;
+      if (end && end.getTime() > Date.now()) {
+        isSubscriptionActive = true;
+      }
+    }
+
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -410,7 +423,8 @@ export class AuthService {
         isEmailVerified: latestUser.isEmailVerified,
         isPaymentVerified: latestUser.isPaymentVerified,
         isProfileComplete,
-        subscription: latestUser.subscription || { status: 'none' },
+        subscription,
+        isSubscriptionActive,
         billing: latestUser.billing || null,
       },
     };

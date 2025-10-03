@@ -2,19 +2,21 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { Coupon, CouponDocument } from './schemas/coupon.schema';
-import { Advisor, AdvisorDocument } from '../advisors/schemas/advisor.schema';
 import { UsersService } from '../users/users.service';
 import {
   PaymentHistory,
   PaymentHistoryDocument,
 } from './schemas/payment-history.schema';
 import { User } from '../users/schemas/user.schema';
+import { CreateCouponDto } from './dto/create-coupon.dto';
+import { EmailService } from '../auth/email.service';
 
 type StripeInvoiceExpanded = Stripe.Invoice & {
   payment_intent?: string | Stripe.PaymentIntent | null;
@@ -37,14 +39,15 @@ export class PaymentService {
     'latest_invoice.payment_intent',
     'latest_invoice.subscription',
   ] as const;
+  private readonly logger = new Logger(PaymentService.name);
 
   constructor(
     @InjectModel(Coupon.name) private couponModel: Model<CouponDocument>,
-    @InjectModel(Advisor.name) private advisorModel: Model<AdvisorDocument>,
     @InjectModel(PaymentHistory.name)
     private paymentHistoryModel: Model<PaymentHistoryDocument>,
     private configService: ConfigService,
     private usersService: UsersService,
+    private readonly emailService: EmailService,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (!secretKey) {
@@ -1230,36 +1233,44 @@ export class PaymentService {
     return originalAmount;
   }
 
-  // Creates sample coupons for testing
-  async createSampleCoupons(): Promise<void> {
-    const sampleCoupons = [
-      {
-        code: 'FREETRIAL2025',
-        type: 'free_trial' as const,
-        value: 100,
-        usageLimit: 50,
-      },
-      {
-        code: 'DISCOUNT50',
-        type: 'percentage' as const,
-        value: 50,
-        usageLimit: 20,
-      },
-      {
-        code: 'SAVE1000',
-        type: 'fixed' as const,
-        value: 1000, // $1000 off
-        usageLimit: 10,
-      },
-    ];
-
-    for (const couponData of sampleCoupons) {
-      await this.couponModel.findOneAndUpdate(
-        { code: couponData.code },
-        couponData,
-        { upsert: true, new: true },
-      );
+  async createCoupon(dto: CreateCouponDto) {
+    const code = dto.code.trim().toUpperCase();
+    if (!code) {
+      throw new BadRequestException('Coupon code is required');
     }
+
+    const existing = await this.couponModel.findOne({ code });
+    if (existing) {
+      throw new BadRequestException('Coupon code already exists');
+    }
+
+    const percentage = Math.round(dto.discountPercentage);
+    if (Number.isNaN(percentage)) {
+      throw new BadRequestException('Discount percentage is required');
+    }
+    if (percentage < 1 || percentage > 100) {
+      throw new BadRequestException('Discount percentage must be between 1 and 100');
+    }
+
+    const coupon = new this.couponModel({
+      code,
+      type: 'percentage',
+      value: percentage,
+      isActive: true,
+      usageLimit: dto.usageLimit,
+      expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
+    });
+
+    const saved = await coupon.save();
+    return saved.toObject();
+  }
+
+  async listCoupons() {
+    return this.couponModel
+      .find()
+      .sort({ createdAt: -1 })
+      .select('-__v')
+      .lean();
   }
 
   async handleWebhook(
@@ -1430,6 +1441,41 @@ export class PaymentService {
               },
             });
           }
+
+          if (!userRecord) {
+            try {
+              userRecord = await this.usersService.findById(userId);
+            } catch (error) {
+              const reason = (error as Error)?.message || String(error);
+              this.logger.warn(`[PaymentService] Unable to load user record for payment failure email: ${reason}`);
+            }
+          }
+
+          if (userRecord) {
+            try {
+              const frontendUrl =
+                this.configService.get<string>('FRONTEND_URL') ||
+                'https://frontend-five-pied-17.vercel.app';
+              const attemptDate = new Date(
+                (invoice.created || Math.floor(Date.now() / 1000)) * 1000,
+              ).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              });
+              await this.emailService.sendPaymentFailedEmail({
+                email: userRecord.email,
+                advisorName: userRecord.name || 'there',
+                planLabel: 'Advisor Chooser membership',
+                attemptDate,
+                ctaUrl: `${frontendUrl.replace(/\/$/, '')}/advisor-change-card`,
+                failureReason,
+              });
+            } catch (error) {
+              const reason = (error as Error)?.message || String(error);
+              this.logger.warn(`[PaymentService] Unable to send payment failure email: ${reason}`);
+            }
+          }
         }
         break;
       }
@@ -1440,26 +1486,7 @@ export class PaymentService {
     return { received: true };
   }
 
-  async activateFreeTrial(
-    userId: string,
-  ): Promise<{ success: boolean; message: string }> {
-    // Mark user as payment verified
-    await this.usersService.markPaymentVerified(userId, 'free-trial');
 
-    // Activate advisor profile if exists
-    const advisor = await this.advisorModel.findOneAndUpdate(
-      { userId },
-      { isActive: true },
-      { new: true },
-    );
-
-    return {
-      success: true,
-      message: advisor
-        ? 'Free trial activated and profile activated'
-        : 'Free trial activated - create profile next',
-    };
-  }
 
   async getHistory(userId: string) {
     const items = await this.paymentHistoryModel

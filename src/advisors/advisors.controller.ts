@@ -24,6 +24,7 @@ import { AdvisorsService } from './advisors.service';
 import { CreateAdvisorProfileDto } from './dto/create-advisor-profile.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/schemas/user.schema';
 import { memoryStorage } from 'multer';
@@ -147,6 +148,7 @@ export class AdvisorsController {
   }
 
   @Get('leads')
+  @UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
   @ApiOperation({ summary: 'Get leads for the current advisor' })
   @ApiResponse({ status: 200, description: 'Leads retrieved successfully' })
   @ApiResponse({ status: 404, description: 'No leads found' })

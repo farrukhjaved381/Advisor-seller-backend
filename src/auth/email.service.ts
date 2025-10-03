@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class EmailService {
@@ -41,6 +43,28 @@ export class EmailService {
 
   private escapeAttr(value: string | number | null | undefined): string {
     return this.escapeHtml(value);
+  }
+
+  private loadTemplate(templateName: string): string {
+    const templatePath = path.join(process.cwd(), 'templates', templateName);
+    try {
+      return fs.readFileSync(templatePath, 'utf8');
+    } catch (error) {
+      throw new Error(`Email template not found: ${templateName}`);
+    }
+  }
+
+  private applyTemplate(
+    template: string,
+    replacements: Record<string, string | number | null | undefined>,
+  ): string {
+    return Object.entries(replacements).reduce((html, [key, rawValue]) => {
+      const value = this.escapeHtml(
+        rawValue === null || rawValue === undefined ? '' : String(rawValue),
+      );
+      const pattern = new RegExp(`{{\s*${key}\s*}}`, 'g');
+      return html.replace(pattern, value);
+    }, template);
   }
 
   async sendEmail(options: {
@@ -225,5 +249,58 @@ export class EmailService {
       console.error('Password reset email sending failed:', error);
       throw error;
     }
+  }
+
+  async sendSubscriptionExpiredEmail(params: {
+    email: string;
+    advisorName: string;
+    planLabel: string;
+    expiryDate: string;
+    ctaUrl: string;
+  }): Promise<void> {
+    const { email, advisorName, planLabel, expiryDate, ctaUrl } = params;
+    const template = this.loadTemplate('subscription-expired.hbs');
+    const html = this.applyTemplate(template, {
+      advisorName,
+      planLabel,
+      expiryDate,
+      ctaUrl,
+    });
+    await this.sendEmail({
+      to: email,
+      subject: 'Your Advisor Chooser access has expired',
+      html,
+    });
+  }
+
+  async sendPaymentFailedEmail(params: {
+    email: string;
+    advisorName: string;
+    planLabel: string;
+    attemptDate: string;
+    ctaUrl: string;
+    failureReason?: string | null;
+  }): Promise<void> {
+    const {
+      email,
+      advisorName,
+      planLabel,
+      attemptDate,
+      ctaUrl,
+      failureReason,
+    } = params;
+    const template = this.loadTemplate('payment-failed.hbs');
+    const html = this.applyTemplate(template, {
+      advisorName,
+      planLabel,
+      attemptDate,
+      ctaUrl,
+      failureReason: failureReason || '',
+    });
+    await this.sendEmail({
+      to: email,
+      subject: 'Action required: update your Advisor Chooser billing details',
+      html,
+    });
   }
 }

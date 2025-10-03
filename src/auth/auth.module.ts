@@ -10,6 +10,7 @@ import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AdvisorsModule } from '../advisors/advisors.module';
 import { SellersModule } from '../sellers/sellers.module';
+import { SubscriptionGuard } from './guards/subscription.guard';
 
 @Module({
   imports: [
@@ -28,8 +29,14 @@ import { SellersModule } from '../sellers/sellers.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, EmailService, CsrfService, JwtStrategy],
+  providers: [
+    AuthService,
+    EmailService,
+    CsrfService,
+    JwtStrategy,
+    SubscriptionGuard,
+  ],
   controllers: [AuthController],
-  exports: [AuthService, EmailService, CsrfService],
+  exports: [AuthService, EmailService, CsrfService, SubscriptionGuard],
 })
 export class AuthModule {}

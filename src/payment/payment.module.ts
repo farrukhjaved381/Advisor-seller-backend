@@ -3,9 +3,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
-import { PaymentSeederService } from './payment-seeder.service';
+import { PaymentNotificationsService } from './payment-notifications.service';
 import { Coupon, CouponSchema } from './schemas/coupon.schema';
-import { Advisor, AdvisorSchema } from '../advisors/schemas/advisor.schema';
 import { UsersModule } from '../users/users.module';
 import {
   PaymentHistory,
@@ -17,7 +16,6 @@ import { AuthModule } from '../auth/auth.module';
   imports: [
     MongooseModule.forFeature([
       { name: Coupon.name, schema: CouponSchema },
-      { name: Advisor.name, schema: AdvisorSchema },
       { name: PaymentHistory.name, schema: PaymentHistorySchema },
     ]),
     ConfigModule,
@@ -25,7 +23,7 @@ import { AuthModule } from '../auth/auth.module';
     AuthModule,
   ],
   controllers: [PaymentController],
-  providers: [PaymentService, PaymentSeederService],
+  providers: [PaymentService, PaymentNotificationsService],
   exports: [PaymentService],
 })
 export class PaymentModule {}

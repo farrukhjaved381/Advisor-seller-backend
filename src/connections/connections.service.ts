@@ -29,7 +29,7 @@ export class ConnectionsService {
     private connectionModel: Model<ConnectionDocument>,
     private matchingService: MatchingService,
     private emailService: EmailService,
-  ) { }
+  ) {}
 
   private escapeHtml(value: string | number | null | undefined): string {
     const stringValue =
@@ -294,10 +294,10 @@ export class ConnectionsService {
     const advisorWebsiteHref =
       advisorWebsiteRaw.length > 0
         ? this.escapeAttr(
-          advisorWebsiteRaw.startsWith('http')
-            ? advisorWebsiteRaw
-            : `https://${advisorWebsiteRaw}`,
-        )
+            advisorWebsiteRaw.startsWith('http')
+              ? advisorWebsiteRaw
+              : `https://${advisorWebsiteRaw}`,
+          )
         : '#';
 
     const yearsExperienceRaw =
@@ -364,23 +364,17 @@ export class ConnectionsService {
     const sellerRevenueDisplay = this.escapeHtml(sellerRevenueDisplayRaw);
 
     const sellerCompanyNameRaw =
-      this.sanitizeSnapshotString(seller.companyName) ||
-      'Company for sale';
+      this.sanitizeSnapshotString(seller.companyName) || 'Company for sale';
     const sellerCompanyText = this.escapeHtml(sellerCompanyNameRaw);
 
     const sellerUserNameRaw =
       typeof sellerUser?.name === 'string' ? sellerUser.name.trim() : '';
     const sellerContactNameValue =
       this.sanitizeSnapshotString(seller.contactName) || sellerUserNameRaw;
-    const sellerDisplayNameRaw =
-      sellerContactNameValue || sellerCompanyNameRaw;
+    const sellerDisplayNameRaw = sellerContactNameValue || sellerCompanyNameRaw;
     const sellerNameText = this.escapeHtml(sellerDisplayNameRaw);
 
-    const sellerFirstNameSource =
-      sellerDisplayNameRaw.split(/\s+/).filter(Boolean)[0];
-    const sellerFirstNameText = sellerFirstNameSource
-      ? this.escapeHtml(sellerFirstNameSource)
-      : sellerNameText;
+    const sellerFirstNameText = this.escapeHtml(sellerDisplayNameRaw);
 
     const sellerPrimaryEmailRaw =
       this.sanitizeSnapshotString(seller.contactEmail) ||
@@ -391,14 +385,13 @@ export class ConnectionsService {
     );
 
     const advisorCompanyNameForTitle =
-      this.sanitizeSnapshotString(advisorCompanyNameRaw) ||
-      'Advisor Company';
+      this.sanitizeSnapshotString(advisorCompanyNameRaw) || 'Advisor Company';
     const heroTitleRaw = `Advisor Chooser Introduction ${sellerCompanyNameRaw} <> ${advisorCompanyNameForTitle}`;
     const heroTitleText = this.escapeHtml(heroTitleRaw);
 
     const sellerAnnualRevenueValue =
       typeof seller.annualRevenue === 'number' &&
-        Number.isFinite(seller.annualRevenue)
+      Number.isFinite(seller.annualRevenue)
         ? seller.annualRevenue
         : undefined;
     const sellerCurrencyValue =
@@ -899,9 +892,11 @@ export class ConnectionsService {
         const contactName = advisorUser?.name?.trim() || companyName;
         const contactNameHtml = escapeHtml(contactName);
         const phoneRaw = advisor.phone?.trim() || '';
-        const phoneDisplay = phoneRaw.length > 0 ? escapeHtml(phoneRaw) : 'Not provided';
+        const phoneDisplay =
+          phoneRaw.length > 0 ? escapeHtml(phoneRaw) : 'Not provided';
         const emailRaw = advisorUser?.email?.trim() || '';
-        const emailDisplay = emailRaw.length > 0 ? escapeHtml(emailRaw) : 'Not provided';
+        const emailDisplay =
+          emailRaw.length > 0 ? escapeHtml(emailRaw) : 'Not provided';
         const websiteRaw = advisor.website?.trim() || '';
         const normalizedWebsite =
           websiteRaw.length > 0
@@ -1106,7 +1101,8 @@ export class ConnectionsService {
       try {
         await this.emailService.sendEmail({
           to: advisorUser?.email,
-          subject: 'Advisor Chooser Match:The seller has opted to reach out directly.',
+          subject:
+            'Advisor Chooser Match:The seller has opted to reach out directly.',
           html: advisorHtml,
         });
 

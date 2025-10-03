@@ -10,6 +10,7 @@ import { CreateSellerProfileDto } from './dto/create-seller-profile.dto';
 import { UpdateSellerProfileDto } from './dto/update-seller-profile.dto';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../auth/email.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class SellersService {
@@ -38,7 +39,7 @@ export class SellersService {
 
     const user = await this.usersService.findById(userId);
     if (user?.email) {
-      const firstName = (user.name || '').trim().split(/\s+/)[0] || 'there';
+      const completeName = createSellerProfileDto.contactName || user.name || 'there';
       const escapeHtml = (value: string) =>
         value
           .replace(/&/g, '&amp;')
@@ -47,7 +48,7 @@ export class SellersService {
           .replace(/"/g, '&quot;')
           .replace(/'/g, '&#39;');
       const escapeAttr = (value: string) => escapeHtml(value);
-      const safeFirstName = escapeHtml(firstName);
+      const safeCompleteName = escapeHtml(completeName);
       const frontendUrl =
         process.env.FRONTEND_URL?.replace(/\/$/, '') ||
         'https://frontend-five-pied-17.vercel.app';
@@ -71,7 +72,7 @@ export class SellersService {
                           <p style="margin: 0; color: #6366f1; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;">Seller Playbook</p>
                           <h1 style="margin: 12px 0 6px; font-size: 24px; line-height: 1.3; font-weight: 700; color: #111827;">Prep for world-class advisor conversations</h1>
                           <p style="margin: 0; font-size: 14px; color: #4b5563; line-height: 1.6;">
-                            Hi ${safeFirstName}, thanks for using Advisor Chooser. We recommend interviewing at least five advisors before deciding who will lead your transaction.
+                            Hi ${safeCompleteName}, thanks for using Advisor Chooser. We recommend interviewing at least five advisors before deciding who will lead your transaction.
                           </p>
                         </td>
                       </tr>
@@ -199,5 +200,21 @@ export class SellersService {
 
   async findById(id: string): Promise<Seller | null> {
     return this.sellerModel.findById(id).populate('userId', 'name email');
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async handleCron() {
+    this.deleteInactiveSellers();
+  }
+
+  async deleteInactiveSellers(): Promise<void> {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const inactiveSellers = await this.sellerModel.find({
+      createdAt: { $lt: twentyFourHoursAgo },
+    });
+
+    for (const seller of inactiveSellers) {
+      await this.deleteProfile(seller.userId.toString());
+    }
   }
 }

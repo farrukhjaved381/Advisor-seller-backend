@@ -281,11 +281,14 @@ export class UsersService {
       subscription.cancelAtPeriodEnd = details.cancelAtPeriodEnd;
     }
 
+    if (['active', 'trialing'].includes(details.status)) {
+      delete subscription.expiryNotifiedAt;
+      delete subscription.lastAutoRenewAttempt;
+    }
+
     const updateData: any = {
       subscription,
-      isPaymentVerified: ['active', 'trialing', 'past_due'].includes(
-        details.status,
-      ),
+      isPaymentVerified: ['active', 'trialing'].includes(details.status),
     };
 
     if (details.subscriptionId) {
@@ -351,6 +354,7 @@ export class UsersService {
   async markSubscriptionStatus(
     userId: string,
     status: 'expired' | 'past_due',
+    options: { expiryNotifiedAt?: Date } = {},
   ): Promise<User | null> {
     const user = await this.userModel.findById(userId);
     if (!user) {
@@ -360,6 +364,9 @@ export class UsersService {
     subscription.status = status;
     if (status === 'expired') {
       subscription.cancelAtPeriodEnd = true;
+      if (options.expiryNotifiedAt) {
+        subscription.expiryNotifiedAt = options.expiryNotifiedAt;
+      }
     }
     return this.userModel.findByIdAndUpdate(
       userId,
@@ -369,6 +376,21 @@ export class UsersService {
       },
       { new: true },
     );
+  }
+
+  async findAdvisorsWithExpiredSubscription(reference: Date): Promise<User[]> {
+    return this.userModel
+      .find({
+        role: UserRole.ADVISOR,
+        'subscription.status': { $in: ['active', 'trialing', 'past_due'] },
+        'subscription.currentPeriodEnd': { $lte: reference },
+        $or: [
+          { 'subscription.expiryNotifiedAt': { $exists: false } },
+          { 'subscription.expiryNotifiedAt': null },
+        ],
+      })
+      .limit(500)
+      .exec();
   }
 
   async cancelSubscriptionAtPeriodEnd(userId: string): Promise<User | null> {
@@ -470,10 +492,7 @@ export class UsersService {
       throw new ConflictException('Email already exists');
     }
 
-    const localPart = normalizedEmail.split('@')[0];
-    const defaultName =
-      localPart.replace(/[^a-zA-Z0-9]/g, ' ').trim() || 'Seller';
-    const name = fallbackName?.trim() || defaultName;
+    const name = fallbackName?.trim() || normalizedEmail;
 
     const tempPassword = randomBytes(32).toString('hex');
     const hashedPassword = await bcrypt.hash(tempPassword, 12);
