@@ -136,6 +136,71 @@ export class PaymentController {
     return this.paymentService.redeemCoupon(req.user._id, redeemCouponDto.code);
   }
 
+  @Post('create-subscription')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 5, ttl: 3600 } })
+  @ApiOperation({ summary: 'Create subscription for advisor membership' })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        subscriptionId: { type: 'string' },
+        status: { type: 'string' },
+        clientSecret: { type: 'string' },
+        requiresAction: { type: 'boolean' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid payment method or coupon' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - not an advisor' })
+  @ApiBody({ type: CreateSubscriptionDto })
+  async createSubscription(
+    @Request() req,
+    @Body() createSubscriptionDto: CreateSubscriptionDto,
+  ) {
+    // Creates Stripe subscription for advisor membership with payment method
+    return this.paymentService.createSubscription(
+      req.user._id,
+      createSubscriptionDto.paymentMethodId,
+      createSubscriptionDto.couponCode,
+    );
+  }
+
+  @Post('finalize-subscription')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 5, ttl: 3600 } })
+  @ApiOperation({ summary: 'Finalize subscription after payment confirmation' })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription finalized successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        subscriptionId: { type: 'string' },
+        status: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid subscription or payment not completed' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - subscription does not belong to user' })
+  @ApiBody({ type: FinalizeSubscriptionDto })
+  async finalizeSubscription(
+    @Request() req,
+    @Body() finalizeSubscriptionDto: FinalizeSubscriptionDto,
+  ) {
+    // Finalizes subscription and updates user payment status
+    return this.paymentService.finalizeSubscription(
+      req.user._id,
+      finalizeSubscriptionDto.subscriptionId,
+    );
+  }
+
   @Post('setup-coupons')
   @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data', 'application/json')
