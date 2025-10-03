@@ -171,13 +171,29 @@ export class PaymentController {
           description:
             'How many people can use this code before it stops working. Leave empty for unlimited.',
         },
+        expiresDate: {
+          type: 'string',
+          format: 'date',
+          nullable: true,
+          example: '2025-12-31',
+          description:
+            'Pick the calendar date you want this coupon to stop working.',
+        },
+        expiresTime: {
+          type: 'string',
+          format: 'time',
+          nullable: true,
+          example: '17:00',
+          description:
+            'Pick the time on that day when the coupon should expire. Leave empty to expire at the end of the day.',
+        },
         expiresAt: {
           type: 'string',
           format: 'date-time',
           nullable: true,
           example: '2025-12-31T23:59:59.000Z',
           description:
-            'Optional end date. After this date the coupon will no longer work.',
+            'Advanced: manually type a custom ISO date/time if you prefer not to use the calendar inputs.',
         },
       },
     },
@@ -230,10 +246,24 @@ export class PaymentController {
         },
         newExpirationDate: {
           type: 'string',
+          format: 'date',
+          example: '2026-01-31',
+          description:
+            'Pick the calendar date for the new expiration. Leave blank to keep the current date.',
+        },
+        newExpirationTime: {
+          type: 'string',
+          format: 'time',
+          example: '17:00',
+          description:
+            'Pick the time on that day when the coupon should expire. Leave blank to keep the end-of-day default.',
+        },
+        newExpirationDateTime: {
+          type: 'string',
           format: 'date-time',
           example: '2026-01-31T23:59:59.000Z',
           description:
-            'Extend or change when the coupon expires. Leave blank to keep the current date.',
+            'Advanced: manually type the full ISO date/time if you do not want to use the calendar inputs.',
         },
         clearExpiration: {
           type: 'boolean',

@@ -52,8 +52,27 @@ export class CreateCouponDto {
   usageLimit?: number;
 
   @ApiPropertyOptional({
+    description: 'Pick the calendar date you want this coupon to stop working.',
+    example: '2025-12-31',
+    format: 'date',
+  })
+  @IsOptional()
+  @Matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)
+  expiresDate?: string;
+
+  @ApiPropertyOptional({
     description:
-      'Optional end date. After this date the coupon will no longer work. Example format: 2025-12-31T23:59:59.000Z',
+      'Pick the time on that day when the coupon should expire (24-hour format).',
+    example: '17:00',
+    format: 'time',
+  })
+  @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
+  expiresTime?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Advanced: provide a custom ISO 8601 date & time if you prefer typing it manually.',
     example: '2025-12-31T23:59:59.000Z',
   })
   @IsOptional()

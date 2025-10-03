@@ -21,6 +21,13 @@ async function createApp(): Promise<INestApplication> {
     rawBody: true, // Enable raw body parsing for webhook verification
   });
 
+  const httpAdapter = nestApp.getHttpAdapter();
+  const instance: any =
+    typeof (httpAdapter as any).getInstance === 'function'
+      ? (httpAdapter as any).getInstance()
+      : null;
+  instance?.set?.('trust proxy', 1);
+
   // Security headers
   nestApp.use(
     helmet({

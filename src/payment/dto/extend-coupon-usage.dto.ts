@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsInt, Min, IsISO8601, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsInt,
+  Min,
+  IsISO8601,
+  IsBoolean,
+  Matches,
+} from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
 export class ExtendCouponUsageDto {
@@ -34,11 +41,31 @@ export class ExtendCouponUsageDto {
   @ApiPropertyOptional({
     description:
       'Update the expiration date. After this date the coupon will no longer work. Leave blank to keep the current date.',
+    example: '2026-01-31',
+    format: 'date',
+  })
+  @IsOptional()
+  @Matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)
+  newExpirationDate?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Pick the time on that day when the coupon should expire (24-hour format).',
+    example: '17:00',
+    format: 'time',
+  })
+  @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
+  newExpirationTime?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Advanced: provide the full ISO 8601 date & time directly if you prefer.',
     example: '2026-01-31T23:59:59.000Z',
   })
   @IsOptional()
   @IsISO8601()
-  newExpirationDate?: string;
+  newExpirationDateTime?: string;
 
   @ApiPropertyOptional({
     description:

@@ -327,6 +327,52 @@ export class PaymentService {
     );
   }
 
+  private resolveExpirationDate(
+    isoString?: string,
+    date?: string,
+    time?: string,
+  ): Date | undefined {
+    if (isoString) {
+      const parsed = new Date(isoString);
+      if (Number.isNaN(parsed.getTime())) {
+        throw new BadRequestException('Invalid expiration date');
+      }
+      return parsed;
+    }
+
+    if (!date && time) {
+      throw new BadRequestException(
+        'Please provide a calendar date along with the time value.',
+      );
+    }
+
+    if (date) {
+      const trimmedDate = date.trim();
+      if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(trimmedDate)) {
+        throw new BadRequestException('Invalid expiration date');
+      }
+
+      let normalizedTime = '23:59:59';
+      if (time && time.trim()) {
+        const trimmedTime = time.trim();
+        if (!/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/.test(trimmedTime)) {
+          throw new BadRequestException('Invalid expiration time');
+        }
+        normalizedTime =
+          trimmedTime.length === 5 ? `${trimmedTime}:00` : trimmedTime;
+      }
+
+      const combined = `${trimmedDate}T${normalizedTime}`;
+      const parsed = new Date(combined);
+      if (Number.isNaN(parsed.getTime())) {
+        throw new BadRequestException('Invalid expiration date');
+      }
+      return parsed;
+    }
+
+    return undefined;
+  }
+
   async createSubscription(
     userId: string,
     paymentMethodId: string,
@@ -1259,13 +1305,19 @@ export class PaymentService {
       );
     }
 
+    const expiresAt = this.resolveExpirationDate(
+      dto.expiresAt,
+      dto.expiresDate,
+      dto.expiresTime,
+    );
+
     const coupon = new this.couponModel({
       code,
       type: 'percentage',
       value: percentage,
       isActive: true,
       usageLimit: dto.usageLimit,
-      expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
+      expiresAt,
     });
 
     const saved = await coupon.save();
@@ -1289,10 +1341,13 @@ export class PaymentService {
 
     const hasUsageUpdate = dto.additionalUses || dto.newTotalLimit;
     const hasExpirationUpdate =
-      dto.newExpirationDate !== undefined || dto.clearExpiration;
+      dto.newExpirationDate !== undefined ||
+      dto.newExpirationTime !== undefined ||
+      dto.newExpirationDateTime !== undefined ||
+      dto.clearExpiration;
     if (!hasUsageUpdate && !hasExpirationUpdate) {
       throw new BadRequestException(
-        'Please provide additionalUses, newTotalLimit, newExpirationDate, or clearExpiration to update the coupon.',
+        'Please provide additionalUses, newTotalLimit, newExpirationDate/newExpirationTime, newExpirationDateTime, or clearExpiration to update the coupon.',
       );
     }
 
@@ -1308,8 +1363,18 @@ export class PaymentService {
       coupon.usageLimit = currentLimit + dto.additionalUses;
     }
 
-    if (dto.newExpirationDate) {
-      coupon.expiresAt = new Date(dto.newExpirationDate);
+    if (
+      dto.newExpirationDateTime ||
+      dto.newExpirationDate ||
+      dto.newExpirationTime
+    ) {
+      const updatedExpiration = this.resolveExpirationDate(
+        dto.newExpirationDateTime,
+        dto.newExpirationDate,
+        dto.newExpirationTime,
+      );
+
+      coupon.expiresAt = updatedExpiration;
     }
 
     if (dto.clearExpiration) {
