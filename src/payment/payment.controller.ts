@@ -10,6 +10,7 @@ import {
   Patch,
   Param,
   Delete,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,6 +19,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiParam,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PaymentService } from './payment.service';
@@ -29,6 +31,7 @@ import { FinalizeSubscriptionDto } from './dto/finalize-subscription.dto';
 import { UpdatePaymentMethodDto } from './dto/update-payment-method.dto';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 import { ExtendCouponUsageDto } from './dto/extend-coupon-usage.dto';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -134,13 +137,51 @@ export class PaymentController {
   }
 
   @Post('setup-coupons')
+  @UseInterceptors(AnyFilesInterceptor())
+  @ApiConsumes('multipart/form-data', 'application/json')
   @ApiOperation({
     summary: 'Create a new coupon',
     description:
       'Fill in this form to create a coupon you can share in emails or chats. The percentage decides how much of the $5,000 advisor membership fee will be waived.',
   })
   @ApiResponse({ status: 201, description: 'Coupon created successfully' })
-  @ApiBody({ type: CreateCouponDto })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['code', 'discountPercentage'],
+      properties: {
+        code: {
+          type: 'string',
+          example: 'GROWTH75',
+          description:
+            'Short code you will send to advisors. Letters or numbers only, no spaces.',
+        },
+        discountPercentage: {
+          type: 'number',
+          example: 75,
+          minimum: 1,
+          maximum: 100,
+          description:
+            'How much of the $5,000 advisor fee to waive. 100 makes it a completely free coupon.',
+        },
+        usageLimit: {
+          type: 'integer',
+          nullable: true,
+          example: 5,
+          description:
+            'How many people can use this code before it stops working. Leave empty for unlimited.',
+        },
+        expiresAt: {
+          type: 'string',
+          format: 'date-time',
+          nullable: true,
+          example: '2025-12-31T23:59:59.000Z',
+          description:
+            'Optional end date. After this date the coupon will no longer work.',
+        },
+      },
+    },
+  })
   async createCoupon(@Body() createCouponDto: CreateCouponDto) {
     const coupon = await this.paymentService.createCoupon(createCouponDto);
     return { message: 'Coupon created successfully', coupon };
@@ -158,6 +199,8 @@ export class PaymentController {
   }
 
   @Patch('coupons/:code/usage')
+  @UseInterceptors(AnyFilesInterceptor())
+  @ApiConsumes('multipart/form-data', 'application/json')
   @ApiOperation({
     summary: 'Add more uses or change expiration for a coupon',
     description:
@@ -169,7 +212,38 @@ export class PaymentController {
       'Coupon code exactly as shown in the coupon list (not case sensitive).',
     example: 'GROWTH75',
   })
-  @ApiBody({ type: ExtendCouponUsageDto })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        additionalUses: {
+          type: 'integer',
+          example: 10,
+          description:
+            'Add this many extra uses on top of the current limit (for example, typing 10 allows 10 more people).',
+        },
+        newTotalLimit: {
+          type: 'integer',
+          example: 40,
+          description:
+            'Set a brand-new total usage limit. Use this if you prefer to define the exact total number of uses.',
+        },
+        newExpirationDate: {
+          type: 'string',
+          format: 'date-time',
+          example: '2026-01-31T23:59:59.000Z',
+          description:
+            'Extend or change when the coupon expires. Leave blank to keep the current date.',
+        },
+        clearExpiration: {
+          type: 'boolean',
+          example: false,
+          description:
+            'Turn on to remove the expiration date altogether so the coupon stays active until the usage limit is reached.',
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 200, description: 'Coupon updated successfully' })
   async extendCouponUsage(
     @Param('code') code: string,

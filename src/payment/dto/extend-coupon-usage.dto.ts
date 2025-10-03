@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsInt, Min, IsISO8601, IsBoolean } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class ExtendCouponUsageDto {
   @ApiPropertyOptional({
@@ -9,6 +9,9 @@ export class ExtendCouponUsageDto {
     example: 10,
   })
   @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? Number(value) : value,
+  )
   @Type(() => Number)
   @IsInt()
   @Min(1)
@@ -20,6 +23,9 @@ export class ExtendCouponUsageDto {
     example: 40,
   })
   @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? Number(value) : value,
+  )
   @Type(() => Number)
   @IsInt()
   @Min(1)
@@ -40,6 +46,13 @@ export class ExtendCouponUsageDto {
     default: false,
   })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      return normalized === 'true' || normalized === '1';
+    }
+    return Boolean(value);
+  })
   @Type(() => Boolean)
   @IsBoolean()
   clearExpiration?: boolean;

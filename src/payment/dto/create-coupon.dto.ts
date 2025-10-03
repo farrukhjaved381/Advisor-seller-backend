@@ -9,7 +9,7 @@ import {
   Matches,
   IsISO8601,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class CreateCouponDto {
   @ApiProperty({
@@ -28,6 +28,9 @@ export class CreateCouponDto {
     minimum: 1,
     maximum: 100,
   })
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? Number(value) : value,
+  )
   @Type(() => Number)
   @IsNumber({ allowNaN: false, allowInfinity: false })
   @Min(1)
@@ -40,6 +43,9 @@ export class CreateCouponDto {
     example: 5,
   })
   @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? Number(value) : value,
+  )
   @Type(() => Number)
   @IsInt()
   @Min(1)
