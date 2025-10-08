@@ -183,7 +183,7 @@ export class ConnectionsService {
     const directListCtaSection = '';
 
     return {
-      heroTitle: '',
+      heroTitle: 'Advisor Chooser Match: The seller has opted to reach out directly.',
       heroSubtitle: '',
       introGreeting: `Hi ${data.advisorDisplayNameText},`,
       introMessage:
@@ -767,16 +767,16 @@ export class ConnectionsService {
       'utf8',
     );
 
-    const introductionTemplatePath = path.join(
+    const directOutreachTemplatePath = path.join(
       process.cwd(),
       'templates',
-      'introduction.hbs',
+      'direct-outreach.hbs',
     );
-    let introductionTemplate = '';
+    let directOutreachTemplate = '';
     try {
-      introductionTemplate = fs.readFileSync(introductionTemplatePath, 'utf8');
+      directOutreachTemplate = fs.readFileSync(directOutreachTemplatePath, 'utf8');
     } catch (error) {
-      throw new Error('Introduction email template not found');
+      throw new Error('Direct outreach email template not found');
     }
 
     const frontendUrl =
@@ -1076,7 +1076,7 @@ export class ConnectionsService {
         advisorDashboardUrl: AdvisordashboardUrl,
       });
 
-      const advisorHtml = this.applyTemplate(introductionTemplate, {
+      const advisorHtml = this.applyTemplate(directOutreachTemplate, {
         ...emailData.replacements,
         ...this.buildIntroductionContext('direct-list', emailData.contextData),
       });

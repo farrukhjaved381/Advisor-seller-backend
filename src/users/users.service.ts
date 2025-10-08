@@ -413,7 +413,7 @@ export class UsersService {
       return user;
     }
     subscription.cancelAtPeriodEnd = true;
-    subscription.status = 'canceled';
+    // Keep status as 'active' until period actually ends
     subscription.canceledAt = new Date();
     // Keep isPaymentVerified true until the subscription actually expires
     const updateData = {
