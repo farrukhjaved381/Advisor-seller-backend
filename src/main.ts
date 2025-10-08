@@ -80,10 +80,10 @@ async function createApp(): Promise<INestApplication> {
     appUrl,
     'http://localhost:5174',
     'http://127.0.0.1:5174',
-    'http://localhost:3000',
+    'https://advisor-seller-backend.vercel.app',
     'https://frontend-five-pied-17.vercel.app',
     'https://cimamplify-ui.vercel.app',
-    'http://localhost:3000',
+    'https://advisor-seller-backend.vercel.app',
   ];
 
   const normalizeOrigin = (value?: string | null) => {
