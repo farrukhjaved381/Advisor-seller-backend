@@ -1045,13 +1045,14 @@ export class ConnectionsService {
     const sellerNameHtml = escapeHtml(sellerDisplayNameForEmail);
     const sellerDashboardLink = escapeAttr(SellerdashboardUrl);
     const advisorDashboardLink = escapeAttr(AdvisordashboardUrl);
-    const listEmailHtml = directListTemplate
-      .replace(/{{sellerName}}/g, sellerNameHtml)
-      .replace(/{{advisorCount}}/g, matches.length.toString())
-      .replace(/{{pluralLabel}}/g, pluralLabel)
-      .replace(/{{SellerdashboardUrl}}/g, sellerDashboardLink)
-      .replace(/{{AdvisordashboardUrl}}/g, advisorDashboardLink)
-      .replace(/{{advisorList}}/g, advisorListHtml);
+    const listEmailHtml = this.applyTemplate(directListTemplate, {
+      sellerName: sellerNameHtml,
+      advisorCount: matches.length.toString(),
+      pluralLabel: pluralLabel,
+      SellerdashboardUrl: sellerDashboardLink,
+      AdvisordashboardUrl: advisorDashboardLink,
+      advisorList: advisorListHtml,
+    });
 
     try {
       await this.emailService.sendEmail({
@@ -1084,7 +1085,7 @@ export class ConnectionsService {
         await this.emailService.sendEmail({
           to: advisorUser?.email,
           subject:
-            'Advisor Chooser Match:The seller has opted to reach out directly.',
+            'Advisor Chooser Match: The seller has opted to reach out directly.',
           html: advisorHtml,
         });
 
