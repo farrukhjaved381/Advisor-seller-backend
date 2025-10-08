@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Payment Failed</title>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937;">
+    <div style="padding: 32px 16px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 720px; margin: 0 auto; border-collapse: separate; border-spacing: 0;">
+        <tr>
+          <td style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 24px; overflow: hidden; box-shadow: 0 22px 60px rgba(15, 23, 42, 0.08);">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+              <tr>
+                <td style="background: linear-gradient(135deg, #fef3c7 0%, #fee2e2 100%); padding: 32px 36px;">
+                  <p style="margin: 0; color: #b45309; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;">We couldn’t process your renewal</p>
+                  <h1 style="margin: 12px 0 6px; font-size: 24px; line-height: 1.35; font-weight: 700; color: #111827;">Update your card to keep Advisor Chooser access</h1>
+                  <p style="margin: 0; font-size: 14px; color: #4b5563; line-height: 1.6;">Hi {{advisorName}}, we tried to renew your {{planLabel}} on {{attemptDate}}, but the payment was declined. Update your billing details and we’ll retry automatically.</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 28px 32px 24px;">
+                  {{#if failureReason}}
+                  <div style="margin-bottom: 18px; padding: 14px 16px; border-radius: 16px; border: 1px solid #fbbf24; background-color: #fffbeb; color: #92400e; font-size: 13px;">
+                    <strong>Card response:</strong> {{failureReason}}
+                  </div>
+                  {{/if}}
+
+                  <p style="margin: 0 0 18px; font-size: 14px; color: #4b5563;">
+                    Here’s how to restore your membership:
+                  </p>
+                  <ol style="margin: 0 0 24px; padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.8;">
+                    <li>Click the button below and add a new credit card or fix your existing one.</li>
+                    <li>We’ll retry the renewal immediately—no extra steps required.</li>
+                    <li>Your dashboard, seller matches, and notifications reactivate right away.</li>
+                  </ol>
+
+                  <div style="text-align: center; margin-bottom: 18px;">
+                    <a href="{{ctaUrl}}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">Update billing details</a>
+                  </div>
+
+                  <p style="margin: 0 0 18px; font-size: 12px; color: #9ca3af; text-align: center;">If you need help, email <a href="mailto:support@advisorchooser.com" style="color: #4f46e5; text-decoration: none;">support@advisorchooser.com</a> and we’ll walk you through it.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin: 24px auto 0; max-width: 720px; font-size: 12px; color: #9ca3af; text-align: center;">
+        This notice is sent after a failed renewal attempt for your Advisor Chooser subscription.
+      </p>
+    </div>
+  </body>
+</html>
