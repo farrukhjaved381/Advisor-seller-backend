@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -14,6 +15,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class SellersService {
+  private readonly logger = new Logger(SellersService.name);
+
   constructor(
     @InjectModel(Seller.name) private sellerModel: Model<Seller>,
     private usersService: UsersService,
@@ -202,19 +205,40 @@ export class SellersService {
     return this.sellerModel.findById(id).populate('userId', 'name email');
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron('0 1 * * *') // Run at 1:00 AM every day
   async handleCron() {
-    this.deleteInactiveSellers();
+    this.logger.log('Starting seller cleanup cron job at 1:00 AM');
+    await this.deleteInactiveSellers();
   }
 
   async deleteInactiveSellers(): Promise<void> {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const inactiveSellers = await this.sellerModel.find({
-      createdAt: { $lt: twentyFourHoursAgo },
-    });
+    try {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      this.logger.log(`Looking for sellers created before: ${twentyFourHoursAgo.toISOString()}`);
+      
+      const inactiveSellers = await this.sellerModel.find({
+        createdAt: { $lt: twentyFourHoursAgo },
+      });
 
-    for (const seller of inactiveSellers) {
-      await this.deleteProfile(seller.userId.toString());
+      this.logger.log(`Found ${inactiveSellers.length} sellers to delete`);
+
+      let deletedCount = 0;
+      let errorCount = 0;
+
+      for (const seller of inactiveSellers) {
+        try {
+          await this.deleteProfile(seller.userId.toString());
+          deletedCount++;
+          this.logger.log(`Successfully deleted seller profile for user: ${seller.userId}`);
+        } catch (error) {
+          errorCount++;
+          this.logger.error(`Failed to delete seller profile for user ${seller.userId}:`, error);
+        }
+      }
+
+      this.logger.log(`Seller cleanup completed. Deleted: ${deletedCount}, Errors: ${errorCount}`);
+    } catch (error) {
+      this.logger.error('Error in deleteInactiveSellers cron job:', error);
     }
   }
 }
