@@ -414,12 +414,14 @@ export class UsersService {
     }
     subscription.cancelAtPeriodEnd = true;
     subscription.status = 'canceled';
+    subscription.isCancelled = true;
     subscription.canceledAt = new Date();
     // Keep isPaymentVerified true until the subscription actually expires
     const updateData = {
       subscription,
       // Don't change isPaymentVerified here - let it remain true until period ends
     };
+
     return this.userModel.findByIdAndUpdate(
       userId,
       updateData,
@@ -438,6 +440,7 @@ export class UsersService {
     ) {
       subscription.cancelAtPeriodEnd = false;
       subscription.status = 'active';
+      subscription.isCancelled = false;
       delete subscription.canceledAt;
       const updateData = {
         subscription,

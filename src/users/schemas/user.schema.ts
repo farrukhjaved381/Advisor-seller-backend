@@ -102,6 +102,7 @@ export class User extends Document {
       cancelAtPeriodEnd: { type: Boolean, default: false },
       canceledAt: { type: Date },
       lastAutoRenewAttempt: { type: Date },
+       isCancelled : { type: 'boolean', default: false },
     },
     default: { status: 'none' },
   })
@@ -119,6 +120,7 @@ export class User extends Document {
       cancelAtPeriodEnd: { type: 'boolean' },
       canceledAt: { type: 'string', format: 'date-time' },
       lastAutoRenewAttempt: { type: 'string', format: 'date-time' },
+      isCancelled : { type: 'boolean', default: false },
     },
   })
   subscription?: {
