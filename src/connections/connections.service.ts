@@ -175,19 +175,18 @@ export class ConnectionsService {
       };
     }
 
-    // const directListCtaSection = `
-    //   <div style="text-align: center; margin-bottom: 18px;">
-    //     <a href="${data.advisordashboardHref}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">${this.escapeHtml('Open Advisor Dashboard')}</a>
-    //   </div>
-    // `.trim();
-    const directListCtaSection = '';
+    const directListCtaSection = `
+      <div style="text-align: center; margin-bottom: 18px;">
+        <a href="${data.advisordashboardHref}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">${this.escapeHtml('Open Advisor Dashboard')}</a>
+      </div>
+    `.trim();
 
     return {
       heroTitle: 'Advisor Chooser Match: The seller has opted to reach out directly.',
       heroSubtitle: '',
       introGreeting: `Hi ${data.advisorDisplayNameText},`,
       introMessage:
-        'We matched you with a potential client The seller has opted to reach out to you directly, so expect to hear from someone that will mention finding you on Advisor Chooser.<br /><br />To see all you matches and manage your profile, head to your Advisor Chooser dashboard.',
+        'We matched you with a potential client! The seller has opted to reach out to you directly, so expect to hear from someone that will mention finding you on Advisor Chooser.<br /><br />To see all you matches and manage your profile, head to your Advisor Chooser dashboard.',
       contactSection: '',
       advisorDetailsSection: '',
       sellerDetailsSection: '',
@@ -706,18 +705,18 @@ export class ConnectionsService {
           type: ConnectionType.INTRODUCTION,
         });
 
-        try {
-          await this.emailService.sendEmail({
-            to: sellerUser.email,
-            subject: `Advisor Chooser Introduction:${emailData.raw.sellerCompanyName} <> ${emailData.raw.advisorCompanyName}`,
-            html: sellerCopyHtml,
-          });
-        } catch (sellerError) {
-          console.error(
-            `Failed to send introduction copy to seller ${sellerUser.email}:`,
-            sellerError,
-          );
-        }
+        // try {
+        //   await this.emailService.sendEmail({
+        //     to: sellerUser.email,
+        //     subject: `Advisor Chooser Introduction:${emailData.raw.sellerCompanyName} <> ${emailData.raw.advisorCompanyName}`,
+        //     html: sellerCopyHtml,
+        //   });
+        // } catch (sellerError) {
+        //   console.error(
+        //     `Failed to send introduction copy to seller ${sellerUser.email}:`,
+        //     sellerError,
+        //   );
+        // }
 
         emailsSent++;
       } catch (error) {
@@ -936,23 +935,23 @@ export class ConnectionsService {
             `<span style="display:flex; align-items:center; gap:8px;">📈 <strong>${escapeHtml(dealsCount)}</strong> closed deals</span>`,
           );
         }
-        if (phoneRaw.length > 0) {
-          const telHref = escapeAttr(`tel:${phoneRaw.replace(/[^+\d]/g, '')}`);
-          metrics.push(
-            `<span style="display:flex; align-items:center; gap:8px;">📞 <a href="${telHref}" style="color:#1f2937; text-decoration:none;">${phoneDisplay}</a></span>`,
-          );
-        }
-        if (emailRaw.length > 0) {
-          const mailtoHref = escapeAttr(`mailto:${emailRaw}`);
-          metrics.push(
-            `<span style="display:flex; align-items:center; gap:8px;">✉️ <a href="${mailtoHref}" style="color:#1f2937; text-decoration:none;">${emailDisplay}</a></span>`,
-          );
-        }
-        if (normalizedWebsite.length > 0) {
-          metrics.push(
-            `<span style="display:flex; align-items:center; gap:8px;">🔗 <a href="${websiteHref}" style="color:#4f46e5; text-decoration:none;">${websiteDisplay}</a></span>`,
-          );
-        }
+        // if (phoneRaw.length > 0) {
+        //   const telHref = escapeAttr(`tel:${phoneRaw.replace(/[^+\d]/g, '')}`);
+        //   metrics.push(
+        //     `<span style="display:flex; align-items:center; gap:8px;">📞 <a href="${telHref}" style="color:#1f2937; text-decoration:none;">${phoneDisplay}</a></span>`,
+        //   );
+        // }
+        // if (emailRaw.length > 0) {
+        //   const mailtoHref = escapeAttr(`mailto:${emailRaw}`);
+        //   metrics.push(
+        //     `<span style="display:flex; align-items:center; gap:8px;">✉️ <a href="${mailtoHref}" style="color:#1f2937; text-decoration:none;">${emailDisplay}</a></span>`,
+        //   );
+        // }
+        // if (normalizedWebsite.length > 0) {
+        //   metrics.push(
+        //     `<span style="display:flex; align-items:center; gap:8px;">🔗 <a href="${websiteHref}" style="color:#4f46e5; text-decoration:none;">${websiteDisplay}</a></span>`,
+        //   );
+        // }
 
         const metricsHtml =
           metrics.length > 0

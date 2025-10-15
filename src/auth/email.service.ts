@@ -148,7 +148,7 @@ export class EmailService {
                             <ol style="margin: 0; padding-left: 18px; font-size: 13px; color: #4b5563; line-height: 1.7;">
                               <li>Complete your advisor profile.</li>
                               <li>Receive a confirmation from our team once verified.</li>
-                              <li>As Company Sellers get matched to you we will send you emails and update your dashboard on Advisor Chooser.</li>
+                              <li>As Company Sellers get matched to you, we will send you emails and update your dashboard on Advisor Chooser.</li>
                             </ol>
                           </div>
                           <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">Need help? Email support@advisorchooser.com.</p>
@@ -304,3 +304,4 @@ export class EmailService {
     });
   }
 }
+
