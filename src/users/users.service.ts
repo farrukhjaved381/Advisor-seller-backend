@@ -530,4 +530,11 @@ export class UsersService {
 
     return user.save();
   }
+
+  async deleteUser(userId: string): Promise<void> {
+    const result = await this.userModel.deleteOne({ _id: userId });
+    if (result.deletedCount === 0) {
+      throw new NotFoundException('User not found');
+    }
+  }
 }

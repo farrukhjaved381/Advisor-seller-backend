@@ -2,7 +2,6 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
-  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -15,13 +14,13 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class SellersService {
-  private readonly logger = new Logger(SellersService.name);
-
   constructor(
     @InjectModel(Seller.name) private sellerModel: Model<Seller>,
     private usersService: UsersService,
     private emailService: EmailService,
-  ) {}
+  ) {
+    console.log('SellersService initialized - Cron job for seller cleanup registered');
+  }
 
   async createProfile(
     userId: string,
@@ -178,9 +177,9 @@ export class SellersService {
       throw new NotFoundException('Seller profile not found');
     }
 
-    await this.usersService.updateProfileComplete(userId, false);
+    await this.usersService.deleteUser(userId);
 
-    return { message: 'Seller profile deleted successfully' };
+    return { message: 'Seller profile and user deleted successfully' };
   }
 
   async toggleActiveStatus(userId: string, isActive: boolean): Promise<Seller> {
@@ -205,40 +204,36 @@ export class SellersService {
     return this.sellerModel.findById(id).populate('userId', 'name email');
   }
 
-  @Cron('0 1 * * *') // Run at 1:00 AM every day
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleCron() {
-    this.logger.log('Starting seller cleanup cron job at 1:00 AM');
+    console.log('Running daily cleanup of sellers created >24 hours ago');
     await this.deleteInactiveSellers();
   }
 
   async deleteInactiveSellers(): Promise<void> {
-    try {
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      this.logger.log(`Looking for sellers created before: ${twentyFourHoursAgo.toISOString()}`);
-      
-      const inactiveSellers = await this.sellerModel.find({
-        createdAt: { $lt: twentyFourHoursAgo },
-      });
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    console.log('Checking for sellers created before:', twentyFourHoursAgo);
+    
+    const oldSellers = await this.sellerModel.find({
+      createdAt: { $lt: twentyFourHoursAgo }
+    });
+    
+    console.log(`Found ${oldSellers.length} sellers to delete`);
 
-      this.logger.log(`Found ${inactiveSellers.length} sellers to delete`);
-
-      let deletedCount = 0;
-      let errorCount = 0;
-
-      for (const seller of inactiveSellers) {
-        try {
-          await this.deleteProfile(seller.userId.toString());
-          deletedCount++;
-          this.logger.log(`Successfully deleted seller profile for user: ${seller.userId}`);
-        } catch (error) {
-          errorCount++;
-          this.logger.error(`Failed to delete seller profile for user ${seller.userId}:`, error);
-        }
+    for (const seller of oldSellers) {
+      try {
+        console.log(`Deleting seller ${seller._id} created at ${(seller as any).createdAt}`);
+        
+        // Delete seller profile directly
+        await this.sellerModel.deleteOne({ _id: seller._id });
+        
+        // Delete associated user
+        await this.usersService.deleteUser(seller.userId.toString());
+        
+        console.log(`Successfully deleted seller: ${seller._id}`);
+      } catch (error) {
+        console.error(`Failed to delete seller ${seller._id}:`, error);
       }
-
-      this.logger.log(`Seller cleanup completed. Deleted: ${deletedCount}, Errors: ${errorCount}`);
-    } catch (error) {
-      this.logger.error('Error in deleteInactiveSellers cron job:', error);
     }
   }
 }

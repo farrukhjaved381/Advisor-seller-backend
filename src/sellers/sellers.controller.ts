@@ -168,13 +168,5 @@ export class SellersController {
     return this.sellersService.toggleActiveStatus(req.user._id, body.isActive);
   }
 
-  @Post('test-cleanup')
-  @ApiOperation({ summary: 'Test seller cleanup cron job manually' })
-  @ApiResponse({ status: 200, description: 'Cleanup test completed' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @Roles(UserRole.ADMIN) // Only admins can trigger this
-  async testCleanup() {
-    await this.sellersService.deleteInactiveSellers();
-    return { message: 'Seller cleanup test completed. Check logs for details.' };
-  }
+
 }
