@@ -74,7 +74,7 @@ export class EmailService {
     html: string;
   }): Promise<void> {
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: `"Advisor Chooser" <${process.env.EMAIL_USER}>`,
       ...options,
     };
 
@@ -109,7 +109,7 @@ export class EmailService {
     const verificationText = this.escapeHtml(verificationUrl);
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: `"Advisor Chooser" <${process.env.EMAIL_USER}>`, 
       to: email,
       subject: 'Verify Your Email - Advisor Chooser Platform',
       html: `<!DOCTYPE html>
@@ -190,7 +190,7 @@ export class EmailService {
     const resetText = this.escapeHtml(resetUrl);
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: `"Advisor Chooser" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Reset Your Password - Advisor Chooser Platform',
       html: `<!DOCTYPE html>
@@ -304,4 +304,3 @@ export class EmailService {
     });
   }
 }
-
