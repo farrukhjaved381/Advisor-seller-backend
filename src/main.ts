@@ -80,10 +80,10 @@ async function createApp(): Promise<INestApplication> {
     appUrl,
     'http://localhost:5174',
     'http://127.0.0.1:5174',
-    'https://advisor-seller-backend.vercel.app',
-    'https://frontend-five-pied-17.vercel.app',
+    'http://localhost:3003',
+    'http://localhost:5174',
     'https://cimamplify-ui.vercel.app',
-    'https://advisor-seller-backend.vercel.app',
+    'http://localhost:3003',
   ];
 
   const normalizeOrigin = (value?: string | null) => {
@@ -180,19 +180,19 @@ async function createApp(): Promise<INestApplication> {
 
 async function bootstrap() {
   app = await createApp();
-  await app.listen(process.env.PORT || 3000);
+  await app.listen(process.env.PORT || 3003);
   console.log(
-    `🚀 Backend server running on: http://localhost:${process.env.PORT || 3000}`,
+    `🚀 Backend server running on: http://localhost:${process.env.PORT || 3003}`,
   );
   console.log(
-    `📚 Swagger API docs available at: http://localhost:${process.env.PORT || 3000}/docs`,
+    `📚 Swagger API docs available at: http://localhost:${process.env.PORT || 3003}/docs`,
   );
 }
 
 export default async (req: any, res: any) => {
   // Handle CORS preflight requests immediately
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', 'https://frontend-five-pied-17.vercel.app');
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5174');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-csrf-token, X-CSRF-Token, Cookie');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -202,7 +202,7 @@ export default async (req: any, res: any) => {
   }
 
   // Set CORS headers for all requests
-  res.setHeader('Access-Control-Allow-Origin', 'https://frontend-five-pied-17.vercel.app');
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5174');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Expose-Headers', 'set-cookie');
 

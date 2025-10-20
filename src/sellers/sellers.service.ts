@@ -53,7 +53,7 @@ export class SellersService {
       const safeCompleteName = escapeHtml(completeName);
       const frontendUrl =
         process.env.FRONTEND_URL?.replace(/\/$/, '') ||
-        'https://frontend-five-pied-17.vercel.app';
+        'http://localhost:5174';
       const sellerDashboardUrl = `${frontendUrl}/seller-login`;
       const sellerDashboardHref = escapeAttr(sellerDashboardUrl);
 

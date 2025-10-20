@@ -26,7 +26,7 @@ export class PaymentNotificationsService {
 
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') ||
-      'https://frontend-five-pied-17.vercel.app';
+      'http://localhost:5174';
     const ctaUrl = `${frontendUrl.replace(/\/$/, '')}/advisor-payments?intent=reactivate`;
 
     for (const advisor of advisors) {
