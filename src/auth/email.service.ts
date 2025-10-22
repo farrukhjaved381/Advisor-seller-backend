@@ -96,7 +96,7 @@ export class EmailService {
     });
 
     const frontendUrl =
-      process.env.FRONTEND_URL || 'http://localhost:5174';
+      process.env.FRONTEND_URL || 'https://app.advisorchooser.com';
     const params = new URLSearchParams({ token });
     if (role) {
       params.append('role', role);
@@ -181,7 +181,7 @@ export class EmailService {
     token: string,
   ): Promise<void> {
     const frontendUrl =
-      process.env.FRONTEND_URL || 'http://localhost:5174';
+      process.env.FRONTEND_URL || 'https://app.advisorchooser.com';
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
     const displayName = name?.trim() || 'there';

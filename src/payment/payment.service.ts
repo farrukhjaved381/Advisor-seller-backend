@@ -1629,7 +1629,7 @@ export class PaymentService {
             try {
               const frontendUrl =
                 this.configService.get<string>('FRONTEND_URL') ||
-                'http://localhost:5174';
+                'https://app.advisorchooser.com';
               const attemptDate = new Date(
                 (invoice.created || Math.floor(Date.now() / 1000)) * 1000,
               ).toLocaleDateString('en-US', {

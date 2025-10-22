@@ -644,7 +644,7 @@ export class ConnectionsService {
 
     const frontendUrl =
       process.env.FRONTEND_URL?.replace(/\/$/, '') ||
-      'http://localhost:5174';
+      'https://app.advisorchooser.com';
     const SellerdashboardUrl = `${frontendUrl}/seller-login`;
     const AdvisordashboardUrl = `${frontendUrl}/advisor-login`;
 
@@ -780,7 +780,7 @@ export class ConnectionsService {
 
     const frontendUrl =
       process.env.FRONTEND_URL?.replace(/\/$/, '') ||
-      'http://localhost:5174';
+      'https://app.advisorchooser.com';
     const SellerdashboardUrl = `${frontendUrl}/seller-login`;
     const AdvisordashboardUrl = `${frontendUrl}/advisor-login`;
 

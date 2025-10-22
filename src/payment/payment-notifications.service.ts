@@ -26,7 +26,7 @@ export class PaymentNotificationsService {
 
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') ||
-      'http://localhost:5174';
+      'https://app.advisorchooser.com';
     const ctaUrl = `${frontendUrl.replace(/\/$/, '')}/advisor-payments?intent=reactivate`;
 
     for (const advisor of advisors) {

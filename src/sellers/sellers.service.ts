@@ -53,7 +53,7 @@ export class SellersService {
       const safeCompleteName = escapeHtml(completeName);
       const frontendUrl =
         process.env.FRONTEND_URL?.replace(/\/$/, '') ||
-        'http://localhost:5174';
+        'https://app.advisorchooser.com';
       const sellerDashboardUrl = `${frontendUrl}/seller-login`;
       const sellerDashboardHref = escapeAttr(sellerDashboardUrl);
 
