@@ -705,18 +705,18 @@ export class ConnectionsService {
           type: ConnectionType.INTRODUCTION,
         });
 
-        // try {
-        //   await this.emailService.sendEmail({
-        //     to: sellerUser.email,
-        //     subject: `Advisor Chooser Introduction:${emailData.raw.sellerCompanyName} <> ${emailData.raw.advisorCompanyName}`,
-        //     html: sellerCopyHtml,
-        //   });
-        // } catch (sellerError) {
-        //   console.error(
-        //     `Failed to send introduction copy to seller ${sellerUser.email}:`,
-        //     sellerError,
-        //   );
-        // }
+        try {
+          await this.emailService.sendEmail({
+            to: sellerUser.email,
+            subject: `Advisor Chooser Introduction:${emailData.raw.sellerCompanyName} <> ${emailData.raw.advisorCompanyName}`,
+            html: sellerCopyHtml,
+          });
+        } catch (sellerError) {
+          console.error(
+            `Failed to send introduction copy to seller ${sellerUser.email}:`,
+            sellerError,
+          );
+        }
 
         emailsSent++;
       } catch (error) {
