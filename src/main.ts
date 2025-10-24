@@ -19,7 +19,6 @@ let app: INestApplication;
 async function createApp(): Promise<INestApplication> {
   const nestApp = await NestFactory.create(AppModule, {
     rawBody: true, // Enable raw body parsing for webhook verification
-    bodyParser: true,
   });
 
   const httpAdapter = nestApp.getHttpAdapter();
@@ -28,19 +27,6 @@ async function createApp(): Promise<INestApplication> {
       ? (httpAdapter as any).getInstance()
       : null;
   instance?.set?.('trust proxy', 1);
-
-  // Configure body size limits for large file uploads (videos can be up to 200MB)
-  if (instance) {
-    instance.use((req: any, res: any, next: any) => {
-      if (req.path.includes('/api/advisors/profile') || req.path.includes('/api/upload')) {
-        // Set higher limits for file upload endpoints
-        return require('express').json({ limit: '250mb' })(req, res, next);
-      }
-      next();
-    });
-    instance.use(require('express').json({ limit: '250mb' }));
-    instance.use(require('express').urlencoded({ limit: '250mb', extended: true }));
-  }
 
   // Security headers
   nestApp.use(
@@ -158,12 +144,9 @@ async function createApp(): Promise<INestApplication> {
       'x-csrf-token',
       'X-CSRF-Token',
       'Cookie',
-      'Content-Length',
     ],
     exposedHeaders: ['set-cookie'],
     optionsSuccessStatus: 204,
-    preflightContinue: false,
-    maxAge: 86400, // 24 hours
   });
 
   nestApp.useGlobalFilters(
@@ -209,7 +192,7 @@ export default async (req: any, res: any) => {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', 'https://app.advisorchooser.com');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-csrf-token, X-CSRF-Token, Cookie, Content-Length');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-csrf-token, X-CSRF-Token, Cookie');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Max-Age', '86400');
     res.status(204).end();
