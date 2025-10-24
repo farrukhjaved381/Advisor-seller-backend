@@ -158,9 +158,12 @@ async function createApp(): Promise<INestApplication> {
       'x-csrf-token',
       'X-CSRF-Token',
       'Cookie',
+      'Content-Length',
     ],
     exposedHeaders: ['set-cookie'],
     optionsSuccessStatus: 204,
+    preflightContinue: false,
+    maxAge: 86400, // 24 hours
   });
 
   nestApp.useGlobalFilters(
@@ -206,7 +209,7 @@ export default async (req: any, res: any) => {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', 'https://app.advisorchooser.com');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-csrf-token, X-CSRF-Token, Cookie');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-csrf-token, X-CSRF-Token, Cookie, Content-Length');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Max-Age', '86400');
     res.status(204).end();
