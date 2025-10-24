@@ -19,6 +19,7 @@ let app: INestApplication;
 async function createApp(): Promise<INestApplication> {
   const nestApp = await NestFactory.create(AppModule, {
     rawBody: true, // Enable raw body parsing for webhook verification
+    bodyParser: true,
   });
 
   const httpAdapter = nestApp.getHttpAdapter();
@@ -27,6 +28,19 @@ async function createApp(): Promise<INestApplication> {
       ? (httpAdapter as any).getInstance()
       : null;
   instance?.set?.('trust proxy', 1);
+
+  // Configure body size limits for large file uploads (videos can be up to 200MB)
+  if (instance) {
+    instance.use((req: any, res: any, next: any) => {
+      if (req.path.includes('/api/advisors/profile') || req.path.includes('/api/upload')) {
+        // Set higher limits for file upload endpoints
+        return require('express').json({ limit: '250mb' })(req, res, next);
+      }
+      next();
+    });
+    instance.use(require('express').json({ limit: '250mb' }));
+    instance.use(require('express').urlencoded({ limit: '250mb', extended: true }));
+  }
 
   // Security headers
   nestApp.use(
