@@ -3,10 +3,7 @@
   "builds": [
     {
       "src": "api/index.ts",
-      "use": "@vercel/node",
-      "config": {
-        "maxDuration": 60
-      }
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -15,12 +12,6 @@
       "dest": "/api/index.ts"
     }
   ],
-  "functions": {
-    "api/index.ts": {
-      "maxDuration": 60,
-      "memory": 3008
-    }
-  },
   "env": {
     "NODE_ENV": "production"
   }
