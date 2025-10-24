@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Subscription Cancelled</title>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937;">
+    <div style="padding: 32px 16px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 720px; margin: 0 auto; border-collapse: separate; border-spacing: 0;">
+        <tr>
+          <td style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 24px; overflow: hidden; box-shadow: 0 22px 60px rgba(15, 23, 42, 0.08);">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+              <tr>
+                <td style="background: linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%); padding: 32px 36px;">
+                  <p style="margin: 0; color: #d97706; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;">Subscription Update</p>
+                  <h1 style="margin: 12px 0 6px; font-size: 24px; line-height: 1.35; font-weight: 700; color: #111827;">Your subscription has been cancelled</h1>
+                  <p style="margin: 0; font-size: 14px; color: #4b5563; line-height: 1.6;">Hi {{advisorName}}, your subscription to Advisor Chooser is set to cancel. You'll retain full access until {{accessUntilDate}}.</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 28px 32px 24px;">
+                  <p style="margin: 0 0 18px; font-size: 15px; line-height: 1.6; color: #1f2937;">
+                    We're sorry to see you go. Here's what happens next:
+                  </p>
+                  <ul style="margin: 0 0 24px; padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.8;">
+                    <li>You'll continue to have full access to all features until <strong>{{accessUntilDate}}</strong>.</li>
+                    <li>After {{accessUntilDate}}, your account will be deactivated and you won't receive new leads.</li>
+                    <li>You can resume your subscription anytime before {{accessUntilDate}} with one click.</li>
+                  </ul>
+
+                  <p style="margin: 0 0 18px; font-size: 14px; color: #4b5563;">Changed your mind? You can easily reactivate your subscription from your dashboard.</p>
+
+                  <div style="text-align: center; margin-bottom: 18px;">
+                    <a href="{{dashboardUrl}}" style="display: inline-block; padding: 14px 28px; border-radius: 999px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">Resume Subscription</a>
+                  </div>
+
+                  <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">We'd love to hear your feedback. If there's anything we could have done better, please reply to this email.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin: 24px auto 0; max-width: 720px; font-size: 12px; color: #9ca3af; text-align: center;">
+        You are receiving this message because you have an active Advisor Chooser subscription.
+      </p>
+    </div>
+  </body>
+</html>

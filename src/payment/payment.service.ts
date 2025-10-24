@@ -1691,6 +1691,51 @@ export class PaymentService {
 
     // Update local subscription status
     const updatedUser = await this.usersService.cancelSubscriptionAtPeriodEnd(userId);
+    
+    // Send cancellation email to advisor
+    if (updatedUser && updatedUser.subscription?.currentPeriodEnd) {
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://app.advisorchooser.com';
+      const dashboardUrl = `${frontendUrl}/advisor-dashboard`;
+      const accessUntilDate = new Date(updatedUser.subscription.currentPeriodEnd).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      try {
+        // Send email to advisor
+        await this.emailService.sendSubscriptionCancelledEmail({
+          email: updatedUser.email,
+          advisorName: updatedUser.name || 'Advisor',
+          accessUntilDate,
+          dashboardUrl,
+        });
+        
+        // Send notification to company email using proper template
+        const companyEmail = this.configService.get<string>('EMAIL_USER');
+        if (companyEmail) {
+          await this.emailService.sendAdminSubscriptionCancelledEmail({
+            email: companyEmail,
+            advisorName: updatedUser.name || 'Unknown',
+            advisorEmail: updatedUser.email,
+            accessUntilDate,
+            cancelledAt: new Date().toLocaleString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZoneName: 'short'
+            }),
+            userId: userId,
+          });
+        }
+      } catch (error) {
+        console.error('[PaymentService] Failed to send cancellation email:', error);
+        // Don't throw error, cancellation already processed
+      }
+    }
+    
     return { subscription: updatedUser?.subscription };
   }
 
@@ -1715,6 +1760,30 @@ export class PaymentService {
 
     // Update local subscription status
     const updatedUser = await this.usersService.resumeSubscription(userId);
+    
+    // Send resume email to advisor
+    if (updatedUser && updatedUser.subscription?.currentPeriodEnd) {
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://app.advisorchooser.com';
+      const dashboardUrl = `${frontendUrl}/advisor-dashboard`;
+      const renewalDate = new Date(updatedUser.subscription.currentPeriodEnd).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      try {
+        await this.emailService.sendSubscriptionResumedEmail({
+          email: updatedUser.email,
+          advisorName: updatedUser.name || 'Advisor',
+          renewalDate,
+          dashboardUrl,
+        });
+      } catch (error) {
+        console.error('[PaymentService] Failed to send resume email:', error);
+        // Don't throw error, resumption already processed
+      }
+    }
+    
     return { subscription: updatedUser?.subscription };
   }
 

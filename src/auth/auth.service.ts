@@ -85,7 +85,7 @@ export class AuthService {
 
     if (!user.isEmailVerified) {
       throw new UnauthorizedException(
-        'Please verify your email before logging in',
+        'We previously sent you a verification email, check you spam.  Request a new verification email(link)',
       );
     }
 
@@ -430,3 +430,4 @@ export class AuthService {
     };
   }
 }
+

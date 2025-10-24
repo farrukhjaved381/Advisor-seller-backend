@@ -303,4 +303,65 @@ export class EmailService {
       html,
     });
   }
+
+  async sendSubscriptionCancelledEmail(params: {
+    email: string;
+    advisorName: string;
+    accessUntilDate: string;
+    dashboardUrl: string;
+  }): Promise<void> {
+    const template = this.loadTemplate('subscription-cancelled.hbs');
+    const html = this.applyTemplate(template, {
+      advisorName: params.advisorName,
+      accessUntilDate: params.accessUntilDate,
+      dashboardUrl: params.dashboardUrl,
+    });
+    await this.sendEmail({
+      to: params.email,
+      subject: 'Subscription Cancelled - Advisor Chooser',
+      html,
+    });
+  }
+
+  async sendSubscriptionResumedEmail(params: {
+    email: string;
+    advisorName: string;
+    renewalDate: string;
+    dashboardUrl: string;
+  }): Promise<void> {
+    const template = this.loadTemplate('subscription-resumed.hbs');
+    const html = this.applyTemplate(template, {
+      advisorName: params.advisorName,
+      renewalDate: params.renewalDate,
+      dashboardUrl: params.dashboardUrl,
+    });
+    await this.sendEmail({
+      to: params.email,
+      subject: 'Welcome Back! Subscription Resumed - Advisor Chooser',
+      html,
+    });
+  }
+
+  async sendAdminSubscriptionCancelledEmail(params: {
+    email: string;
+    advisorName: string;
+    advisorEmail: string;
+    accessUntilDate: string;
+    cancelledAt: string;
+    userId: string;
+  }): Promise<void> {
+    const template = this.loadTemplate('admin-subscription-cancelled.hbs');
+    const html = this.applyTemplate(template, {
+      advisorName: params.advisorName,
+      advisorEmail: params.advisorEmail,
+      accessUntilDate: params.accessUntilDate,
+      cancelledAt: params.cancelledAt,
+      userId: params.userId,
+    });
+    await this.sendEmail({
+      to: params.email,
+      subject: `Advisor Subscription Cancelled - ${params.advisorName}`,
+      html,
+    });
+  }
 }
