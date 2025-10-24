@@ -62,6 +62,9 @@ export class AdvisorCardDto {
   @ApiProperty({ example: 'https://example.com/logo.png' })
   logoUrl?: string;
 
+  @ApiProperty({ example: 'https://example.com/intro-video.mp4' })
+  introVideoUrl?: string;
+
   @ApiProperty({
     example: [
       {

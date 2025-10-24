@@ -13,7 +13,7 @@ export class MatchingService {
   constructor(
     @InjectModel(Advisor.name) private advisorModel: Model<Advisor>,
     @InjectModel(Seller.name) private sellerModel: Model<Seller>,
-  ) {}
+  ) { }
 
   async findMatches(
     sellerId: string,
@@ -31,8 +31,8 @@ export class MatchingService {
       : /.*/i;
     const geographyVariants = seller.geography
       ? [seller.geography, seller.geography.split('>')[0]?.trim()].filter(
-          Boolean,
-        )
+        Boolean,
+      )
       : [];
     const geographyRegexes = geographyVariants.map(
       (variant) => new RegExp(`^${escapeRegex(variant)}$`, 'i'),
@@ -86,12 +86,12 @@ export class MatchingService {
       const advisorUser = advisor.userId as any;
       const advisorName =
         typeof advisorUser?.name === 'string' &&
-        advisorUser.name.trim().length > 0
+          advisorUser.name.trim().length > 0
           ? advisorUser.name.trim()
           : advisor.companyName || 'Advisor';
       const advisorEmail =
         typeof advisorUser?.email === 'string' &&
-        advisorUser.email.trim().length > 0
+          advisorUser.email.trim().length > 0
           ? advisorUser.email.trim()
           : 'Not provided';
 
@@ -105,8 +105,8 @@ export class MatchingService {
         ),
         matchedGeographies: geographyRegexes.length
           ? advisor.geographies.filter((geo) =>
-              geographyRegexes.some((regex) => regex.test(geo)),
-            )
+            geographyRegexes.some((regex) => regex.test(geo)),
+          )
           : advisor.geographies,
         yearsExperience: advisor.yearsExperience,
         numberOfTransactions: advisor.numberOfTransactions,
@@ -118,6 +118,7 @@ export class MatchingService {
         currency: advisor.currency,
         description: advisor.description,
         logoUrl: advisor.logoUrl,
+        introVideoUrl: advisor.introVideoUrl,
         testimonials: advisor.testimonials || [],
         workedWithCimamplify: advisor.workedWithCimamplify,
       } as AdvisorCardDto;

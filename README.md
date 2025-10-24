@@ -12,7 +12,7 @@ This is the NestJS backend for the Seller-Advisor Matching Platform. It handles 
 2. Install dependencies: `npm install`
 3. Create `.env` file (see .env.example for template)
 4. Run locally: `npm run start:dev`
-5. Access API docs: https://api.advisorchooser.com/docs/docs this is swagger
+5. Access API docs: https://api.advisorchooser.com/docs this is swagger
 6. Run tests: `npm test`
 
 ## Project Structure
