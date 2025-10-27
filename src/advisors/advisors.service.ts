@@ -598,23 +598,7 @@ export class AdvisorsService {
       unresolved: leadsWithSeller.filter((x) => !x.seller).length,
     });
 
-    const dedupedLeads: any[] = [];
-    const seenKeys = new Set<string>();
-    for (const lead of leadsWithSeller) {
-      const baseKey =
-        lead.sellerUserId || (lead.sellerId ? String(lead.sellerId) : null);
-      const fallbackKey = lead.seller?.companyName
-        ? `${lead.seller.companyName}`
-        : lead._id?.toString?.();
-      const key = baseKey || fallbackKey;
-      if (key && seenKeys.has(key)) {
-        continue;
-      }
-      if (key) {
-        seenKeys.add(key);
-      }
-      dedupedLeads.push(lead);
-    }
+    const dedupedLeads = leadsWithSeller;
     console.log('[AdvisorsService] Deduplicated leads', {
       before: leadsWithSeller.length,
       after: dedupedLeads.length,
