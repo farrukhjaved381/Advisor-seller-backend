@@ -677,8 +677,10 @@ export class ConnectionsService {
       });
 
       try {
+        // Send introduction email to advisor with seller CC'd
         await this.emailService.sendEmail({
           to: advisorUser?.email,
+          cc: sellerUser.email, // CC the seller on the advisor's email
           subject: `Advisor Chooser Introduction: ${emailData.raw.sellerCompanyName} <> ${emailData.raw.advisorCompanyName}`,
           html: advisorHtml,
         });
@@ -705,18 +707,20 @@ export class ConnectionsService {
           type: ConnectionType.INTRODUCTION,
         });
 
-        try {
-          await this.emailService.sendEmail({
-            to: sellerUser.email,
-            subject: `Advisor Chooser Introduction:${emailData.raw.sellerCompanyName} <> ${emailData.raw.advisorCompanyName}`,
-            html: sellerCopyHtml,
-          });
-        } catch (sellerError) {
-          console.error(
-            `Failed to send introduction copy to seller ${sellerUser.email}:`,
-            sellerError,
-          );
-        }
+        // COMMENTED OUT: No longer sending separate email to seller
+        // Seller now receives the same email via CC
+        // try {
+        //   await this.emailService.sendEmail({
+        //     to: sellerUser.email,
+        //     subject: `Advisor Chooser Introduction:${emailData.raw.sellerCompanyName} <> ${emailData.raw.advisorCompanyName}`,
+        //     html: sellerCopyHtml,
+        //   });
+        // } catch (sellerError) {
+        //   console.error(
+        //     `Failed to send introduction copy to seller ${sellerUser.email}:`,
+        //     sellerError,
+        //   );
+        // }
 
         emailsSent++;
       } catch (error) {
@@ -1123,3 +1127,4 @@ export class ConnectionsService {
     };
   }
 }
+
