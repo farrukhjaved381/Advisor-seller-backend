@@ -389,12 +389,24 @@ export class PaymentService {
   ) {
     const { user, customerId } = await this.ensureStripeCustomer(userId);
 
+    // Check if test payment method is being used with live keys
+    if (paymentMethodId.includes('HCdPp0Jinm')) {
+      throw new BadRequestException(
+        'Test payment method detected. Please use a real credit card for live payments.'
+      );
+    }
+
     try {
       await this.stripe.paymentMethods.attach(paymentMethodId, {
         customer: customerId,
       });
     } catch (error: any) {
       if (error?.code !== 'resource_already_exists') {
+        if (error?.message?.includes('No such PaymentMethod')) {
+          throw new BadRequestException(
+            'Invalid payment method. This usually happens when test payment methods are used with live keys. Please refresh the page and try again with a real credit card.'
+          );
+        }
         throw error;
       }
     }
