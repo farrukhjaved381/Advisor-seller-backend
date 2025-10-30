@@ -403,6 +403,11 @@ export class PaymentService {
     } catch (error: any) {
       if (error?.code !== 'resource_already_exists') {
         console.error('[PaymentService] Payment method attach error:', error);
+        if (error?.message?.includes('card was declined')) {
+          throw new BadRequestException(
+            'Your card was declined. Please try a different payment method or contact your bank.'
+          );
+        }
         throw error;
       }
     }
