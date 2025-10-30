@@ -389,12 +389,12 @@ export class PaymentService {
   ) {
     const { user, customerId } = await this.ensureStripeCustomer(userId);
 
-    // Check if test payment method is being used with live keys
-    if (paymentMethodId.includes('HCdPp0Jinm')) {
-      throw new BadRequestException(
-        'Test payment method detected. Please use a real credit card for live payments.'
-      );
-    }
+    // Temporarily disabled test detection for debugging
+    // if (paymentMethodId.includes('HCdPp0Jinm')) {
+    //   throw new BadRequestException(
+    //     'Test payment method detected. Please use a real credit card for live payments.'
+    //   );
+    // }
 
     try {
       await this.stripe.paymentMethods.attach(paymentMethodId, {
