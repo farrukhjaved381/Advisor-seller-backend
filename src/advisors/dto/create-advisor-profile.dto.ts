@@ -3,6 +3,7 @@ import {
   IsArray,
   IsNumber,
   IsOptional,
+  IsBoolean,
   ArrayMaxSize,
   ArrayMinSize,
   ValidateNested,
@@ -29,6 +30,21 @@ export class CreateAdvisorProfileDto {
   @IsString()
   @ApiProperty({ description: 'Company name', example: 'ABC Consulting LLC' })
   companyName: string;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiProperty({ description: 'Whether advisor wants to receive leads', default: false })
+  sendLeads?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiProperty({ description: 'Whether advisor has worked with CimAmplify before', default: false })
+  workedWithCimamplify?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiProperty({ description: 'Whether the profile is active', default: false })
+  isActive?: boolean;
 
   @IsString()
   @ApiProperty({ example: '+1-555-123-4567' })
@@ -109,8 +125,4 @@ export class CreateAdvisorProfileDto {
   @IsString()
   @ApiProperty({ description: 'Introduction video URL', required: false })
   introVideoUrl?: string;
-
-  @IsOptional()
-  @ApiProperty({ description: 'Worked with Cimamplify', required: false })
-  workedWithCimamplify?: boolean;
 }

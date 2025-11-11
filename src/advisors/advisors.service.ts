@@ -59,39 +59,120 @@ export class AdvisorsService {
 
   // ========== BASIC CRUD ==========
 
+  async createEmptyProfile(userId: string, force = false): Promise<Advisor> {
+    // First try to find existing profile
+    const existingProfile = await this.advisorModel.findOne({ userId }).exec();
+    
+    // If profile exists and we're not forcing creation, return it
+    if (existingProfile && !force) {
+      return existingProfile;
+    }
+
+    // Only create a new profile if it doesn't exist or we're forcing creation
+    if (!existingProfile) {
+      // Create a new empty profile with all required fields
+      const emptyProfile = {
+        userId,
+        companyName: 'New Advisor',
+        industries: [],
+        geographies: [],
+        yearsExperience: 0,
+        numberOfTransactions: 0,
+        phone: '+1234567890',
+        website: '',
+        currency: 'USD',
+        description: 'New advisor profile',
+        testimonials: Array(5).fill({ 
+          clientName: 'Client Name', 
+          testimonial: 'Testimonial text' 
+        }),
+        revenueRange: { min: 0, max: 0 },
+        isActive: false, // Inactive until properly filled out
+        sendLeads: false,
+        workedWithCimamplify: false
+      };
+
+      try {
+        const newProfile = new this.advisorModel(emptyProfile);
+        const savedProfile = await newProfile.save({ validateBeforeSave: true });
+        return savedProfile;
+      } catch (error: any) {
+        // If there's a duplicate key error, it means another process created the profile
+        if (error.code === 11000) {
+          const profile = await this.advisorModel.findOne({ userId }).exec();
+          if (profile) {
+            return profile;
+          }
+        }
+        throw error;
+      }
+    }
+    
+    return existingProfile;
+  }
+
   async createProfile(
     userId: string,
     createDto: CreateAdvisorProfileDto,
   ): Promise<Advisor> {
-    if (
-      !Array.isArray(createDto.testimonials) ||
-      createDto.testimonials.length !== 5 ||
-      createDto.testimonials.some(
-        (testimonial) =>
-          !testimonial?.clientName?.trim() || !testimonial?.testimonial?.trim(),
-      )
-    ) {
-      throw new BadRequestException(
-        'Exactly 5 testimonials with client name and testimonial text are required',
-      );
+    // First, try to find existing profile
+    let advisor = await this.advisorModel.findOne({ userId });
+    
+    // If no profile exists, create one with provided or default values
+    if (!advisor) {
+      // Create a new profile with provided data or default values
+      const newProfile = {
+        userId,
+        companyName: createDto.companyName || 'New Advisor',
+        industries: createDto.industries || [],
+        geographies: createDto.geographies || [],
+        yearsExperience: createDto.yearsExperience || 0,
+        numberOfTransactions: createDto.numberOfTransactions || 0,
+        phone: createDto.phone || '+1234567890',
+        website: createDto.website || '',
+        currency: createDto.currency || 'USD',
+        description: createDto.description || 'New advisor profile',
+        testimonials: createDto.testimonials || Array(5).fill({ 
+          clientName: 'Client Name', 
+          testimonial: 'Testimonial text' 
+        }),
+        revenueRange: createDto.revenueRange || { min: 0, max: 0 },
+        isActive: true, // Set to true since we're updating with real data
+        sendLeads: createDto.sendLeads || false,
+        workedWithCimamplify: createDto.workedWithCimamplify || false
+      };
+      
+      // Create and save the new profile with validation
+      advisor = new this.advisorModel(newProfile);
+      await advisor.save({ validateBeforeSave: true });
+      
+      // Update user's profile completion status
+      await this.usersService.updateProfileComplete(userId, true);
+      return advisor;
     }
 
-    const existingProfile = await this.advisorModel.findOne({ userId });
-    if (existingProfile) {
-      throw new ConflictException('Advisor profile already exists');
+    // Mark as active when the form is submitted with valid data
+    if (createDto && Object.keys(createDto).length > 0) {
+      createDto.isActive = true;
     }
 
-    const newProfile = new this.advisorModel({
-      userId,
-      ...createDto,
-      isActive: true,
-    });
-
-    const savedProfile = await newProfile.save();
-
+    // Update existing profile with new data
+    const updatedProfile = await this.advisorModel.findOneAndUpdate(
+      { userId },
+      { 
+        ...createDto,
+        isActive: true // Mark as active when properly filled out
+      },
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedProfile) {
+      throw new Error('Failed to update advisor profile');
+    }
+    
+    // Update user's profile completion status
     await this.usersService.updateProfileComplete(userId, true);
-
-    return savedProfile;
+    return updatedProfile;
   }
 
   async getProfileByUserId(userId: string): Promise<Advisor | null> {
@@ -102,17 +183,50 @@ export class AdvisorsService {
     userId: string,
     updateAdvisorProfileDto: UpdateAdvisorProfileDto,
   ): Promise<Advisor> {
-    const advisor = await this.advisorModel.findOneAndUpdate(
+    // Check if profile exists
+    const existingProfile = await this.advisorModel.findOne({ userId });
+    
+    // If no profile exists, create one with provided or default values
+    if (!existingProfile) {
+      const newProfile = {
+        userId,
+        companyName: updateAdvisorProfileDto.companyName || '',
+        industries: updateAdvisorProfileDto.industries || [],
+        geographies: updateAdvisorProfileDto.geographies || [],
+        yearsExperience: updateAdvisorProfileDto.yearsExperience || 0,
+        numberOfTransactions: updateAdvisorProfileDto.numberOfTransactions || 0,
+        phone: updateAdvisorProfileDto.phone || '',
+        website: updateAdvisorProfileDto.website || '',
+        currency: updateAdvisorProfileDto.currency || 'USD',
+        description: updateAdvisorProfileDto.description || '',
+        testimonials: updateAdvisorProfileDto.testimonials || Array(5).fill({ 
+          clientName: '', 
+          testimonial: '' 
+        }),
+        revenueRange: updateAdvisorProfileDto.revenueRange || { min: 0, max: 0 },
+        isActive: true, // Set to true since we're updating with real data
+        sendLeads: updateAdvisorProfileDto.sendLeads || false,
+        workedWithCimamplify: updateAdvisorProfileDto.workedWithCimamplify || false
+      };
+      
+      const createdProfile = new this.advisorModel(newProfile);
+      await createdProfile.save({ validateBeforeSave: true });
+      await this.usersService.updateProfileComplete(userId, true);
+      return createdProfile;
+    }
+
+    // Update existing profile
+    const updatedProfile = await this.advisorModel.findOneAndUpdate(
       { userId },
       updateAdvisorProfileDto,
       { new: true },
     );
 
-    if (!advisor) {
-      throw new NotFoundException('Advisor profile not found');
+    if (!updatedProfile) {
+      throw new Error('Failed to update advisor profile');
     }
 
-    return advisor;
+    return updatedProfile;
   }
 
   async toggleLeadSending(
@@ -223,9 +337,45 @@ export class AdvisorsService {
       introVideo?: Express.Multer.File[];
     },
   ): Promise<Advisor> {
-    const advisor = await this.advisorModel.findOne({ userId });
+    // First, try to find existing profile
+    let advisor = await this.advisorModel.findOne({ userId });
+    
+    // If no profile exists, create a new one with provided or default values
     if (!advisor) {
-      throw new NotFoundException('Advisor profile not found');
+      // Create a new profile with provided data or default values
+      const newProfile = {
+        userId,
+        companyName: updateProfileDto.companyName || 'New Advisor',
+        industries: updateProfileDto.industries || [],
+        geographies: updateProfileDto.geographies || [],
+        yearsExperience: updateProfileDto.yearsExperience || 0,
+        numberOfTransactions: updateProfileDto.numberOfTransactions || 0,
+        phone: updateProfileDto.phone || '+1234567890',
+        website: updateProfileDto.website || '',
+        currency: updateProfileDto.currency || 'USD',
+        description: updateProfileDto.description || 'New advisor profile',
+        testimonials: updateProfileDto.testimonials || Array(5).fill({ 
+          clientName: 'Client Name', 
+          testimonial: 'Testimonial text' 
+        }),
+        revenueRange: updateProfileDto.revenueRange || { min: 0, max: 0 },
+        isActive: true, // Set to true since we're updating with real data
+        sendLeads: updateProfileDto.sendLeads || false,
+        workedWithCimamplify: updateProfileDto.workedWithCimamplify || false
+      };
+      
+      // Create and save the new profile with validation
+      advisor = new this.advisorModel(newProfile);
+      await advisor.save({ validateBeforeSave: true });
+      
+      // Update user's profile completion status
+      await this.usersService.updateProfileComplete(userId, true);
+      return advisor;
+    }
+
+    // Mark as active when the form is submitted with valid data
+    if (updateProfileDto && Object.keys(updateProfileDto).length > 0) {
+      updateProfileDto.isActive = true;
     }
 
     // ✅ Step 1: Update normal fields with coercion for arrays/objects

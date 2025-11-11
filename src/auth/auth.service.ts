@@ -74,6 +74,9 @@ export class AuthService {
       // Don't throw error - allow registration to complete
     }
 
+    // We no longer create empty advisor profiles automatically
+    // The profile will be created when the user first accesses their profile
+
     return this.generateAuthResponse(user);
   }
 
@@ -88,6 +91,9 @@ export class AuthService {
         'We previously sent you a verification email, check you spam.  Request a new verification email(link)',
       );
     }
+
+    // We no longer create empty advisor profiles automatically during login
+    // The profile will be created when the user first accesses their profile
 
     return this.generateAuthResponse(user);
   }
