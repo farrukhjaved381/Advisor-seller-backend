@@ -80,4 +80,8 @@ export class AdvisorCardDto {
   @ApiProperty({ example: true, required: false })
   @IsOptional()
   workedWithCimamplify?: boolean;
+
+  @ApiProperty({ example: 5, description: 'Number of seller impressions (views)' })
+  @IsOptional()
+  impressions?: number;
 }

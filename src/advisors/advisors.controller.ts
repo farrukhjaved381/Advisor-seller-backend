@@ -311,4 +311,34 @@ export class AdvisorsController {
     const userId = req.user._doc?._id || req.user._id || req.user.sub || req.user.id;
     return this.advisorsService.getLeadsForAdvisor(userId);
   }
+
+  @Post('record-impression')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Record impression when seller views advisor' })
+  @ApiResponse({ status: 200, description: 'Impression recorded successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid request data' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        advisorId: { type: 'string', description: 'Advisor profile ID' },
+      },
+      required: ['advisorId'],
+    },
+  })
+  async recordImpression(
+    @Request() req,
+    @Body() body: { advisorId: string },
+  ) {
+    const sellerId = req.user._doc?._id || req.user._id || req.user.sub || req.user.id;
+    if (!body.advisorId) {
+      throw new BadRequestException('advisorId is required');
+    }
+    return this.advisorsService.recordImpression(
+      sellerId.toString(),
+      body.advisorId,
+    );
+  }
 }

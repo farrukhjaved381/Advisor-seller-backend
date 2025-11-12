@@ -121,6 +121,7 @@ export class MatchingService {
         introVideoUrl: advisor.introVideoUrl,
         testimonials: advisor.testimonials || [],
         workedWithCimamplify: advisor.workedWithCimamplify,
+        impressions: advisor.impressions || 0,
       } as AdvisorCardDto;
     });
   }

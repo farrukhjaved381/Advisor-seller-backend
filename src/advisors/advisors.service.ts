@@ -5,8 +5,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Advisor } from './schemas/advisor.schema';
+import { AdvisorImpression } from './schemas/advisor-impression.schema';
 import { Seller, SellerDocument } from '../sellers/schemas/seller.schema';
 import { CreateAdvisorProfileDto } from './dto/create-advisor-profile.dto';
 import { UpdateAdvisorProfileDto } from './dto/update-advisor-profile.dto';
@@ -22,6 +23,8 @@ import {
 export class AdvisorsService {
   constructor(
     @InjectModel(Advisor.name) private advisorModel: Model<Advisor>,
+    @InjectModel(AdvisorImpression.name)
+    private impressionModel: Model<AdvisorImpression>,
     @InjectModel(Connection.name)
     private connectionModel: Model<ConnectionDocument>,
     @InjectModel(Seller.name)
@@ -825,5 +828,78 @@ export class AdvisorsService {
       totalLeads: result.stats.totalLeads,
     });
     return result;
+  }
+
+  // ========== IMPRESSION TRACKING ==========
+
+  async recordImpression(
+    sellerId: string,
+    advisorId: string,
+  ): Promise<{ isNew: boolean; impression: any }> {
+    try {
+      console.log('[AdvisorsService] recordImpression called with:', { sellerId, advisorId });
+      
+      // Convert string IDs to ObjectId for proper comparison
+      const sellerObjectId = new Types.ObjectId(sellerId);
+      const advisor = await this.advisorModel.findById(advisorId);
+      if (!advisor) {
+        console.error('[AdvisorsService] Advisor not found for advisorId:', advisorId);
+        throw new NotFoundException('Advisor profile not found');
+      }
+      console.log('[AdvisorsService] Advisor found:', { advisorId, advisorCompanyName: advisor.companyName });
+
+      // Try to find existing impression
+      const existingImpression = await this.impressionModel.findOne({
+        sellerId: sellerObjectId,
+        advisorId,
+      });
+
+      if (existingImpression) {
+        console.log('[AdvisorsService] Existing impression found, updating timestamp');
+        // Update the timestamp
+        existingImpression.updatedAt = new Date();
+        await existingImpression.save();
+        return { isNew: false, impression: existingImpression };
+      }
+
+      // Create new impression
+      console.log('[AdvisorsService] Creating new impression record');
+      const newImpression = new this.impressionModel({
+        sellerId: sellerObjectId,
+        advisorId,
+      });
+      await newImpression.save();
+      console.log('[AdvisorsService] Impression saved successfully');
+
+      // Increment advisor's impression count
+      const updatedAdvisor = await this.advisorModel.findByIdAndUpdate(
+        advisorId,
+        { $inc: { impressions: 1 } },
+        { new: true },
+      );
+      console.log('[AdvisorsService] Advisor impressions incremented to:', updatedAdvisor?.impressions);
+
+      return { isNew: true, impression: newImpression };
+    } catch (error) {
+      console.error('[AdvisorsService] Error recording impression:', error.message);
+      throw error;
+    }
+  }
+
+  async getAdvisorImpressions(advisorId: string): Promise<number> {
+    const advisor = await this.advisorModel.findById(advisorId);
+    return advisor?.impressions || 0;
+  }
+
+  async getAdvisorImpressionDetails(advisorId: string): Promise<any> {
+    const impressions = await this.impressionModel
+      .find({ advisorId })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return {
+      totalImpressions: impressions.length,
+      impressions,
+    };
   }
 }

@@ -97,6 +97,10 @@ export class Advisor {
 
   @Prop({ type: Boolean, default: false })
   workedWithCimamplify: boolean;
+
+  @Prop({ type: Number, default: 0 })
+  @ApiProperty({ description: 'Number of impressions (seller views)' })
+  impressions: number;
 }
 
 function arrayLimit(val: any[]) {
