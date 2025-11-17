@@ -49,21 +49,21 @@ async function createApp(): Promise<INestApplication> {
     }),
   );
 
-  // Rate limiting
+  // Rate limiting - Increased limits for better user experience
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    max: 500, // limit each IP to 500 requests per windowMs (increased from 100)
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
   });
   nestApp.use('/api/', limiter);
 
-  // Slow down repeated requests
+  // Slow down repeated requests - More lenient limits
   const speedLimiter = slowDown({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    delayAfter: 50, // allow 50 requests per 15 minutes, then...
-    delayMs: 500, // begin adding 500ms of delay per request above 50
+    delayAfter: 200, // allow 200 requests per 15 minutes, then... (increased from 50)
+    delayMs: 300, // begin adding 300ms of delay per request above 200 (reduced from 500ms)
   });
   nestApp.use('/api/auth/', speedLimiter);
 
