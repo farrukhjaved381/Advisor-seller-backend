@@ -213,23 +213,23 @@ export class SellersService {
   async deleteInactiveSellers(): Promise<void> {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     console.log('Checking for sellers created before:', twentyFourHoursAgo);
-    
+
     const oldSellers = await this.sellerModel.find({
       createdAt: { $lt: twentyFourHoursAgo }
     });
-    
+
     console.log(`Found ${oldSellers.length} sellers to delete`);
 
     for (const seller of oldSellers) {
       try {
         console.log(`Deleting seller ${seller._id} created at ${(seller as any).createdAt}`);
-        
+
         // Delete seller profile directly
         await this.sellerModel.deleteOne({ _id: seller._id });
-        
+
         // Delete associated user
         await this.usersService.deleteUser(seller.userId.toString());
-        
+
         console.log(`Successfully deleted seller: ${seller._id}`);
       } catch (error) {
         console.error(`Failed to delete seller ${seller._id}:`, error);

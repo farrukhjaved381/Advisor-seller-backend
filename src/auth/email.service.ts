@@ -109,7 +109,7 @@ export class EmailService {
     const verificationText = this.escapeHtml(verificationUrl);
 
     const mailOptions = {
-      from: `"Advisor Chooser" <${process.env.EMAIL_USER}>`, 
+      from: `"Advisor Chooser" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Verify Your Email - Advisor Chooser Platform',
       html: `<!DOCTYPE html>
@@ -361,6 +361,50 @@ export class EmailService {
     await this.sendEmail({
       to: params.email,
       subject: `Advisor Subscription Cancelled - ${params.advisorName}`,
+      html,
+    });
+  }
+
+  async sendAdvisorCreatedEmail(params: {
+    advisorName: string;
+    advisorCompanyName: string;
+    advisorEmail: string;
+    advisorPhone: string;
+    advisorWebsite: string;
+    advisorExperience: number;
+    advisorTransactions: number;
+    advisorIndustries: string;
+    advisorGeographies: string;
+    advisorRevenueMin: number;
+    advisorRevenueMax: number;
+    advisorCurrency: string;
+    advisorDescription: string;
+    workedWithCimamplify: string;
+    sendLeads: string;
+    dashboardUrl: string;
+  }): Promise<void> {
+    const template = this.loadTemplate('advisor-created.hbs');
+    const html = this.applyTemplate(template, {
+      advisorName: params.advisorName,
+      advisorCompanyName: params.advisorCompanyName,
+      advisorEmail: params.advisorEmail,
+      advisorPhone: params.advisorPhone,
+      advisorWebsite: params.advisorWebsite,
+      advisorExperience: params.advisorExperience,
+      advisorTransactions: params.advisorTransactions,
+      advisorIndustries: params.advisorIndustries,
+      advisorGeographies: params.advisorGeographies,
+      advisorRevenueMin: params.advisorRevenueMin,
+      advisorRevenueMax: params.advisorRevenueMax,
+      advisorCurrency: params.advisorCurrency,
+      advisorDescription: params.advisorDescription,
+      workedWithCimamplify: params.workedWithCimamplify,
+      sendLeads: params.sendLeads,
+      dashboardUrl: params.dashboardUrl,
+    });
+    await this.sendEmail({
+      to: 'johnm@cimamplify.com',
+      subject: `New Advisor Created: ${params.advisorName}`,
       html,
     });
   }

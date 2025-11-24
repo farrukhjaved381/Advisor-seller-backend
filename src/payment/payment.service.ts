@@ -181,8 +181,8 @@ export class PaymentService {
     const expandedInvoice =
       typeof invoice === 'string'
         ? ((await this.stripe.invoices.retrieve(
-            invoice,
-          )) as StripeInvoiceExpanded)
+          invoice,
+        )) as StripeInvoiceExpanded)
         : invoice;
 
     const amount =
@@ -256,7 +256,7 @@ export class PaymentService {
 
     // Determine the correct status based on Stripe subscription state
     let localStatus = this.normalizeSubscriptionStatus(expandedSubscription.status);
-    
+
     // If Stripe subscription is canceled but still within the period, keep it as 'canceled' locally
     // but don't change isPaymentVerified until the period actually ends
     if (expandedSubscription.status === 'canceled' && expandedSubscription.cancel_at_period_end) {
@@ -289,8 +289,8 @@ export class PaymentService {
       const invoice =
         typeof latestInvoiceRaw === 'string'
           ? ((await this.stripe.invoices.retrieve(
-              latestInvoiceRaw,
-            )) as StripeInvoiceExpanded)
+            latestInvoiceRaw,
+          )) as StripeInvoiceExpanded)
           : latestInvoiceRaw;
       paymentIntent = invoice.payment_intent as
         | Stripe.PaymentIntent
@@ -503,9 +503,9 @@ export class PaymentService {
 
     const invoicePaymentIntent = latestInvoice
       ? ((latestInvoice.payment_intent as
-          | Stripe.PaymentIntent
-          | string
-          | undefined) ?? (latestInvoice as any).latest_payment_intent)
+        | Stripe.PaymentIntent
+        | string
+        | undefined) ?? (latestInvoice as any).latest_payment_intent)
       : undefined;
     let paymentIntent: Stripe.PaymentIntent | undefined;
 
@@ -678,8 +678,8 @@ export class PaymentService {
       latestInvoice =
         typeof latestInvoiceRaw === 'string'
           ? ((await this.stripe.invoices.retrieve(latestInvoiceRaw, {
-              expand: ['payment_intent'],
-            })) as StripeInvoiceExpanded)
+            expand: ['payment_intent'],
+          })) as StripeInvoiceExpanded)
           : latestInvoiceRaw;
       const invoicePaymentIntent = latestInvoice.payment_intent as
         | Stripe.PaymentIntent
@@ -717,8 +717,8 @@ export class PaymentService {
 
     const billingDetails = paymentMethodId
       ? this.buildBillingDetails(
-          await this.stripe.paymentMethods.retrieve(paymentMethodId),
-        )
+        await this.stripe.paymentMethods.retrieve(paymentMethodId),
+      )
       : undefined;
 
     await this.usersService.updateSubscriptionFromStripe(
@@ -919,12 +919,12 @@ export class PaymentService {
 
       let billingDetails:
         | {
-            paymentMethodId?: string;
-            cardBrand?: string;
-            cardLast4?: string;
-            cardExpMonth?: number;
-            cardExpYear?: number;
-          }
+          paymentMethodId?: string;
+          cardBrand?: string;
+          cardLast4?: string;
+          cardExpMonth?: number;
+          cardExpYear?: number;
+        }
         | undefined;
 
       if (paymentMethodId && customerId) {
@@ -1240,8 +1240,8 @@ export class PaymentService {
             const latestInvoice =
               typeof latestInvoiceRaw === 'string'
                 ? ((await this.stripe.invoices.retrieve(
-                    latestInvoiceRaw,
-                  )) as StripeInvoiceExpanded)
+                  latestInvoiceRaw,
+                )) as StripeInvoiceExpanded)
                 : latestInvoiceRaw;
             if (latestInvoice && !latestInvoice.paid && latestInvoice.id) {
               await this.stripe.invoices.pay(latestInvoice.id, {
@@ -1275,9 +1275,9 @@ export class PaymentService {
   // Validates coupon code and availability
   private async validateCoupon(code: string): Promise<Coupon> {
     const normalizedCode = code.trim().toUpperCase();
-    const coupon = await this.couponModel.findOne({ 
-      code: { $regex: new RegExp(`^${normalizedCode}$`, 'i') }, 
-      isActive: true 
+    const coupon = await this.couponModel.findOne({
+      code: { $regex: new RegExp(`^${normalizedCode}$`, 'i') },
+      isActive: true
     });
 
     if (!coupon) {
@@ -1432,8 +1432,7 @@ export class PaymentService {
       } catch (error: any) {
         if (error?.statusCode !== 404) {
           this.logger.warn(
-            `[PaymentService] Unable to delete Stripe coupon ${couponId}: ${
-              error?.message || error
+            `[PaymentService] Unable to delete Stripe coupon ${couponId}: ${error?.message || error
             }`,
           );
         }
@@ -1562,7 +1561,7 @@ export class PaymentService {
             );
           }
         }
-        
+
         // Auto-retry payment with updated payment method
         if (userId && invoice.subscription) {
           try {
@@ -1709,7 +1708,7 @@ export class PaymentService {
 
     // Update local subscription status
     const updatedUser = await this.usersService.cancelSubscriptionAtPeriodEnd(userId);
-    
+
     // Send cancellation email to advisor
     if (updatedUser && updatedUser.subscription?.currentPeriodEnd) {
       const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://app.advisorchooser.com';
@@ -1719,7 +1718,7 @@ export class PaymentService {
         month: 'long',
         day: 'numeric'
       });
-      
+
       try {
         // Send email to advisor
         await this.emailService.sendSubscriptionCancelledEmail({
@@ -1728,7 +1727,7 @@ export class PaymentService {
           accessUntilDate,
           dashboardUrl,
         });
-        
+
         // Send notification to company email using proper template
         const companyEmail = this.configService.get<string>('EMAIL_USER');
         if (companyEmail) {
@@ -1753,7 +1752,7 @@ export class PaymentService {
         // Don't throw error, cancellation already processed
       }
     }
-    
+
     return { subscription: updatedUser?.subscription };
   }
 
@@ -1778,7 +1777,7 @@ export class PaymentService {
 
     // Update local subscription status
     const updatedUser = await this.usersService.resumeSubscription(userId);
-    
+
     // Send resume email to advisor
     if (updatedUser && updatedUser.subscription?.currentPeriodEnd) {
       const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://app.advisorchooser.com';
@@ -1788,7 +1787,7 @@ export class PaymentService {
         month: 'long',
         day: 'numeric'
       });
-      
+
       try {
         await this.emailService.sendSubscriptionResumedEmail({
           email: updatedUser.email,
@@ -1801,7 +1800,7 @@ export class PaymentService {
         // Don't throw error, resumption already processed
       }
     }
-    
+
     return { subscription: updatedUser?.subscription };
   }
 

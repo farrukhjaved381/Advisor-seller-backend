@@ -29,7 +29,7 @@ export class ConnectionsService {
     private connectionModel: Model<ConnectionDocument>,
     private matchingService: MatchingService,
     private emailService: EmailService,
-  ) {}
+  ) { }
 
   private escapeHtml(value: string | number | null | undefined): string {
     const stringValue =
@@ -293,10 +293,10 @@ export class ConnectionsService {
     const advisorWebsiteHref =
       advisorWebsiteRaw.length > 0
         ? this.escapeAttr(
-            advisorWebsiteRaw.startsWith('http')
-              ? advisorWebsiteRaw
-              : `https://${advisorWebsiteRaw}`,
-          )
+          advisorWebsiteRaw.startsWith('http')
+            ? advisorWebsiteRaw
+            : `https://${advisorWebsiteRaw}`,
+        )
         : '#';
 
     const yearsExperienceRaw =
@@ -390,7 +390,7 @@ export class ConnectionsService {
 
     const sellerAnnualRevenueValue =
       typeof seller.annualRevenue === 'number' &&
-      Number.isFinite(seller.annualRevenue)
+        Number.isFinite(seller.annualRevenue)
         ? seller.annualRevenue
         : undefined;
     const sellerCurrencyValue =
@@ -960,8 +960,8 @@ export class ConnectionsService {
         const metricsHtml =
           metrics.length > 0
             ? `<div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; font-size:12px; color:#4b5563;">${metrics.join(
-                '<span style="width:12px; display:block;"></span>',
-              )}</div>`
+              '<span style="width:12px; display:block;"></span>',
+            )}</div>`
             : '';
 
         return `
@@ -1015,7 +1015,7 @@ export class ConnectionsService {
                         <p style="margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #047857; font-weight: 700;">Typical Client Revenue</p>
                         <p style="margin: 8px 0 0; font-size: 15px; color: #065f46; font-weight: 700;">${revenueRangeHtml}</p>
                       </div>
- */'' } 
+ */''} 
                       <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px;">
                         <p style="margin: 0 0 10px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; font-weight: 700;">Contact Details</p>
                         <p style="margin: 0 0 6px; font-size: 13px; color: #1f2937;"><strong>${contactNameHtml}</strong></p>

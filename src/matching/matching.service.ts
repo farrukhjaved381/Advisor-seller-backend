@@ -41,10 +41,15 @@ export class MatchingService {
       geographies: { $regex: regex },
     }));
 
+    // Priority sorting: CIM Amplify users first, then by specified criteria
     let sortCriteria = {};
-    if (sortBy === 'years') sortCriteria = { yearsExperience: -1 };
-    else if (sortBy === 'company') sortCriteria = { companyName: 1 };
-    else sortCriteria = { createdAt: -1 };
+    if (sortBy === 'years') {
+      sortCriteria = { workedWithCimamplify: -1, yearsExperience: -1 };
+    } else if (sortBy === 'company') {
+      sortCriteria = { workedWithCimamplify: -1, companyName: 1 };
+    } else {
+      sortCriteria = { workedWithCimamplify: -1, createdAt: -1 };
+    }
 
     let query = this.advisorModel
       .find({

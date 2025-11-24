@@ -9,6 +9,7 @@ import { UsersModule } from '../users/users.module';
 import { AuthModule } from '../auth/auth.module';
 import { ConnectionsModule } from '../connections/connections.module';
 import { PaymentModule } from '../payment/payment.module';
+import { EmailService } from '../auth/email.service';
 
 @Module({
   imports: [
@@ -23,7 +24,7 @@ import { PaymentModule } from '../payment/payment.module';
     forwardRef(() => PaymentModule),
   ],
   controllers: [AdvisorsController],
-  providers: [AdvisorsService],
+  providers: [AdvisorsService, EmailService],
   exports: [AdvisorsService],
 })
 export class AdvisorsModule {}

@@ -12,7 +12,7 @@ export class PaymentNotificationsService {
     private readonly usersService: UsersService,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   @Cron(CronExpression.EVERY_DAY_AT_6AM)
   async handleExpiredSubscriptions(): Promise<void> {
@@ -34,13 +34,13 @@ export class PaymentNotificationsService {
         const subscription = advisor.subscription || ({} as any);
         const expiryDate = subscription.currentPeriodEnd
           ? new Date(subscription.currentPeriodEnd).toLocaleDateString(
-              'en-US',
-              {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-              },
-            )
+            'en-US',
+            {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+            },
+          )
           : new Date().toLocaleDateString('en-US');
 
         await this.emailService.sendSubscriptionExpiredEmail({

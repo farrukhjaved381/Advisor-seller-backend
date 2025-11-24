@@ -12,6 +12,7 @@ import { Seller, SellerDocument } from '../sellers/schemas/seller.schema';
 import { CreateAdvisorProfileDto } from './dto/create-advisor-profile.dto';
 import { UpdateAdvisorProfileDto } from './dto/update-advisor-profile.dto';
 import { UsersService } from '../users/users.service';
+import { EmailService } from '../auth/email.service';
 import { v2 as cloudinary } from 'cloudinary';
 import {
   Connection,
@@ -30,6 +31,7 @@ export class AdvisorsService {
     @InjectModel(Seller.name)
     private sellerModel: Model<SellerDocument>,
     private usersService: UsersService,
+    private emailService: EmailService,
   ) {
     this.initializeIndexes();
 
@@ -65,7 +67,7 @@ export class AdvisorsService {
   async createEmptyProfile(userId: string, force = false): Promise<Advisor> {
     // First try to find existing profile
     const existingProfile = await this.advisorModel.findOne({ userId }).exec();
-    
+
     // If profile exists and we're not forcing creation, return it
     if (existingProfile && !force) {
       return existingProfile;
@@ -85,9 +87,9 @@ export class AdvisorsService {
         website: '',
         currency: 'USD',
         description: 'New advisor profile',
-        testimonials: Array(5).fill({ 
-          clientName: 'Client Name', 
-          testimonial: 'Testimonial text' 
+        testimonials: Array(5).fill({
+          clientName: 'Client Name',
+          testimonial: 'Testimonial text'
         }),
         revenueRange: { min: 0, max: 0 },
         isActive: false, // Inactive until properly filled out
@@ -110,7 +112,7 @@ export class AdvisorsService {
         throw error;
       }
     }
-    
+
     return existingProfile;
   }
 
@@ -120,7 +122,7 @@ export class AdvisorsService {
   ): Promise<Advisor> {
     // First, try to find existing profile
     let advisor = await this.advisorModel.findOne({ userId });
-    
+
     // If no profile exists, create one with provided or default values
     if (!advisor) {
       // Create a new profile with provided data or default values
@@ -135,22 +137,26 @@ export class AdvisorsService {
         website: createDto.website || '',
         currency: createDto.currency || 'USD',
         description: createDto.description || 'New advisor profile',
-        testimonials: createDto.testimonials || Array(5).fill({ 
-          clientName: 'Client Name', 
-          testimonial: 'Testimonial text' 
+        testimonials: createDto.testimonials || Array(5).fill({
+          clientName: 'Client Name',
+          testimonial: 'Testimonial text'
         }),
         revenueRange: createDto.revenueRange || { min: 0, max: 0 },
         isActive: true, // Set to true since we're updating with real data
         sendLeads: createDto.sendLeads || false,
         workedWithCimamplify: createDto.workedWithCimamplify || false
       };
-      
+
       // Create and save the new profile with validation
       advisor = new this.advisorModel(newProfile);
       await advisor.save({ validateBeforeSave: true });
-      
+
       // Update user's profile completion status
       await this.usersService.updateProfileComplete(userId, true);
+
+      // Send notification email to project owner
+      await this.sendAdvisorCreatedNotification(advisor, userId);
+
       return advisor;
     }
 
@@ -162,17 +168,17 @@ export class AdvisorsService {
     // Update existing profile with new data
     const updatedProfile = await this.advisorModel.findOneAndUpdate(
       { userId },
-      { 
+      {
         ...createDto,
         isActive: true // Mark as active when properly filled out
       },
       { new: true, runValidators: true }
     );
-    
+
     if (!updatedProfile) {
       throw new Error('Failed to update advisor profile');
     }
-    
+
     // Update user's profile completion status
     await this.usersService.updateProfileComplete(userId, true);
     return updatedProfile;
@@ -188,7 +194,7 @@ export class AdvisorsService {
   ): Promise<Advisor> {
     // Check if profile exists
     const existingProfile = await this.advisorModel.findOne({ userId });
-    
+
     // If no profile exists, create one with provided or default values
     if (!existingProfile) {
       const newProfile = {
@@ -202,19 +208,23 @@ export class AdvisorsService {
         website: updateAdvisorProfileDto.website || '',
         currency: updateAdvisorProfileDto.currency || 'USD',
         description: updateAdvisorProfileDto.description || '',
-        testimonials: updateAdvisorProfileDto.testimonials || Array(5).fill({ 
-          clientName: '', 
-          testimonial: '' 
+        testimonials: updateAdvisorProfileDto.testimonials || Array(5).fill({
+          clientName: '',
+          testimonial: ''
         }),
         revenueRange: updateAdvisorProfileDto.revenueRange || { min: 0, max: 0 },
         isActive: true, // Set to true since we're updating with real data
         sendLeads: updateAdvisorProfileDto.sendLeads || false,
         workedWithCimamplify: updateAdvisorProfileDto.workedWithCimamplify || false
       };
-      
+
       const createdProfile = new this.advisorModel(newProfile);
       await createdProfile.save({ validateBeforeSave: true });
       await this.usersService.updateProfileComplete(userId, true);
+
+      // Send notification email to project owner
+      await this.sendAdvisorCreatedNotification(createdProfile, userId);
+
       return createdProfile;
     }
 
@@ -273,14 +283,14 @@ export class AdvisorsService {
               error instanceof Error
                 ? error
                 : new Error(
-                    typeof error === 'string'
-                      ? error
-                      : (error as { message?: unknown })?.message &&
-                          typeof (error as { message?: unknown }).message ===
-                            'string'
-                        ? String((error as { message?: unknown }).message)
-                        : 'Cloudinary upload failed',
-                  );
+                  typeof error === 'string'
+                    ? error
+                    : (error as { message?: unknown })?.message &&
+                      typeof (error as { message?: unknown }).message ===
+                      'string'
+                      ? String((error as { message?: unknown }).message)
+                      : 'Cloudinary upload failed',
+                );
             reject(reason);
           } else if (result) {
             resolve(result.secure_url);
@@ -342,7 +352,7 @@ export class AdvisorsService {
   ): Promise<Advisor> {
     // First, try to find existing profile
     let advisor = await this.advisorModel.findOne({ userId });
-    
+
     // If no profile exists, create a new one with provided or default values
     if (!advisor) {
       // Create a new profile with provided data or default values
@@ -357,22 +367,26 @@ export class AdvisorsService {
         website: updateProfileDto.website || '',
         currency: updateProfileDto.currency || 'USD',
         description: updateProfileDto.description || 'New advisor profile',
-        testimonials: updateProfileDto.testimonials || Array(5).fill({ 
-          clientName: 'Client Name', 
-          testimonial: 'Testimonial text' 
+        testimonials: updateProfileDto.testimonials || Array(5).fill({
+          clientName: 'Client Name',
+          testimonial: 'Testimonial text'
         }),
         revenueRange: updateProfileDto.revenueRange || { min: 0, max: 0 },
         isActive: true, // Set to true since we're updating with real data
         sendLeads: updateProfileDto.sendLeads || false,
         workedWithCimamplify: updateProfileDto.workedWithCimamplify || false
       };
-      
+
       // Create and save the new profile with validation
       advisor = new this.advisorModel(newProfile);
       await advisor.save({ validateBeforeSave: true });
-      
+
       // Update user's profile completion status
       await this.usersService.updateProfileComplete(userId, true);
+
+      // Send notification email to project owner
+      await this.sendAdvisorCreatedNotification(advisor, userId);
+
       return advisor;
     }
 
@@ -392,7 +406,7 @@ export class AdvisorsService {
           ) {
             try {
               return JSON.parse(s);
-            } catch {}
+            } catch { }
           }
         }
         return val;
@@ -426,7 +440,7 @@ export class AdvisorsService {
                   : '';
               const pdfUrl =
                 typeof testimonial?.pdfUrl === 'string' &&
-                testimonial.pdfUrl.trim().length > 0
+                  testimonial.pdfUrl.trim().length > 0
                   ? testimonial.pdfUrl.trim()
                   : undefined;
               return {
@@ -436,15 +450,25 @@ export class AdvisorsService {
               };
             });
 
-          if (
-            normalized.length !== 5 ||
-            normalized.some(
-              (testimonial) =>
-                !testimonial.clientName || !testimonial.testimonial,
-            )
-          ) {
+          // Check if at least one testimonial is complete
+          const completedTestimonials = normalized.filter(
+            (testimonial) =>
+              testimonial.clientName &&
+              testimonial.clientName.trim() !== 'Client Name' &&
+              testimonial.testimonial &&
+              testimonial.testimonial.trim() !== 'Testimonial text'
+          );
+
+          if (completedTestimonials.length < 1) {
             throw new BadRequestException(
-              'Exactly 5 testimonials with client name and testimonial text are required',
+              'At least one testimonial with client name and testimonial text is required',
+            );
+          }
+
+          // Ensure we have exactly 5 testimonials (fill with defaults if needed)
+          if (normalized.length !== 5) {
+            throw new BadRequestException(
+              'Exactly 5 testimonials are required (can include placeholder data)',
             );
           }
 
@@ -532,16 +556,24 @@ export class AdvisorsService {
       }
     }
 
-    if (
-      !Array.isArray(advisor.testimonials) ||
-      advisor.testimonials.length !== 5 ||
-      advisor.testimonials.some(
-        (testimonial) =>
-          !testimonial?.clientName?.trim() || !testimonial?.testimonial?.trim(),
-      )
-    ) {
+    // Validate testimonials - at least one must be complete
+    if (!Array.isArray(advisor.testimonials) || advisor.testimonials.length !== 5) {
       throw new BadRequestException(
-        'Advisor profile must include exactly 5 testimonials with client name and testimonial text',
+        'Advisor profile must include exactly 5 testimonials',
+      );
+    }
+
+    const completedTestimonials = advisor.testimonials.filter(
+      (testimonial) =>
+        testimonial?.clientName?.trim() &&
+        testimonial?.clientName?.trim() !== 'Client Name' &&
+        testimonial?.testimonial?.trim() &&
+        testimonial?.testimonial?.trim() !== 'Testimonial text'
+    );
+
+    if (completedTestimonials.length < 1) {
+      throw new BadRequestException(
+        'At least one testimonial with client name and testimonial text is required',
       );
     }
 
@@ -563,7 +595,7 @@ export class AdvisorsService {
       advisorUserId: advisorId,
       at: new Date().toISOString(),
     });
-    
+
     // Debug: Check if advisor profile exists
     const advisorProfile = await this.advisorModel
       .findOne({ userId: advisorId })
@@ -573,7 +605,7 @@ export class AdvisorsService {
       profileFound: !!advisorProfile,
       profileId: advisorProfile?._id?.toString(),
     });
-    
+
     if (!advisorProfile) {
       console.warn(
         '[AdvisorsService] No advisor profile found for user',
@@ -592,7 +624,7 @@ export class AdvisorsService {
         leads: [],
       };
     }
-    
+
     // Debug: Check total connections in database
     const totalConnections = await this.connectionModel.countDocuments();
     console.log('[AdvisorsService] Total connections in database:', totalConnections);
@@ -604,7 +636,7 @@ export class AdvisorsService {
       advisorProfileId: advisorProfile._id.toString(),
       advisorProfileIdType: typeof advisorProfile._id,
     });
-    
+
     // Also check if there are any connections with string version of the ID
     const stringQuery = { advisorId: advisorProfile._id.toString() };
     const stringMatches = await this.connectionModel.find(stringQuery).lean();
@@ -699,9 +731,9 @@ export class AdvisorsService {
       if (!isDirectListLead) {
         mergedSeller = sellerProfile
           ? {
-              ...sellerProfile,
-              ...(Object.keys(snapshot).length > 0 ? snapshot : {}),
-            }
+            ...sellerProfile,
+            ...(Object.keys(snapshot).length > 0 ? snapshot : {}),
+          }
           : Object.keys(snapshot).length > 0
             ? snapshot
             : null;
@@ -732,7 +764,7 @@ export class AdvisorsService {
         sellerUserId,
         contactHidden: isDirectListLead,
       };
-      
+
       // Remove sensitive snapshot data for direct list leads
       if (isDirectListLead) {
         delete result.sellerCompanyName;
@@ -741,7 +773,7 @@ export class AdvisorsService {
         delete result.sellerPhone;
         delete result.sellerWebsite;
       }
-      
+
       return result;
     });
     console.log('[AdvisorsService] Mapped leads with seller', {
@@ -838,7 +870,7 @@ export class AdvisorsService {
   ): Promise<{ isNew: boolean; impression: any }> {
     try {
       console.log('[AdvisorsService] recordImpression called with:', { sellerId, advisorId });
-      
+
       // Convert string IDs to ObjectId for proper comparison
       const sellerObjectId = new Types.ObjectId(sellerId);
       const advisor = await this.advisorModel.findById(advisorId);
@@ -901,5 +933,43 @@ export class AdvisorsService {
       totalImpressions: impressions.length,
       impressions,
     };
+  }
+
+  private async sendAdvisorCreatedNotification(advisor: Advisor, userId: string): Promise<void> {
+    try {
+      // Get user details
+      const user = await this.usersService.findById(userId);
+      if (!user) {
+        console.warn('User not found for advisor notification:', userId);
+        return;
+      }
+
+      const frontendUrl = process.env.FRONTEND_URL || 'https://app.advisorchooser.com';
+      const dashboardUrl = `${frontendUrl}/admin/dashboard`;
+
+      await this.emailService.sendAdvisorCreatedEmail({
+        advisorName: user.name || 'Unknown',
+        advisorCompanyName: advisor.companyName || 'Not specified',
+        advisorEmail: user.email,
+        advisorPhone: advisor.phone || 'Not specified',
+        advisorWebsite: advisor.website || 'Not specified',
+        advisorExperience: advisor.yearsExperience || 0,
+        advisorTransactions: advisor.numberOfTransactions || 0,
+        advisorIndustries: Array.isArray(advisor.industries) ? advisor.industries.join(', ') : 'Not specified',
+        advisorGeographies: Array.isArray(advisor.geographies) ? advisor.geographies.join(', ') : 'Not specified',
+        advisorRevenueMin: advisor.revenueRange?.min || 0,
+        advisorRevenueMax: advisor.revenueRange?.max || 0,
+        advisorCurrency: advisor.currency || 'USD',
+        advisorDescription: advisor.description || 'No description provided',
+        workedWithCimamplify: advisor.workedWithCimamplify ? 'Yes' : 'No',
+        sendLeads: advisor.sendLeads ? 'Yes' : 'No',
+        dashboardUrl,
+      });
+
+      console.log('Advisor creation notification sent successfully for:', user.email);
+    } catch (error) {
+      console.error('Failed to send advisor creation notification:', error);
+      // Don't throw error to avoid breaking the advisor creation process
+    }
   }
 }
