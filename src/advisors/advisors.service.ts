@@ -87,10 +87,7 @@ export class AdvisorsService {
         website: '',
         currency: 'USD',
         description: 'New advisor profile',
-        testimonials: Array(5).fill({
-          clientName: 'Client Name',
-          testimonial: 'Testimonial text'
-        }),
+        testimonials: [],
         revenueRange: { min: 0, max: 0 },
         isActive: false, // Inactive until properly filled out
         sendLeads: false,
@@ -137,10 +134,7 @@ export class AdvisorsService {
         website: createDto.website || '',
         currency: createDto.currency || 'USD',
         description: createDto.description || 'New advisor profile',
-        testimonials: createDto.testimonials || Array(5).fill({
-          clientName: 'Client Name',
-          testimonial: 'Testimonial text'
-        }),
+        testimonials: createDto.testimonials || [],
         revenueRange: createDto.revenueRange || { min: 0, max: 0 },
         isActive: true, // Set to true since we're updating with real data
         sendLeads: createDto.sendLeads || false,
@@ -208,10 +202,7 @@ export class AdvisorsService {
         website: updateAdvisorProfileDto.website || '',
         currency: updateAdvisorProfileDto.currency || 'USD',
         description: updateAdvisorProfileDto.description || '',
-        testimonials: updateAdvisorProfileDto.testimonials || Array(5).fill({
-          clientName: '',
-          testimonial: ''
-        }),
+        testimonials: updateAdvisorProfileDto.testimonials || [],
         revenueRange: updateAdvisorProfileDto.revenueRange || { min: 0, max: 0 },
         isActive: true, // Set to true since we're updating with real data
         sendLeads: updateAdvisorProfileDto.sendLeads || false,
@@ -367,10 +358,7 @@ export class AdvisorsService {
         website: updateProfileDto.website || '',
         currency: updateProfileDto.currency || 'USD',
         description: updateProfileDto.description || 'New advisor profile',
-        testimonials: updateProfileDto.testimonials || Array(5).fill({
-          clientName: 'Client Name',
-          testimonial: 'Testimonial text'
-        }),
+        testimonials: updateProfileDto.testimonials || [],
         revenueRange: updateProfileDto.revenueRange || { min: 0, max: 0 },
         isActive: true, // Set to true since we're updating with real data
         sendLeads: updateProfileDto.sendLeads || false,
@@ -465,10 +453,10 @@ export class AdvisorsService {
             );
           }
 
-          // Ensure we have exactly 5 testimonials (fill with defaults if needed)
-          if (normalized.length !== 5) {
+          // Allow 1-5 testimonials (no placeholders needed)
+          if (normalized.length < 1 || normalized.length > 5) {
             throw new BadRequestException(
-              'Exactly 5 testimonials are required (can include placeholder data)',
+              'Between 1 and 5 testimonials are required',
             );
           }
 
@@ -557,9 +545,9 @@ export class AdvisorsService {
     }
 
     // Validate testimonials - at least one must be complete
-    if (!Array.isArray(advisor.testimonials) || advisor.testimonials.length !== 5) {
+    if (!Array.isArray(advisor.testimonials) || advisor.testimonials.length < 1 || advisor.testimonials.length > 5) {
       throw new BadRequestException(
-        'Advisor profile must include exactly 5 testimonials',
+        'Advisor profile must include between 1 and 5 testimonials',
       );
     }
 

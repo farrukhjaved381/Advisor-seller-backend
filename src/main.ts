@@ -56,6 +56,11 @@ async function createApp(): Promise<INestApplication> {
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => {
+      // Exclude Stripe webhook endpoint from rate limiting
+      // Stripe may send multiple webhook events in quick succession
+      return req.path === '/api/payment/webhook';
+    },
   });
   nestApp.use('/api/', limiter);
 

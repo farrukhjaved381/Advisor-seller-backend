@@ -11,6 +11,7 @@ import {
   Param,
   Delete,
   UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -41,7 +42,7 @@ import type { Request as ExpressRequest } from 'express';
 @ApiTags('Payment')
 @Controller('payment')
 export class PaymentController {
-  constructor(private paymentService: PaymentService) {}
+  constructor(private paymentService: PaymentService) { }
 
   @Post('create-intent')
   @UseGuards(JwtAuthGuard)
@@ -281,9 +282,16 @@ export class PaymentController {
   ) {
     // Public endpoint for Stripe to send payment confirmations
     // No authentication required - Stripe signature verification handles security
+
+    // Validate that rawBody exists (required for Stripe signature verification)
+    if (!req.rawBody) {
+      console.error('[PaymentController] Missing rawBody in webhook request');
+      throw new BadRequestException('Webhook payload missing - rawBody not available');
+    }
+
     return this.paymentService.handleWebhook(
       signature,
-      req.rawBody || Buffer.from(''),
+      req.rawBody,
     );
   }
 
