@@ -83,9 +83,9 @@ async function createApp(): Promise<INestApplication> {
   const rawWhitelist = [
     process.env.FRONTEND_URL,
     appUrl,
-    'http://localhost:5174',
-    'http://127.0.0.1:5174',
     'https://app.advisorchooser.com',
+    'http://127.0.0.1:5174',
+    'http://localhost:5174',
     'https://cimamplify-ui.vercel.app',
   ];
 
