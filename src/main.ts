@@ -18,7 +18,7 @@ let app: INestApplication;
 
 async function createApp(): Promise<INestApplication> {
   const nestApp = await NestFactory.create(AppModule, {
-    rawBody: true, // Enable raw body parsing for webhook verification
+    rawBody: true,
   });
 
   const httpAdapter = nestApp.getHttpAdapter();
@@ -26,18 +26,21 @@ async function createApp(): Promise<INestApplication> {
     typeof (httpAdapter as any).getInstance === 'function'
       ? (httpAdapter as any).getInstance()
       : null;
+
+  // Trust Nginx proxy
   instance?.set?.('trust proxy', 1);
 
-  // Security headers
+  // Security headers with proper CSP for Swagger
   nestApp.use(
     helmet({
       contentSecurityPolicy: {
         directives: {
-          defaultSrc: [`'self'`],
-          styleSrc: [`'self'`, `'unsafe-inline'`],
-          imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
-          scriptSrc: [`'self'`, `'unsafe-inline'`, `https://unpkg.com`],
-          objectSrc: [`'none'`],
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+          imgSrc: ["'self'", 'data:', 'validator.swagger.io'],
+          scriptSrc: ["'self'", "'unsafe-inline'", 'https://unpkg.com'],
+          objectSrc: ["'none'"],
           upgradeInsecureRequests: [],
         },
       },
@@ -49,50 +52,41 @@ async function createApp(): Promise<INestApplication> {
     }),
   );
 
-  // Rate limiting - Increased limits for better user experience
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500, // limit each IP to 500 requests per windowMs (increased from 100)
-    message: 'Too many requests from this IP, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req) => {
-      // Exclude Stripe webhook endpoint from rate limiting
-      // Stripe may send multiple webhook events in quick succession
-      return req.path === '/api/payment/webhook';
-    },
-  });
-  nestApp.use('/api/', limiter);
+  // Rate limiting
+  nestApp.use(
+    '/api/',
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 500,
+      message: 'Too many requests from this IP, please try again later.',
+      standardHeaders: true,
+      legacyHeaders: false,
+      skip: (req) => req.path === '/api/payment/webhook',
+    }),
+  );
 
-  // Slow down repeated requests - More lenient limits
-  const speedLimiter = slowDown({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    delayAfter: 200, // allow 200 requests per 15 minutes, then... (increased from 50)
-    delayMs: 300, // begin adding 300ms of delay per request above 200 (reduced from 500ms)
-  });
-  nestApp.use('/api/auth/', speedLimiter);
+  // Slow down repeated requests
+  nestApp.use(
+    '/api/auth/',
+    slowDown({
+      windowMs: 15 * 60 * 1000,
+      delayAfter: 200,
+      delayMs: 300,
+    }),
+  );
 
   nestApp.use(cookieParser());
 
-  const appUrl = process.env.API_PUBLIC_URL
-    ? process.env.API_PUBLIC_URL
-    : process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : undefined;
-
+  // CORS
   const rawWhitelist = [
     process.env.FRONTEND_URL,
-    appUrl,
+    process.env.API_PUBLIC_URL,
     'https://app.advisorchooser.com',
-    'http://127.0.0.1:5174',
-    'http://localhost:5174',
     'https://cimamplify-ui.vercel.app',
   ];
 
   const normalizeOrigin = (value?: string | null) => {
-    if (!value) {
-      return undefined;
-    }
+    if (!value) return undefined;
     try {
       return new URL(value).origin.replace(/\/$/, '');
     } catch {
@@ -101,9 +95,7 @@ async function createApp(): Promise<INestApplication> {
   };
 
   const allowedOrigins = new Set(
-    rawWhitelist
-      .map(normalizeOrigin)
-      .filter((origin): origin is string => Boolean(origin)),
+    rawWhitelist.map(normalizeOrigin).filter((o): o is string => !!o),
   );
 
   const isAllowedPreviewOrigin = (value: string) => {
@@ -117,32 +109,19 @@ async function createApp(): Promise<INestApplication> {
 
   nestApp.enableCors({
     origin: (origin, callback) => {
-      if (!origin) {
+      if (!origin) return callback(null, true);
+      const normalized = normalizeOrigin(origin);
+      if (normalized && (allowedOrigins.has(normalized) || isAllowedPreviewOrigin(normalized))) {
         return callback(null, true);
       }
-      const normalizedOrigin = normalizeOrigin(origin);
-      if (
-        normalizedOrigin &&
-        (allowedOrigins.has(normalizedOrigin) ||
-          isAllowedPreviewOrigin(normalizedOrigin))
-      ) {
-        return callback(null, true);
-      }
-
-      if (process.env.NODE_ENV !== 'production') {
-        return callback(null, true);
-      }
-
+      if (process.env.NODE_ENV !== 'production') return callback(null, true);
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    // Be explicit to satisfy strict preflight checks in some environments
     allowedHeaders: [
       'Content-Type',
-      'content-type',
       'Authorization',
-      'authorization',
       'X-Requested-With',
       'Accept',
       'Origin',
@@ -154,29 +133,29 @@ async function createApp(): Promise<INestApplication> {
     optionsSuccessStatus: 204,
   });
 
-  nestApp.useGlobalFilters(
-    new AllExceptionsFilter(),
-    new HttpExceptionFilter(),
-  );
-
+  // Global filters and pipes
+  nestApp.useGlobalFilters(new AllExceptionsFilter(), new HttpExceptionFilter());
   nestApp.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
 
   nestApp.setGlobalPrefix('api');
 
-  const config = new DocumentBuilder()
+  // Swagger config with HTTPS server
+  const swaggerConfig = new DocumentBuilder()
     .setTitle('Seller-Advisor Backend API')
     .setDescription('API for Seller-Advisor Matching Platform')
     .setVersion('1.0')
     .addBearerAuth()
+    .addServer('https://api.advisorchooser.com') // Force HTTPS
     .build();
-  const document = SwaggerModule.createDocument(nestApp, config);
-  SwaggerModule.setup('docs', nestApp, document);
+
+  const document = SwaggerModule.createDocument(nestApp, swaggerConfig);
+  SwaggerModule.setup('docs', nestApp, document, {
+    swaggerOptions: {
+      url: 'https://api.advisorchooser.com/api-json', // force HTTPS for JSON
+    },
+  });
 
   return nestApp;
 }
@@ -184,27 +163,28 @@ async function createApp(): Promise<INestApplication> {
 async function bootstrap() {
   app = await createApp();
   await app.listen(process.env.PORT || 3003);
-  console.log(
-    `🚀 Backend server running on: http://localhost:${process.env.PORT || 3003}`,
-  );
-  console.log(
-    `📚 Swagger API docs available at: http://localhost:${process.env.PORT || 3003}/docs`,
-  );
+  console.log(`🚀 Backend running on: http://localhost:${process.env.PORT || 3003}`);
+  console.log(`📚 Swagger docs: https://api.advisorchooser.com/docs`);
 }
 
+// Export for serverless / Lambda style usage
 export default async (req: any, res: any) => {
-  // Handle CORS preflight requests immediately
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', 'https://app.advisorchooser.com');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-csrf-token, X-CSRF-Token, Cookie');
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+    );
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-csrf-token, X-CSRF-Token, Cookie',
+    );
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Max-Age', '86400');
     res.status(204).end();
     return;
   }
 
-  // Set CORS headers for all requests
   res.setHeader('Access-Control-Allow-Origin', 'https://app.advisorchooser.com');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Expose-Headers', 'set-cookie');
